@@ -233,9 +233,6 @@ function ArenaPageContent() {
   };
 
   const handleClose = () => {
-    // Immediate instant client-side route transition
-    router.push('/');
-
     try {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('kollabrix_arena_session');
@@ -244,8 +241,11 @@ function ArenaPageContent() {
             sessionStorage.removeItem(key);
           }
         });
+        window.location.assign('/');
+        return;
       }
     } catch (e) {}
+    router.replace('/');
   };
 
   // If Arena is OFFLINE / UNDER MAINTENANCE (Admins bypass so they can build & test live):

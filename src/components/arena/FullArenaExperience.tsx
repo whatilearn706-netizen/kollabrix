@@ -1005,6 +1005,53 @@ export function FullArenaExperience({
     }
   }, [step, roomCode, isHost, myPlayerId, playerName]);
 
+  // Instant, zero-latency exit back to homepage
+  const handleFastExit = (target = '/') => {
+    try {
+      sessionStorage.removeItem('kollabrix_arena_session');
+      if (roomCode) sessionStorage.removeItem(`arena_code_${roomCode}`);
+    } catch {}
+
+    // Broadcast exit event to Supabase channel if active (non-blocking)
+    if (channelRef.current) {
+      try {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'arena_exit',
+          payload: {
+            exitedBy: playerName,
+            message: `⚡ ${playerName} has exited the Battle Arena. The match has ended.`,
+          },
+        });
+      } catch {}
+    }
+
+    // Fire non-blocking keepalive sync request in background without awaiting
+    if (roomCode) {
+      try {
+        fetch('/api/arena/rooms/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: roomCode,
+            action: 'close_room',
+            playerId: myPlayerId,
+            payload: { exitedBy: playerName },
+          }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch {}
+    }
+
+    // Immediately trigger exit
+    onClose();
+    if (typeof window !== 'undefined') {
+      window.location.assign(target);
+    } else {
+      router.replace(target);
+    }
+  };
+
   // Step-by-step Back Navigation: allows user to go back seamlessly from wherever they are
   const handleBackNavigation = () => {
     // 1. If any modal is open, close modal
@@ -1023,132 +1070,46 @@ export function FullArenaExperience({
       return;
     }
 
-    // 3. In Lobby (Step 3), host goes back to Step 0 with tournament unlocked; non-host leaves room
-    if (step === 3) {
-      if (isHost) {
-        setStep(0);
-        setIsCreateUnlocked(true);
-      } else {
-        handleConfirmExit();
-      }
-      return;
-    }
-
-    // 4. In Victory / Result (Step 6), go back to arena gateway (Step 0)
+    // 3. In Victory / Result (Step 6), go back to arena gateway (Step 0)
     if (step === 6) {
       setStep(0);
       setIsCreateUnlocked(false);
       return;
     }
 
-    // 5. In Step 1 or Step 2 (Tournament configuration)
+    // 4. In Step 1 or Step 2 (Tournament configuration on right pane)
     if (step === 1 || step === 2) {
       setStep(0);
       setIsCreateUnlocked(false);
       return;
     }
 
-    // 6. On Step 0 (Gateway / Colosseum initial screen):
-    if (step === 0) {
-      // If tournament was unlocked and being configured on the right, back relocks it to pure colosseum card
-      if (isCreateUnlocked) {
-        setIsCreateUnlocked(false);
-        return;
-      }
-
-      // If at root of arena, back returns to previous page / homepage
-      try {
-        sessionStorage.removeItem('kollabrix_arena_session');
-      } catch {}
-
-      if (typeof window !== 'undefined' && window.history.length > 1 && document.referrer && document.referrer.includes(window.location.host)) {
-        router.back();
+    // 5. In Step 3 (Lobby), if host wants to return to Step 0, or non-host leaves
+    if (step === 3) {
+      if (isHost) {
+        setStep(0);
+        setIsCreateUnlocked(true);
       } else {
-        router.push('/');
+        handleFastExit('/');
       }
-      onClose();
+      return;
+    }
+
+    // 6. On Step 0 (Gateway / Colosseum initial screen): immediately exit arena to homepage!
+    if (step === 0) {
+      handleFastExit('/');
       return;
     }
 
     // Fallback default
-    router.push('/');
-    onClose();
+    handleFastExit('/');
   };
 
   const handleExitArena = handleBackNavigation;
 
-  const handleConfirmExit = async () => {
+  const handleConfirmExit = () => {
     setShowExitConfirmModal(false);
-
-    // If non-host player is in Lobby (Step 3), simply leave the room without shutting it down for host
-    if (step === 3 && !isHost) {
-      if (channelRef.current) {
-        try {
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'player_left',
-            payload: { name: playerName, playerId: myPlayerId },
-          });
-        } catch {}
-      }
-      if (roomCode) {
-        try {
-          await fetch('/api/arena/rooms/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              code: roomCode,
-              action: 'leave_room',
-              playerId: myPlayerId,
-              payload: { playerName },
-            }),
-          });
-        } catch {}
-      }
-      try {
-        sessionStorage.removeItem('kollabrix_arena_session');
-        window.history.replaceState(null, '', '/arena');
-      } catch {}
-      setStep(0);
-      return;
-    }
-
-    // Host leaving or match in progress: broadcast exit and close room
-    if (channelRef.current) {
-      try {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'arena_exit',
-          payload: {
-            exitedBy: playerName,
-            message: `⚡ ${playerName} has exited the Battle Arena. The match has ended.`,
-          },
-        });
-      } catch {}
-    }
-
-    if (roomCode) {
-      try {
-        await fetch('/api/arena/rooms/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: roomCode,
-            action: 'close_room',
-            playerId: myPlayerId,
-            payload: { exitedBy: playerName },
-          }),
-        });
-      } catch {}
-    }
-
-    try {
-      sessionStorage.removeItem('kollabrix_arena_session');
-      if (roomCode) sessionStorage.removeItem(`arena_code_${roomCode}`);
-    } catch {}
-
-    router.push('/');
-    onClose();
+    handleFastExit('/');
   };
 
   useEffect(() => {
@@ -3521,7 +3482,7 @@ export function FullArenaExperience({
           </div>
 
           {/* Center Timer when in Battle */}
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/40 shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
             <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
             <span className="font-mono text-base font-black text-amber-300 tracking-wider">
               {formatTimer(timeLeft)}
@@ -3533,14 +3494,14 @@ export function FullArenaExperience({
             <button
               type="button"
               onClick={toggleArenaFullscreen}
-              className={`p-2 px-3 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2 px-3.5 rounded-xl border text-xs font-mono font-black flex items-center gap-1.5 transition-all cursor-pointer ${
                 isFullscreen
-                  ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                  : 'bg-black/60 hover:bg-slate-900 border-slate-700/80 text-slate-300 hover:text-white'
+                  ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                  : 'bg-black/60 hover:bg-slate-900 border-slate-600 text-white hover:border-amber-400/60'
               }`}
               title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
-              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5" />}
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5 text-slate-300" />}
               <span className="hidden sm:inline">Fullscreen</span>
             </button>
 
@@ -3549,10 +3510,10 @@ export function FullArenaExperience({
               onClick={handleBackNavigation}
               onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
               onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
-              className="p-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-mono cursor-pointer"
+              className="p-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-600 hover:border-amber-400 text-white transition-colors flex items-center gap-1.5 text-xs font-mono font-black cursor-pointer shadow-sm"
               title="Leave Battle"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400" />
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Back</span>
             </button>
           </div>
@@ -3564,10 +3525,10 @@ export function FullArenaExperience({
           onClick={handleBackNavigation}
           onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
           onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
-          className="fixed top-4 left-4 sm:top-6 sm:left-8 z-50 px-3.5 py-1.5 rounded-full bg-black/45 hover:bg-black/75 border border-white/15 hover:border-amber-400/50 text-slate-300 hover:text-white transition-all duration-150 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.6)] flex items-center gap-1.5 text-xs font-mono cursor-pointer active:scale-95 group select-none"
+          className="fixed top-4 left-4 sm:top-6 sm:left-8 z-50 px-4 py-2 rounded-full bg-black/60 hover:bg-black/85 border border-white/25 hover:border-amber-400 text-white font-black transition-all duration-150 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.7)] flex items-center gap-2 text-xs font-mono cursor-pointer active:scale-95 group select-none tracking-wide"
           title="Back"
         >
-          <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-400 group-hover:-translate-x-0.5 transition-all" />
+          <ArrowLeft className="w-4 h-4 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
           <span>Back</span>
         </button>
       )}
@@ -3644,12 +3605,12 @@ export function FullArenaExperience({
                     <div className="space-y-4">
                       {/* Badge + Headline */}
                       <div className="space-y-1 text-left">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-black/40 border border-amber-400/35 text-amber-300 font-mono text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm shadow-sm">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-black/60 border border-amber-400/50 text-amber-300 font-mono text-[10px] font-black uppercase tracking-widest backdrop-blur-sm shadow-sm">
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                           <span>THE PROVING GROUNDS • LIVE ARENA</span>
                         </div>
 
-                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-serif">
+                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans drop-shadow-[0_2px_14px_rgba(255,255,255,0.2)]">
                           Proving Ground
                         </h1>
                       </div>
@@ -3657,7 +3618,7 @@ export function FullArenaExperience({
                       {/* Avatar Choose Section */}
                       <div className="space-y-2 text-left">
                         <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+                          <span className="text-xs font-mono text-white font-bold flex items-center gap-1.5 tracking-wide">
                             <span className="text-amber-400">⚡</span>
                             <span>Choose Avatar:</span>
                           </span>
@@ -3668,7 +3629,7 @@ export function FullArenaExperience({
                                 setCustomAvatarUrl('');
                                 setAvatarUrlInput('');
                               }}
-                              className="text-[10px] font-mono text-amber-400/80 hover:text-amber-300 underline cursor-pointer"
+                              className="text-[10px] font-mono text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
                             >
                               Reset to Presets
                             </button>
@@ -3676,10 +3637,10 @@ export function FullArenaExperience({
                         </div>
 
                         {/* Avatar Display + Presets */}
-                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/35 border border-amber-400/20 backdrop-blur-md shadow-inner">
+                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/40 border border-amber-400/30 backdrop-blur-md shadow-inner">
                           {/* Active Preview */}
                           <div className="relative shrink-0">
-                            <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.45)] bg-slate-900 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.55)] bg-slate-900 flex items-center justify-center">
                               <img
                                 src={activeAvatarImage}
                                 alt="Active Combatant Avatar"
@@ -3696,7 +3657,7 @@ export function FullArenaExperience({
 
                           {/* Presets Grid */}
                           <div className="flex-1 min-w-0">
-                            <div className="text-[10px] font-mono text-slate-400 mb-1.5 flex items-center justify-between">
+                            <div className="text-[11px] font-mono text-slate-200 font-bold mb-1.5 flex items-center justify-between">
                               <span>Select an avatar:</span>
                             </div>
                             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -3716,8 +3677,8 @@ export function FullArenaExperience({
                                     title={av.name}
                                     className={`relative shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border transition-all cursor-pointer ${
                                       isSelected
-                                        ? 'border-amber-400 ring-2 ring-amber-400/60 scale-105 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
-                                        : 'border-slate-800 hover:border-amber-400/50 opacity-60 hover:opacity-100 hover:scale-100'
+                                        ? 'border-amber-400 ring-2 ring-amber-400/80 scale-105 shadow-[0_0_15px_rgba(245,158,11,0.6)]'
+                                        : 'border-slate-700/80 hover:border-amber-400/60 opacity-75 hover:opacity-100 hover:scale-100'
                                     }`}
                                   >
                                     <img
@@ -3747,11 +3708,11 @@ export function FullArenaExperience({
                               }
                             }}
                             placeholder="Paste avatar image URL (https://...)"
-                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-black/40 border border-amber-400/25 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 text-[11px] font-mono text-amber-200 placeholder:text-slate-500 transition-all outline-none backdrop-blur-md"
+                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-black/50 border border-amber-400/40 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/60 text-xs font-mono font-bold text-amber-200 placeholder:text-slate-400 placeholder:font-medium transition-all outline-none backdrop-blur-md"
                           />
                           <div className="absolute right-1.5 flex items-center">
                             <label
-                              className="cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[10px] font-mono text-amber-300 font-bold transition-all flex items-center gap-1 active:scale-95"
+                              className="cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400/50 text-[10px] font-mono text-amber-200 font-black transition-all flex items-center gap-1 active:scale-95"
                               title="Upload avatar image from device"
                             >
                               <Upload className="w-3 h-3" />
@@ -3786,14 +3747,14 @@ export function FullArenaExperience({
                       {/* Profile Name Section */}
                       <div className="space-y-1.5 text-left">
                         <div className="flex items-center justify-between">
-                          <label className="text-[11px] font-mono text-slate-300 font-semibold flex items-center gap-1.5">
+                          <label className="text-xs font-mono text-white font-bold flex items-center gap-1.5 tracking-wide">
                             <span className="text-amber-400">⚔️</span>
                             <span>Profile Name / Callsign:</span>
                           </label>
                           <button
                             type="button"
                             onClick={rollRandomCallSign}
-                            className="text-[10px] font-mono text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                            className="text-[10px] font-mono text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
                           >
                             🎲 Randomize
                           </button>
@@ -3809,12 +3770,12 @@ export function FullArenaExperience({
                               setPlayerName(clean);
                             }}
                             placeholder="Enter unique profile name..."
-                            className={`w-full px-3.5 py-2 rounded-xl bg-black/40 border font-mono text-xs font-bold transition-all outline-none backdrop-blur-md ${
+                            className={`w-full px-3.5 py-2 rounded-xl bg-black/50 border font-mono text-xs font-black transition-all outline-none backdrop-blur-md ${
                               usernameCheckStatus === 'taken'
-                                ? 'border-rose-500 text-rose-300 focus:ring-1 focus:ring-rose-500/50 bg-rose-950/20'
+                                ? 'border-rose-500 text-rose-300 focus:ring-1 focus:ring-rose-500/50 bg-rose-950/30'
                                 : usernameCheckStatus === 'available'
-                                ? 'border-emerald-500/80 text-emerald-300 focus:ring-1 focus:ring-emerald-500/50'
-                                : 'border-amber-400/25 text-amber-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50'
+                                ? 'border-emerald-500 text-emerald-300 focus:ring-1 focus:ring-emerald-500/50'
+                                : 'border-amber-400/40 text-amber-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/60'
                             }`}
                           />
                           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -3833,25 +3794,25 @@ export function FullArenaExperience({
                         {/* Validation status feedback */}
                         <div className="min-h-[16px] text-[10px] font-mono flex items-center gap-1">
                           {usernameCheckStatus === 'checking' && (
-                            <span className="text-amber-400/90 flex items-center gap-1">
+                            <span className="text-amber-300 font-bold flex items-center gap-1">
                               <Loader2 className="w-3 h-3 animate-spin shrink-0" />
                               Checking availability...
                             </span>
                           )}
                           {usernameCheckStatus === 'taken' && (
-                            <span className="text-rose-400 font-bold flex items-center gap-1 animate-pulse">
+                            <span className="text-rose-300 font-black flex items-center gap-1 animate-pulse">
                               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                               {usernameCheckMsg || 'This username is already taken by another user'}
                             </span>
                           )}
                           {usernameCheckStatus === 'available' && (
-                            <span className="text-emerald-400 flex items-center gap-1">
+                            <span className="text-emerald-300 font-black flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                               {usernameCheckMsg || 'Callsign available for combat'}
                             </span>
                           )}
                           {usernameCheckStatus === 'idle' && (
-                            <span className="text-slate-500">
+                            <span className="text-slate-300 font-bold">
                               {usernameCheckMsg || 'Min 3 characters. Alphanumeric & underscores.'}
                             </span>
                           )}
@@ -3900,7 +3861,7 @@ export function FullArenaExperience({
                           playTacticalSelectSound();
                           setShowJoinModal(true);
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-black/50 hover:bg-black/75 border border-amber-400/30 text-amber-200 font-mono text-xs font-bold tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
+                        className="w-full py-2.5 px-4 rounded-xl bg-black/60 hover:bg-black/80 border border-amber-400/40 hover:border-amber-400 text-amber-200 hover:text-white font-mono text-xs font-black tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
                       >
                         <Users className="w-4 h-4 text-amber-400" />
                         <span>Join with Code</span>
@@ -3943,20 +3904,20 @@ export function FullArenaExperience({
                       {/* Step Header */}
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/40 text-amber-300 inline-block shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500/20 border border-amber-400/50 text-amber-200 inline-block shadow-[0_0_12px_rgba(245,158,11,0.25)]">
                             Step 2 of 3 &bull; Select Arena &amp; Topics
                           </span>
                           {isCreateUnlocked && (
-                            <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                            <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                               UNLOCKED
                             </span>
                           )}
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-serif">
+                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-sans drop-shadow-[0_2px_12px_rgba(255,255,255,0.18)]">
                           Pick Arena &amp; Languages
                         </h2>
-                        <p className="text-[11px] text-slate-400 font-sans">
+                        <p className="text-xs font-semibold text-slate-200 font-sans">
                           Choose duel discipline, tech stack, and match time limit.
                         </p>
                       </div>
@@ -3994,8 +3955,8 @@ export function FullArenaExperience({
                             }`}
                           >
                             <item.icon className="w-4 h-4 text-amber-400 mb-1.5" />
-                            <h4 className="font-mono font-bold text-white text-xs">{item.name}</h4>
-                            <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2 leading-tight">{item.desc}</p>
+                            <h4 className="font-mono font-black text-white text-xs tracking-wide">{item.name}</h4>
+                            <p className="text-[11px] text-slate-200 font-semibold mt-0.5 line-clamp-2 leading-snug">{item.desc}</p>
                           </button>
                         ))}
                       </div>
@@ -4004,11 +3965,11 @@ export function FullArenaExperience({
                       {arena === 'web_dev' && (
                         <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-500/20 backdrop-blur-md space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                               <Globe className="w-3.5 h-3.5 text-amber-400" />
                               <span>Web Dev Topics:</span>
                             </span>
-                            <span className="text-[10px] font-mono text-amber-400 font-bold">
+                            <span className="text-[10px] font-mono text-amber-300 font-black">
                               {selectedTags.includes('html') ? selectedTags.length : selectedTags.length + 1} selected
                             </span>
                           </div>
@@ -4029,10 +3990,10 @@ export function FullArenaExperience({
                                   }}
                                   className={`p-2.5 rounded-xl border transition-all flex items-start gap-2 select-none ${
                                     topic.isMandatory
-                                      ? 'bg-amber-950/60 border-amber-400/80 text-white shadow-sm cursor-default'
+                                      ? 'bg-amber-950/60 border-amber-400 text-white shadow-sm cursor-default'
                                       : isChecked
                                       ? 'bg-amber-950/50 border-amber-400 text-white shadow-sm cursor-pointer'
-                                      : 'bg-black/60 border-slate-800 text-slate-400 hover:border-slate-700 cursor-pointer'
+                                      : 'bg-black/50 border-slate-700/80 text-slate-200 hover:border-amber-400/40 cursor-pointer'
                                   }`}
                                 >
                                   <div
@@ -4045,8 +4006,8 @@ export function FullArenaExperience({
                                     {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold font-mono text-white">{topic.label}</p>
-                                    <p className="text-[10px] text-slate-400">{topic.desc}</p>
+                                    <p className="text-xs font-black font-mono text-white tracking-wide">{topic.label}</p>
+                                    <p className="text-[11px] font-semibold text-slate-200">{topic.desc}</p>
                                   </div>
                                 </div>
                               );
@@ -4059,11 +4020,11 @@ export function FullArenaExperience({
                       {arena === 'algorithms' && (
                         <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                               <Terminal className="w-3.5 h-3.5 text-cyan-400" />
                               <span>Select Language (Choose 1):</span>
                             </span>
-                            <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                            <span className="text-[10px] font-mono text-cyan-300 font-black uppercase">
                               {selectedTags[0] ? selectedTags[0].toUpperCase() : 'JAVA'}
                             </span>
                           </div>
@@ -4086,7 +4047,7 @@ export function FullArenaExperience({
                                   className={`p-2.5 rounded-xl border cursor-pointer transition-all flex items-start gap-2 select-none text-left w-full ${
                                     isSelected
                                       ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                                      : 'bg-slate-900 border-slate-800 text-slate-200 font-medium hover:border-slate-700'
                                   }`}
                                 >
                                   <div
@@ -4099,8 +4060,8 @@ export function FullArenaExperience({
                                     {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
                                   </div>
                                   <div>
-                                    <p className="text-xs font-bold font-mono text-white">{lang.label}</p>
-                                    <p className="text-[10px] text-slate-400">{lang.desc}</p>
+                                    <p className="text-xs font-black font-mono text-white tracking-wide">{lang.label}</p>
+                                    <p className="text-[11px] font-semibold text-slate-200">{lang.desc}</p>
                                   </div>
                                 </button>
                               );
@@ -4113,11 +4074,11 @@ export function FullArenaExperience({
                       {arena === 'bug_hunt' && (
                         <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
                               <Sparkles className="w-3.5 h-3.5 text-rose-400" />
                               <span>Bug Hunt Domain:</span>
                             </span>
-                            <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">
+                            <span className="text-[10px] font-mono text-cyan-300 font-black uppercase">
                               {bugDomain === 'web' ? 'Web UI Bug' : 'Logic Code Bug'}
                             </span>
                           </div>
@@ -4131,7 +4092,7 @@ export function FullArenaExperience({
                               className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
                                 bugDomain === 'web'
                                   ? 'bg-cyan-950/60 border-cyan-400 text-white shadow-md'
-                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                                  : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700'
                               }`}
                             >
                               <div
@@ -4144,11 +4105,11 @@ export function FullArenaExperience({
                                 {bugDomain === 'web' && <Check className="w-3 h-3 stroke-[3]" />}
                               </div>
                               <div>
-                                <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                                <p className="text-xs font-black font-mono text-white flex items-center gap-1.5">
                                   <Globe className="w-3.5 h-3.5 text-cyan-400" />
                                   <span>Web UI Bug Hunt</span>
                                 </p>
-                                <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                                <p className="text-[11px] font-semibold text-slate-200 mt-0.5 leading-tight">
                                   HTML, CSS &amp; layout bugs with live DOM visual verification.
                                 </p>
                               </div>
@@ -4162,7 +4123,7 @@ export function FullArenaExperience({
                               className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 select-none ${
                                 bugDomain === 'logic'
                                   ? 'bg-rose-950/60 border-rose-400 text-white shadow-md'
-                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                                  : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700'
                               }`}
                             >
                               <div
@@ -4175,11 +4136,11 @@ export function FullArenaExperience({
                                 {bugDomain === 'logic' && <Check className="w-3 h-3 stroke-[3]" />}
                               </div>
                               <div>
-                                <p className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                                <p className="text-xs font-black font-mono text-white flex items-center gap-1.5">
                                   <Cpu className="w-3.5 h-3.5 text-rose-400" />
                                   <span>Logic &amp; Code Bug</span>
                                 </p>
-                                <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">
+                                <p className="text-[11px] font-semibold text-slate-200 mt-0.5 leading-tight">
                                   Boundary and syntax bugs with Judge0 sandboxed test runner.
                                 </p>
                               </div>
@@ -4191,7 +4152,7 @@ export function FullArenaExperience({
                       {/* Difficulty & Time Limit */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <div>
-                          <label className="block text-[11px] font-mono font-bold text-slate-400 mb-1">
+                          <label className="block text-xs font-mono font-black text-slate-200 uppercase tracking-wide mb-1.5">
                             Difficulty Level:
                           </label>
                           <div className="grid grid-cols-3 gap-1.5">
@@ -4200,10 +4161,10 @@ export function FullArenaExperience({
                                 key={diff}
                                 type="button"
                                 onClick={() => setDifficulty(diff)}
-                                className={`py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all ${
+                                className={`py-1.5 rounded-xl text-xs font-mono font-black capitalize transition-all ${
                                   difficulty === diff
                                     ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-black/60 text-slate-400 border border-slate-800'
+                                    : 'bg-black/50 text-slate-200 font-bold border border-slate-700/80 hover:text-white hover:border-amber-400/40'
                                 }`}
                               >
                                 {diff}
@@ -4213,7 +4174,7 @@ export function FullArenaExperience({
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-mono font-bold text-slate-400 mb-1">
+                          <label className="block text-xs font-mono font-black text-slate-200 uppercase tracking-wide mb-1.5">
                             Match Duration:
                           </label>
                           <div className="grid grid-cols-3 gap-1.5">
@@ -4226,10 +4187,10 @@ export function FullArenaExperience({
                                 key={t.secs}
                                 type="button"
                                 onClick={() => setTimeLimit(t.secs)}
-                                className={`py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                                className={`py-1.5 rounded-xl text-xs font-mono font-black transition-all ${
                                   timeLimit === t.secs
                                     ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                                    : 'bg-black/60 text-slate-400 border border-slate-800 hover:border-slate-700'
+                                    : 'bg-black/50 text-slate-200 font-bold border border-slate-700/80 hover:text-white hover:border-amber-400/40'
                                 }`}
                               >
                                 {t.label}
@@ -4260,13 +4221,13 @@ export function FullArenaExperience({
         {step === 3 && (
           <div className="w-full max-w-3xl mx-auto space-y-6 relative z-10 animate-fadeIn">
             <div className="text-center space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-amber-500/15 border border-amber-500/40 text-amber-300 inline-block shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-black uppercase tracking-wider bg-amber-500/20 border border-amber-400/50 text-amber-200 inline-block shadow-[0_0_15px_rgba(245,158,11,0.25)]">
                 Step 3 of 3 &bull; Private Room Ready
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-serif">
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans drop-shadow-[0_2px_12px_rgba(255,255,255,0.18)]">
                 Invite Squad &amp; Launch Match
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-200 font-semibold">
                 Share the room code or link to assemble your match.
               </p>
             </div>
@@ -4274,10 +4235,10 @@ export function FullArenaExperience({
             {/* Big Room Code Badge (Warm Amber Glow Matching Step 2) */}
             <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_25px_rgba(245,158,11,0.08)]">
               <div>
-                <span className="text-[10px] font-mono uppercase text-slate-400 font-bold tracking-wider">
+                <span className="text-xs font-mono uppercase text-slate-200 font-black tracking-wider">
                   Private Duel Room Code:
                 </span>
-                <div className="text-2xl sm:text-3xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-300 tracking-wider drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]">
+                <div className="text-2xl sm:text-3xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-300 tracking-wider drop-shadow-[0_0_18px_rgba(245,158,11,0.6)]">
                   {roomCode}
                 </div>
               </div>
@@ -4286,7 +4247,7 @@ export function FullArenaExperience({
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-black/60 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/40 text-slate-200 text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-black/60 hover:bg-slate-900 border border-slate-700 hover:border-amber-400 text-white text-xs font-mono font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
                   <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
@@ -4316,13 +4277,13 @@ export function FullArenaExperience({
                   <Users className="w-4 h-4 text-slate-950" />
                 </div>
                 <div>
-                  <p className="font-mono font-bold text-white text-xs flex items-center gap-1.5">
+                  <p className="font-mono font-black text-white text-xs flex items-center gap-1.5">
                     <span>Auto-Match with Queued Campus Builders</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
                       CAMPUS QUEUE
                     </span>
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs font-semibold text-slate-200">
                     Instantly pairs with active builders from IITs, BITS, DTU, and NITs if dueling solo.
                   </p>
                 </div>
@@ -4549,13 +4510,13 @@ export function FullArenaExperience({
                   </div>
                 ) : isAutoMatchEnabled ? (
                   /* Live Matchmaking Scanner (0-4s) */
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 text-xs font-mono animate-fadeIn">
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex flex-col gap-2.5 text-xs font-mono animate-fadeIn">
                     <div className="flex items-center justify-between">
-                      <span className="text-amber-300 font-bold flex items-center gap-2">
+                      <span className="text-amber-200 font-black flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
                         <span>Searching for live campus builders in [{targetTopicLabel}]...</span>
                       </span>
-                      <span className="text-[11px] font-mono text-amber-300 bg-black/60 px-2 py-0.5 rounded border border-amber-500/30 font-bold">
+                      <span className="text-[11px] font-mono text-amber-200 bg-black/60 px-2 py-0.5 rounded border border-amber-500/40 font-black">
                         {Math.max(1, targetSearchDuration - matchSearchSeconds)}s
                       </span>
                     </div>
@@ -4565,18 +4526,18 @@ export function FullArenaExperience({
                         style={{ width: `${Math.min(100, (matchSearchSeconds / targetSearchDuration) * 100)}%` }}
                       />
                     </div>
-                    <p className="text-[11px] text-slate-400 flex items-center justify-between">
+                    <p className="text-[11px] font-bold text-slate-200 flex items-center justify-between">
                       <span>Scanning active collegiate queue across campus networks...</span>
-                      <span className="text-slate-500">Room {roomCode}</span>
+                      <span className="text-amber-300 font-black">Room {roomCode}</span>
                     </p>
                   </div>
                 ) : (
                   /* Waiting for Friend via Link/Code */
-                  <div className="p-4 rounded-2xl bg-black/60 border border-dashed border-rose-500/30 flex flex-col items-center justify-center py-6 text-center text-xs font-mono text-slate-400 space-y-2">
-                    <Users className="w-6 h-6 text-slate-600 mb-1" />
-                    <span className="text-slate-300 font-bold">Waiting for classmate to join...</span>
-                    <p className="text-[11px] text-slate-500 max-w-xs">
-                      Share room code <strong className="text-amber-400">{roomCode}</strong> or invite link. Or check &ldquo;Auto-Match&rdquo; above to pair with an active campus builder.
+                  <div className="p-4 rounded-2xl bg-black/60 border border-dashed border-rose-500/40 flex flex-col items-center justify-center py-6 text-center text-xs font-mono text-slate-200 space-y-2">
+                    <Users className="w-6 h-6 text-amber-400 mb-1" />
+                    <span className="text-white font-black text-sm">Waiting for classmate to join...</span>
+                    <p className="text-xs text-slate-300 font-medium max-w-xs">
+                      Share room code <strong className="text-amber-300 font-bold">{roomCode}</strong> or invite link. Or check &ldquo;Auto-Match&rdquo; above to pair with an active campus builder.
                     </p>
                   </div>
                 )}
@@ -4595,9 +4556,9 @@ export function FullArenaExperience({
                     handleConfirmExit();
                   }
                 }}
-                className="py-3 px-5 rounded-2xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="py-3 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-mono text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 text-amber-400" />
                 <span>{isHost ? 'Back' : 'Leave Room'}</span>
               </button>
 
@@ -4690,11 +4651,11 @@ export function FullArenaExperience({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-black uppercase bg-amber-500/25 text-amber-200 border border-amber-400/50 shadow-[0_0_12px_rgba(245,158,11,0.25)]">
                       TARGET CHALLENGE:
                     </span>
-                    <span className="font-bold text-white text-sm truncate">{activeQuestion.title}</span>
-                    <span className="text-[11px] font-mono text-slate-400 uppercase font-semibold">
+                    <span className="font-black text-white text-sm sm:text-base tracking-tight truncate drop-shadow-sm">{activeQuestion.title}</span>
+                    <span className="text-xs font-mono text-amber-300 uppercase font-black">
                       ({activeQuestion.difficulty})
                     </span>
                     {activeQuestion.tags && activeQuestion.tags.length > 0 && (
@@ -4702,7 +4663,7 @@ export function FullArenaExperience({
                         {activeQuestion.tags.slice(0, 3).map((tag: string) => (
                           <span
                             key={tag}
-                            className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-slate-900 text-cyan-400 border border-cyan-500/30 font-medium"
+                            className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-slate-900 text-cyan-300 border border-cyan-500/40 font-bold"
                           >
                             #{tag}
                           </span>
@@ -4710,14 +4671,14 @@ export function FullArenaExperience({
                       </div>
                     )}
                     {isWebMatch && activeQuestion.tags?.includes('html') && !activeQuestion.tags?.includes('css') && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/40 inline-flex items-center gap-1 shadow-xs">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black bg-sky-500/25 text-sky-200 border border-sky-400/50 inline-flex items-center gap-1 shadow-xs">
                         <Info className="w-3 h-3 text-sky-400" />
                         HTML Structure Only • CSS Styling Not Evaluated
                       </span>
                     )}
                   </div>
                   {!isQuestionExpanded && (
-                    <p className="text-xs text-slate-300 line-clamp-1">{activeQuestion.description}</p>
+                    <p className="text-xs text-slate-100 font-semibold line-clamp-1">{activeQuestion.description}</p>
                   )}
                 </div>
 
@@ -4818,10 +4779,10 @@ export function FullArenaExperience({
                             <button
                               type="button"
                               onClick={() => setActiveTab('html')}
-                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all ${
                                 activeTab === 'html'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                  : 'text-slate-200 font-bold hover:text-white hover:bg-white/5'
                               }`}
                             >
                               index.html
@@ -4831,10 +4792,10 @@ export function FullArenaExperience({
                             <button
                               type="button"
                               onClick={() => setActiveTab('css')}
-                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all ${
                                 activeTab === 'css'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                  : 'text-slate-200 font-bold hover:text-white hover:bg-white/5'
                               }`}
                             >
                               styles.css
@@ -4844,10 +4805,10 @@ export function FullArenaExperience({
                             <button
                               type="button"
                               onClick={() => setActiveTab('js')}
-                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all ${
                                 activeTab === 'js'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                  : 'text-slate-200 font-bold hover:text-white hover:bg-white/5'
                               }`}
                             >
                               script.js
@@ -4871,10 +4832,10 @@ export function FullArenaExperience({
                             <button
                               type="button"
                               onClick={() => setActiveTab('python')}
-                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all flex items-center gap-1.5 ${
                                 activeTab === 'python'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                  : 'text-slate-200 font-bold hover:text-white hover:bg-white/5'
                               }`}
                             >
                               <span>solution.py</span>
@@ -4884,10 +4845,10 @@ export function FullArenaExperience({
                             <button
                               type="button"
                               onClick={() => setActiveTab('java')}
-                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all flex items-center gap-1.5 ${
                                 activeTab === 'java'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                  : 'text-slate-200 font-bold hover:text-white hover:bg-white/5'
                               }`}
                             >
                               <span>Solution.java</span>
@@ -4897,10 +4858,10 @@ export function FullArenaExperience({
                             <button
                               type="button"
                               onClick={() => setActiveTab('cpp')}
-                              className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all flex items-center gap-1.5 ${
+                              className={`px-3 py-1 rounded-lg text-xs font-mono font-black transition-all flex items-center gap-1.5 ${
                                 activeTab === 'cpp'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                                  : 'text-slate-200 font-bold hover:text-white hover:bg-white/5'
                               }`}
                             >
                               <span>solution.cpp</span>
@@ -4916,18 +4877,18 @@ export function FullArenaExperience({
                     {isWebMatch ? (
                       <>
                         <div className="flex items-center gap-2 mr-1">
-                          <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
+                          <span className="text-xs font-mono text-cyan-300 font-black hidden sm:inline drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                             Tests: {userTestsPassed} / {totalTests}
                           </span>
-                          <span className="text-[11px] font-mono text-slate-400 hidden md:inline-flex items-center gap-1">
-                            <Flame className={`w-3 h-3 text-cyan-400 ${myWpm > 0 ? 'animate-pulse' : 'opacity-40'}`} />
+                          <span className="text-xs font-mono text-slate-100 font-bold hidden md:inline-flex items-center gap-1">
+                            <Flame className={`w-3.5 h-3.5 text-cyan-400 ${myWpm > 0 ? 'animate-pulse' : 'opacity-40'}`} />
                             <span>{myWpm} WPM</span>
                           </span>
                         </div>
                         <button
                           type="button"
                           onClick={handleTestWebLayout}
-                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-mono font-black transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                           title="Run layout coordinate graph verification against Preview blueprint"
                         >
                           <Play className="w-3 h-3 fill-current text-cyan-400" />
@@ -4937,7 +4898,7 @@ export function FullArenaExperience({
                           type="button"
                           disabled={isSubmitting}
                           onClick={handleWebSubmit}
-                          className={`px-3.5 py-1 rounded-lg text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${
+                          className={`px-3.5 py-1 rounded-lg text-white text-xs font-mono font-black transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${
                             userTestsPassed === totalTests && totalTests > 0
                               ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 hover:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400'
                               : 'bg-gradient-to-r from-cyan-600 to-emerald-600 hover:brightness-110'
@@ -4959,11 +4920,11 @@ export function FullArenaExperience({
                     ) : (
                       <>
                         <div className="flex items-center gap-2 mr-1">
-                          <span className="text-[11px] font-mono text-cyan-400 font-bold hidden sm:inline">
+                          <span className="text-xs font-mono text-cyan-300 font-black hidden sm:inline drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                             Tests: {userTestsPassed} / {activeQuestion.testCases?.length || 3}
                           </span>
-                          <span className="text-[11px] font-mono text-slate-400 hidden md:inline-flex items-center gap-1">
-                            <Flame className={`w-3 h-3 text-cyan-400 ${myWpm > 0 ? 'animate-pulse' : 'opacity-40'}`} />
+                          <span className="text-xs font-mono text-slate-100 font-bold hidden md:inline-flex items-center gap-1">
+                            <Flame className={`w-3.5 h-3.5 text-cyan-400 ${myWpm > 0 ? 'animate-pulse' : 'opacity-40'}`} />
                             <span>{myWpm} WPM</span>
                           </span>
                         </div>
@@ -4972,7 +4933,7 @@ export function FullArenaExperience({
                           type="button"
                           disabled={isCompiling || isSubmitting}
                           onClick={handleCompileAndRun}
-                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                          className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-mono font-black transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
                           title="Compile source code and run against current test case input"
                         >
                           {isCompiling ? (
@@ -4988,7 +4949,7 @@ export function FullArenaExperience({
                           type="button"
                           disabled={isCompiling || isSubmitting}
                           onClick={handleSubmitCode}
-                          className={`px-3.5 py-1 rounded-lg text-white text-xs font-mono font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${
+                          className={`px-3.5 py-1 rounded-lg text-white text-xs font-mono font-black transition-all flex items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer ${
                             userTestsPassed === (activeQuestion.testCases?.length || 3) && userTestsPassed > 0
                               ? 'bg-gradient-to-r from-emerald-600 to-cyan-500 hover:brightness-110 shadow-[0_0_15px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400'
                               : 'bg-gradient-to-r from-emerald-600 to-cyan-600 hover:brightness-110'
@@ -5010,10 +4971,10 @@ export function FullArenaExperience({
                 {/* Code Editor Studio with Line Numbers & Real Compiler Capabilities */}
                 <div className={`flex-1 flex flex-col ${isQuestionExpanded ? 'min-h-[250px] sm:min-h-[290px]' : 'min-h-[340px] sm:min-h-[400px]'} bg-[#070a14] border-b border-slate-800/80 transition-all duration-300`}>
                   {/* Sub-header / IDE Utilities Bar */}
-                  <div className="h-7 bg-[#0b0f1d] px-3 border-b border-slate-800/60 flex items-center justify-between text-[11px] font-mono text-slate-400 select-none">
+                  <div className="h-7 bg-[#0b0f1d] px-3 border-b border-slate-800/60 flex items-center justify-between text-xs font-mono text-slate-300 font-bold select-none">
                     <div className="flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold flex items-center gap-1">
-                        <Code2 className="w-3 h-3" />
+                      <span className="text-cyan-300 font-black flex items-center gap-1">
+                        <Code2 className="w-3 h-3 text-cyan-400" />
                         {activeTab === 'html'
                           ? 'index.html'
                           : activeTab === 'css'
@@ -5027,28 +4988,28 @@ export function FullArenaExperience({
                           : 'solution.cpp'}
                       </span>
                       <span className="text-slate-600">|</span>
-                      <span>{Math.max(1, (getCurrentCode() || '').split('\n').length)} lines</span>
+                      <span className="text-slate-200 font-bold">{Math.max(1, (getCurrentCode() || '').split('\n').length)} lines</span>
                       <span className="text-slate-600 hidden sm:inline">|</span>
-                      <span className="text-slate-500 hidden sm:inline">Tab: 2 spaces</span>
+                      <span className="text-slate-300 font-semibold hidden sm:inline">Tab: 2 spaces</span>
                     </div>
 
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={handleResetCurrentTemplate}
-                        className="text-slate-400 hover:text-cyan-300 transition-colors flex items-center gap-1 cursor-pointer"
+                        className="text-slate-300 hover:text-cyan-300 font-bold transition-colors flex items-center gap-1 cursor-pointer"
                         title="Reset current tab to official starter template"
                       >
-                        <RotateCcw className="w-3 h-3" />
+                        <RotateCcw className="w-3 h-3 text-amber-400" />
                         <span className="hidden sm:inline">Reset Template</span>
                       </button>
                       <button
                         type="button"
                         onClick={handleClearCurrentCode}
-                        className="text-slate-400 hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer"
+                        className="text-slate-300 hover:text-rose-400 font-bold transition-colors flex items-center gap-1 cursor-pointer"
                         title="Clear all text in current tab"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3 h-3 text-rose-400" />
                         <span className="hidden sm:inline">Clear All</span>
                       </button>
                     </div>
@@ -5165,12 +5126,12 @@ export function FullArenaExperience({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                      <span className="font-mono text-xs font-bold text-rose-400 uppercase tracking-wider">
+                      <span className="font-mono text-xs font-black text-rose-300 uppercase tracking-wider">
                         OPPONENT &bull; FOG OF WAR ACTIVE
                       </span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                      <EyeOff className="w-3 h-3 text-rose-400" />
+                    <span className="text-xs font-mono text-slate-300 font-bold flex items-center gap-1">
+                      <EyeOff className="w-3.5 h-3.5 text-rose-400" />
                       <span>Zero-Cheating Shield</span>
                     </span>
                   </div>
@@ -5207,7 +5168,7 @@ export function FullArenaExperience({
                   {/* Opponent Progress Bar */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-slate-300 text-[11px] font-semibold flex items-center gap-1.5">
+                      <span className="text-white text-xs font-black flex items-center gap-1.5">
                         <span>{opponentDisplayName}</span>
                         {isBotDuel && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold font-mono">
@@ -5215,7 +5176,7 @@ export function FullArenaExperience({
                           </span>
                         )}
                       </span>
-                      <span className="text-rose-400 font-bold text-[11px]">
+                      <span className="text-rose-300 font-black text-xs">
                         {opponentTestsPassed} / {totalTests} Tests Passed
                       </span>
                     </div>
@@ -5232,15 +5193,15 @@ export function FullArenaExperience({
                   {/* Live Telemetry Heartbeat Cards */}
                   <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                     <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Cadence:</span>
-                      <div className="font-black text-rose-400 flex items-center gap-1">
+                      <span className="text-xs text-slate-200 font-black uppercase">Cadence:</span>
+                      <div className="font-black text-rose-300 flex items-center gap-1">
                         <Flame className={`w-3.5 h-3.5 text-rose-500 ${opponentWpm > 0 ? 'animate-pulse' : 'opacity-30'}`} />
                         <span>{opponentWpm} WPM</span>
                       </div>
                     </div>
                     <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between min-w-0">
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase shrink-0">Status:</span>
-                      <span className={`font-bold truncate text-[10px] ${opponentWpm > 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                      <span className="text-xs text-slate-200 font-black uppercase shrink-0">Status:</span>
+                      <span className={`font-bold truncate text-xs ${opponentWpm > 0 ? 'text-emerald-400' : 'text-slate-200'}`}>
                         {isBotDuel ? opponentStatusText : (opponentWpm > 0 ? 'Typing' : 'Idle')}
                       </span>
                     </div>
@@ -5249,11 +5210,11 @@ export function FullArenaExperience({
                   {/* Fog of War Blurred Code Streaming View (Realistic Indented Code Preview) */}
                   <div className="relative rounded-xl bg-[#070914] border border-rose-500/30 overflow-hidden shadow-inner">
                     <div className="h-6 bg-slate-950/90 px-2.5 flex items-center justify-between border-b border-rose-500/20 text-[10px] font-mono select-none">
-                      <div className="flex items-center gap-1.5 text-rose-400 font-bold">
-                        <EyeOff className="w-3 h-3 text-rose-500" />
+                      <div className="flex items-center gap-1.5 text-rose-300 font-black">
+                        <EyeOff className="w-3.5 h-3.5 text-rose-400" />
                         <span>Fog of War &bull; Live Code Stream</span>
                       </div>
-                      <span className="text-[9px] text-slate-500 font-semibold uppercase">Real-Time Encrypted</span>
+                      <span className="text-[10px] text-slate-300 font-bold uppercase">Real-Time Encrypted</span>
                     </div>
 
                     <div className="p-2.5 font-mono text-[10px] leading-relaxed relative overflow-hidden max-h-[115px] select-none pointer-events-none">
@@ -5290,11 +5251,11 @@ export function FullArenaExperience({
 
                       {/* Anti-cheat banner over blurred code */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-[0.5px]">
-                        <div className="px-2.5 py-0.5 rounded-full bg-slate-950/90 border border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.3)] flex items-center gap-1.5 text-rose-300 text-[9px] font-mono font-bold tracking-wider">
+                        <div className="px-2.5 py-0.5 rounded-full bg-slate-950/90 border border-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.3)] flex items-center gap-1.5 text-rose-200 text-xs font-mono font-black tracking-wider">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
                           <span>ANTI-CHEAT FOG OF WAR</span>
                         </div>
-                        <p className="text-[8px] font-mono text-slate-400 mt-0.5">
+                        <p className="text-[10px] font-mono text-slate-200 font-bold mt-0.5">
                           Cadence streaming active &bull; Unlocks on match finish
                         </p>
                       </div>
@@ -5318,16 +5279,16 @@ export function FullArenaExperience({
                         {/* Preview Title Bar (Image 6 Parity) */}
                         <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-slate-200 border border-slate-600 shadow-2xs">
+                            <span className="px-2.5 py-0.5 rounded text-xs font-mono font-black lowercase bg-[#0f172a] text-white border border-slate-500 shadow-2xs">
                               preview
                             </span>
                             {isWebMatch && activeQuestion.tags?.includes('html') && !activeQuestion.tags?.includes('css') && (
-                              <span className="text-[10px] font-mono text-sky-400 bg-sky-950/70 border border-sky-500/30 px-2 py-0.5 rounded">
+                              <span className="text-[10px] font-mono text-sky-300 font-bold bg-sky-950/70 border border-sky-500/40 px-2 py-0.5 rounded">
                                 Semantic HTML Only (No CSS Needed)
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-slate-400">
+                          <div className="flex items-center gap-2 text-slate-300">
                             <button
                               type="button"
                               onClick={() => setRenderNonce((n) => n + 1)}
@@ -5431,12 +5392,12 @@ ${
                         {/* Output Title Bar (Image 6 Parity) */}
                         <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
                           <div className="flex items-center gap-2">
-                         <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs">
-                            output
-                           </span>
-                             </div>
+                            <span className="px-2.5 py-0.5 rounded text-xs font-mono font-black lowercase bg-[#0f172a] text-cyan-200 border border-cyan-500 shadow-2xs">
+                              output
+                            </span>
+                          </div>
                           
-                          <div className="flex items-center gap-2 text-slate-400">
+                          <div className="flex items-center gap-2 text-slate-300">
                             <button
                               type="button"
                               onClick={() => setRenderNonce((n) => n + 1)}
@@ -5582,32 +5543,32 @@ ${jsCode || ''}
                         {/* Terminal Header Bar */}
                         <div className="h-9 bg-[#1e293b] px-3.5 flex items-center justify-between border-b border-slate-700 select-none shrink-0">
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold lowercase bg-[#0f172a] text-cyan-300 border border-cyan-800 shadow-2xs flex items-center gap-1.5">
-                              <Terminal className="w-3 h-3" />
+                            <span className="px-2.5 py-0.5 rounded text-xs font-mono font-black lowercase bg-[#0f172a] text-cyan-200 border border-cyan-500 shadow-2xs flex items-center gap-1.5">
+                              <Terminal className="w-3.5 h-3.5 text-cyan-400" />
                               <span>compiler terminal</span>
                             </span>
 
                             {/* Execution Verdict Pill */}
                             {activeConsoleTab === 'testcases' && testCaseResults[selectedTestCaseIdx] ? (
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase border ${
                                   testCaseResults[selectedTestCaseIdx].status === 'Accepted'
-                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                                    ? 'bg-emerald-950 text-emerald-200 border-emerald-500'
                                     : testCaseResults[selectedTestCaseIdx].status === 'Wrong Answer'
-                                    ? 'bg-rose-950 text-rose-300 border-rose-700'
-                                    : 'bg-amber-950 text-amber-300 border-amber-700'
+                                    ? 'bg-rose-950 text-rose-200 border-rose-500'
+                                    : 'bg-amber-950 text-amber-200 border-amber-500'
                                 }`}
                               >
                                 Case {selectedTestCaseIdx + 1}: {testCaseResults[selectedTestCaseIdx].status}
                               </span>
                             ) : compilerResult ? (
                               <span
-                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-mono font-black uppercase border ${
                                   compilerResult.status === 'Accepted'
-                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                                    ? 'bg-emerald-950 text-emerald-200 border-emerald-500'
                                     : compilerResult.status === 'Wrong Answer'
-                                    ? 'bg-rose-950 text-rose-300 border-rose-700'
-                                    : 'bg-amber-950 text-amber-300 border-amber-700'
+                                    ? 'bg-rose-950 text-rose-200 border-rose-500'
+                                    : 'bg-amber-950 text-amber-200 border-amber-500'
                                 }`}
                               >
                                 {compilerResult.status}
@@ -5620,10 +5581,10 @@ ${jsCode || ''}
                             <button
                               type="button"
                               onClick={() => setActiveConsoleTab('testcases')}
-                              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                              className={`px-2.5 py-0.5 rounded text-xs font-black transition-colors ${
                                 activeConsoleTab === 'testcases'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400'
+                                  : 'text-slate-200 font-bold hover:text-white'
                               }`}
                             >
                               Test Cases
@@ -5631,10 +5592,10 @@ ${jsCode || ''}
                             <button
                               type="button"
                               onClick={() => setActiveConsoleTab('stdout')}
-                              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                              className={`px-2.5 py-0.5 rounded text-xs font-black transition-colors ${
                                 activeConsoleTab === 'stdout'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400'
+                                  : 'text-slate-200 font-bold hover:text-white'
                               }`}
                             >
                               Stdout
@@ -5642,10 +5603,10 @@ ${jsCode || ''}
                             <button
                               type="button"
                               onClick={() => setActiveConsoleTab('custom')}
-                              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-colors ${
+                              className={`px-2.5 py-0.5 rounded text-xs font-black transition-colors ${
                                 activeConsoleTab === 'custom'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                                  : 'text-slate-400 hover:text-white'
+                                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400'
+                                  : 'text-slate-200 font-bold hover:text-white'
                               }`}
                             >
                               Custom Stdin
@@ -5656,7 +5617,7 @@ ${jsCode || ''}
                               onClick={() =>
                                 setMaximizedPane(maximizedPane === 'output' ? 'none' : 'output')
                               }
-                              className="hover:text-white transition-colors p-1 ml-1 text-slate-400"
+                              className="hover:text-white transition-colors p-1 ml-1 text-slate-300"
                               title={maximizedPane === 'output' ? 'Restore View' : 'Maximize Console'}
                             >
                               <Maximize2 className="w-3.5 h-3.5" />
