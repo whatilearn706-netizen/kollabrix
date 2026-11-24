@@ -3629,7 +3629,7 @@ export function FullArenaExperience({
               ? 'scale-110 opacity-0 blur-2xl pointer-events-none'
               : 'scale-100 opacity-100 animate-fadeIn'
           }`}>
-            <div className="relative w-full rounded-3xl bg-[#070913]/92 border border-amber-500/35 border-t-amber-400/40 border-l-amber-400/25 shadow-[0_0_80px_rgba(0,0,0,0.9),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_1px_rgba(255,255,255,0.15)] backdrop-blur-2xl p-5 sm:p-7 overflow-hidden">
+            <div className="relative w-full rounded-3xl bg-[#070914]/70 sm:bg-[#070914]/65 border border-amber-400/35 border-t-amber-300/45 border-l-white/20 shadow-[0_0_80px_rgba(0,0,0,0.85),0_0_35px_rgba(245,158,11,0.12),inset_0_1px_2px_rgba(255,255,255,0.2)] backdrop-blur-3xl p-5 sm:p-7 overflow-hidden">
               {/* Subtle ambient warm ember highlights inside the command glass */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_70%)] pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.08),transparent_70%)] pointer-events-none" />
@@ -3674,7 +3674,7 @@ export function FullArenaExperience({
                         </div>
 
                         {/* Avatar Display + Presets */}
-                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/55 border border-amber-500/20 backdrop-blur-sm shadow-inner">
+                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/35 border border-amber-400/20 backdrop-blur-md shadow-inner">
                           {/* Active Preview */}
                           <div className="relative shrink-0">
                             <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.45)] bg-slate-900 flex items-center justify-center">
@@ -3745,7 +3745,7 @@ export function FullArenaExperience({
                               }
                             }}
                             placeholder="Paste avatar image URL (https://...)"
-                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-black/60 border border-amber-500/25 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 text-[11px] font-mono text-amber-200 placeholder:text-slate-500 transition-all outline-none"
+                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-black/40 border border-amber-400/25 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50 text-[11px] font-mono text-amber-200 placeholder:text-slate-500 transition-all outline-none backdrop-blur-md"
                           />
                           <div className="absolute right-1.5 flex items-center">
                             <label
@@ -3807,12 +3807,12 @@ export function FullArenaExperience({
                               setPlayerName(clean);
                             }}
                             placeholder="Enter unique profile name..."
-                            className={`w-full px-3.5 py-2 rounded-xl bg-black/60 border font-mono text-xs font-bold transition-all outline-none ${
+                            className={`w-full px-3.5 py-2 rounded-xl bg-black/40 border font-mono text-xs font-bold transition-all outline-none backdrop-blur-md ${
                               usernameCheckStatus === 'taken'
                                 ? 'border-rose-500 text-rose-300 focus:ring-1 focus:ring-rose-500/50 bg-rose-950/20'
                                 : usernameCheckStatus === 'available'
                                 ? 'border-emerald-500/80 text-emerald-300 focus:ring-1 focus:ring-emerald-500/50'
-                                : 'border-amber-500/30 text-amber-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50'
+                                : 'border-amber-400/25 text-amber-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/50'
                             }`}
                           />
                           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -3987,8 +3987,8 @@ export function FullArenaExperience({
                             onClick={() => handleSelectArena(item.id as ArenaCategory)}
                             className={`p-3 rounded-2xl border text-left transition-all ${
                               arena === item.id
-                                ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]'
-                                : 'bg-black/60 border-slate-800 hover:border-slate-700'
+                                ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)] backdrop-blur-md'
+                                : 'bg-black/40 border-slate-800/80 hover:border-amber-400/40 backdrop-blur-md'
                             }`}
                           >
                             <item.icon className="w-4 h-4 text-amber-400 mb-1.5" />
@@ -4000,7 +4000,7 @@ export function FullArenaExperience({
 
                       {/* 1. WEB DEV TOPICS */}
                       {arena === 'web_dev' && (
-                        <div className="p-3.5 rounded-2xl bg-black/60 border border-amber-500/25 space-y-2.5">
+                        <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-500/20 backdrop-blur-md space-y-2.5">
                           <div className="flex items-center justify-between">
                             <span className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                               <Globe className="w-3.5 h-3.5 text-amber-400" />
