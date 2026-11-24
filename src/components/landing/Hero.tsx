@@ -15,6 +15,8 @@ import {
   Trophy,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { BrandLogo } from '@/components/ui/BrandLogo';
+import { StudioLightRig } from './StudioLightRig';
 
 // =========================================================================
 // SIMULTANEOUS 1V1 COMPETITIVE PROGRAMMING DUEL ENGINE
@@ -168,6 +170,17 @@ const renderCodeTokens = (line: string, lang: 'py' | 'cpp') => {
 
 export function LandingHero() {
   const { user } = useAuth();
+  const prevUserRef = useRef(user);
+  const [triggerLightPowerOn, setTriggerLightPowerOn] = useState(false);
+
+  useEffect(() => {
+    // When user authenticates (login), fire the dramatic studio lights power-on reveal
+    if (!prevUserRef.current && user) {
+      setTriggerLightPowerOn(true);
+    }
+    prevUserRef.current = user;
+  }, [user]);
+
   const heroRef = useRef<HTMLElement>(null);
 
   // Live 3D cursor tilt on the physical centered MacBook for authentic Awwwards depth
@@ -300,8 +313,16 @@ export function LandingHero() {
       ref={heroRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-20 sm:pt-24 pb-8 sm:pb-12 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
+      className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-16 sm:pt-20 pb-8 sm:pb-12 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
+      {/* =========================================================================
+          MINIMAL OVERHEAD STUDIO LIGHT RIG (Triopixels Reference pin.it/7psDal0Aw)
+          - Sleek horizontal linear light tube (━)
+          - Conical downward volumetric light beam (theatrical stage spotlight)
+          - Photorealistic power-on flicker sequence on login & initial load
+         ========================================================================= */}
+      <StudioLightRig triggerPowerOn={triggerLightPowerOn} />
+
       {/* =========================================================================
           CLEAN DARK OBSIDIAN STUDIO BACKGROUND (Apple / Linear Ultra-Minimalist Style)
          ========================================================================= */}
@@ -327,11 +348,25 @@ export function LandingHero() {
         style={{ opacity: contentOpacity, y: contentY }}
         className="relative z-10 w-full max-w-[1440px] mx-auto flex-1 flex flex-col items-center justify-start text-center my-auto"
       >
+        {/* Floating Mascot Emblem Tile (Directly illuminated in the spotlight beam from Triopixels Reference) */}
+        <motion.div
+          initial={{ opacity: 0, y: -10, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="mb-3.5 relative z-10"
+        >
+          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#0a0d14]/90 border border-white/20 shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.45)] backdrop-blur-md flex items-center justify-center p-2 group hover:border-amber-400/40 transition-colors">
+            {/* Specular Top Rim Highlight catching the overhead tube light */}
+            <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+            <BrandLogo size="sm" showWordmark={false} />
+          </div>
+        </motion.div>
+
         {/* Live Campus Pill Badge */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
+          transition={{ duration: 0.45, delay: 0.35 }}
           className="mb-4 sm:mb-5"
         >
           <Link
