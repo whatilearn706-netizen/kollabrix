@@ -114,6 +114,12 @@ export function Navbar() {
   };
 
   const isFaculty = isFacultyUser(user, profile);
+  const isAdmin = Boolean(
+    profile?.role === 'admin' ||
+    user?.email?.toLowerCase().includes('whatilearn706') ||
+    user?.email?.toLowerCase().includes('goyalmayank142') ||
+    user?.email?.toLowerCase().includes('admin')
+  );
 
   const displayName =
     profile?.display_name ||
@@ -263,8 +269,8 @@ export function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2.5">
-              {/* Configurable Brand CTA Button (Students Only) */}
-              {!isFaculty && (
+              {/* Configurable Brand CTA Button (Admin Only) */}
+              {isAdmin && !isFaculty && (
                 <button
                   type="button"
                   onClick={handleStartProjectClick}
@@ -648,7 +654,7 @@ export function Navbar() {
           <div className="pt-2 border-t opacity-20" style={{ borderColor: theme.borderColor }} />
 
           {user ? (
-            !isFaculty && (
+            isAdmin && !isFaculty && (
               <button
                 type="button"
                 onClick={() => {
