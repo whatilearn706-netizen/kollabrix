@@ -17,7 +17,7 @@ export function GlobalLightRays() {
         speed={14}
         blur={36}
         length="100vh"
-        color={isDark ? 'rgba(251, 191, 36, 0.18)' : 'rgba(245, 158, 11, 0.22)'}
+        color={isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(226, 232, 240, 0.16)'}
         opacity={0.65}
       />
     </div>

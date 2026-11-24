@@ -145,7 +145,7 @@ export function GlobalBroadcastBanner() {
         {/* Left / Center content */}
         <div className="flex-1 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-center">
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${themeStyle.badge}`}>
-            <Megaphone className="w-3 h-3 shrink-0 text-amber-400" />
+            <Megaphone className="w-3 h-3 shrink-0 text-slate-200" />
             Announcement
           </span>
           <span className="font-semibold text-slate-200 leading-tight">{bannerText}</span>

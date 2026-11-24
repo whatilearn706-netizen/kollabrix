@@ -214,7 +214,7 @@ export function Navbar() {
                   'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-150 inline-flex items-center gap-2 border select-none active:scale-[0.96]',
                   isActive
                     ? isNavbarDark
-                      ? 'bg-white/12 text-white border-white/25 shadow-xs shadow-amber-500/10'
+                      ? 'bg-white/12 text-white border-white/25 shadow-xs shadow-white/10'
                       : 'bg-stone-200/70 text-stone-900 border-stone-300/90 shadow-xs'
                     : isNavbarDark
                     ? 'text-stone-300 border-transparent hover:text-white hover:bg-white/8 hover:border-white/10'
@@ -226,8 +226,8 @@ export function Navbar() {
                     'w-3.5 h-3.5 transition-colors',
                     isActive
                       ? isNavbarDark
-                        ? 'text-amber-400'
-                        : 'text-amber-600'
+                        ? 'text-white'
+                        : 'text-slate-800'
                       : isNavbarDark
                       ? 'text-stone-400'
                       : 'text-stone-500'
@@ -235,7 +235,7 @@ export function Navbar() {
                 />
                 <span>{link.label}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse shrink-0" />
                 )}
               </Link>
             );
@@ -252,8 +252,8 @@ export function Navbar() {
             className={clsx(
               "hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
               isNavbarDark
-                ? "text-slate-300 hover:text-amber-400 hover:bg-white/5"
-                : "text-stone-600 dark:text-stone-300 hover:text-amber-500 dark:hover:text-amber-400"
+                ? "text-slate-300 hover:text-white hover:bg-white/5"
+                : "text-stone-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white"
             )}
             title="Collegiate Learning Resources & Compilers"
           >
@@ -456,7 +456,7 @@ export function Navbar() {
                 className={clsx(
                   "text-xs font-extrabold px-4 py-2 shadow-xs transition-all active:scale-[0.98] hover:opacity-95 rounded-full cursor-pointer",
                   isNavbarDark
-                    ? "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/40"
+                    ? "bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:from-white hover:to-white text-slate-950 font-bold shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 hover:scale-[1.02]"
                     : "text-white shadow-xs"
                 )}
               >
@@ -678,7 +678,7 @@ export function Navbar() {
                   setMobileMenuOpen(false);
                   openAuthModal('signup');
                 }}
-                className="w-full py-3 px-3 rounded-xl text-xs font-extrabold text-slate-950 bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_15px_rgba(245,158,11,0.35)] border border-amber-300/40 text-center"
+                className="w-full py-3 px-3 rounded-xl text-xs font-extrabold text-slate-950 bg-gradient-to-r from-white via-slate-100 to-slate-200 shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 text-center"
               >
                 Join Free
               </button>
