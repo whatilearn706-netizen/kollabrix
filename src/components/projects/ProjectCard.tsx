@@ -48,9 +48,9 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
       {/* Top glowing accent gradient bar on hover */}
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
-      <div className="flex-1 flex flex-col space-y-3.5">
+      <div className="flex-1 flex flex-col space-y-4">
         {/* Top Badges Row */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center justify-between gap-2 flex-wrap pb-1">
           <div className="flex items-center gap-1.5 flex-wrap">
             {project.is_featured && (
               <span
@@ -111,7 +111,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           </span>
         </div>
 
-        {/* Project Title with Uniform Min Height */}
+        {/* Project Title with Uniform Min Height & Generous Line Spacing */}
         <Link href={`/projects/${project.id}`} className="block focus:outline-none">
           <h3
             style={{ color: cardHeadingColor }}
@@ -121,16 +121,16 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           </h3>
         </Link>
 
-        {/* Short Summary with Uniform Min Height */}
+        {/* Short Summary with Relaxed Leading for Effortless Reading */}
         <p
           style={{ color: theme.bodyTextColor }}
-          className="text-xs sm:text-sm line-clamp-2 min-h-[2.5rem] leading-relaxed font-medium opacity-90"
+          className="text-xs sm:text-sm line-clamp-2 min-h-[2.75rem] leading-relaxed font-normal opacity-85 text-slate-300"
         >
           {project.summary}
         </p>
 
         {/* Technologies List with Uniform Spacing */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 min-h-[1.75rem]">
+        <div className="flex flex-wrap items-center gap-2 pt-1 min-h-[2rem]">
           {project.technologies && project.technologies.length > 0 ? (
             <>
               {project.technologies.slice(0, 4).map((tech, idx) => (
@@ -141,7 +141,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
                     borderColor: theme.borderColor,
                     color: theme.bodyTextColor,
                   }}
-                  className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border transition-all duration-200 group-hover:border-violet-500/30 group-hover:scale-[1.02]"
+                  className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all duration-200 group-hover:border-violet-500/30 group-hover:scale-[1.02]"
                 >
                   {tech}
                 </span>
@@ -159,34 +159,26 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
                 borderColor: theme.borderColor,
                 color: theme.mutedTextColor,
               }}
-              className="text-[10px] font-mono px-2 py-0.5 rounded-lg border opacity-60"
+              className="text-[10px] font-mono px-2.5 py-1 rounded-lg border opacity-60"
             >
               General Stack
             </span>
           )}
         </div>
 
-        {/* Required Open Skills with Uniform Height */}
-        <div
-          style={{ borderColor: theme.borderColor }}
-          className="pt-2 border-t opacity-90 min-h-[3.25rem] flex flex-col justify-center"
-        >
+        {/* Required Open Skills with Clean Visual Sectioning */}
+        <div className="pt-3 min-h-[3.25rem] flex flex-col justify-center">
           {project.required_skills && project.required_skills.length > 0 ? (
             <>
-              <div className="flex items-center gap-1 text-[11px] font-bold mb-1" style={{ color: theme.headingColor }}>
-                <Sparkles className="w-3.5 h-3.5 text-brand-500 shrink-0" />
+              <div className="flex items-center gap-1.5 text-[11px] font-bold mb-1.5 text-slate-300">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span>Open Team Roles:</span>
               </div>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {project.required_skills.slice(0, 3).map((skill, idx) => (
                   <span
                     key={idx}
-                    style={{
-                      backgroundColor: `${theme.brandColor}10`,
-                      borderColor: `${theme.brandColor}30`,
-                      color: theme.brandColor,
-                    }}
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-lg border"
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                   >
                     {skill}
                   </span>
@@ -206,10 +198,10 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         </div>
       </div>
 
-      {/* Card Footer - Pinned to bottom with mt-auto */}
+      {/* Card Footer - Pinned to bottom with mt-auto and clean spacing */}
       <div
         style={{ borderColor: theme.borderColor }}
-        className="mt-auto pt-4 border-t space-y-3"
+        className="mt-auto pt-5 border-t space-y-3.5"
       >
         {/* Creator Info & Verified College Affiliation */}
         <div className="flex items-center justify-between gap-2 min-w-0">
@@ -260,10 +252,10 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           )}
         </div>
 
-        {/* Squad Capacity Status & Action CTA */}
-        <div className="pt-2.5 border-t border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
+        {/* Squad Capacity Status & Action CTA - Clean Spacious Row */}
+        <div className="flex items-center justify-between gap-3 pt-1">
           <div
-            className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-xl font-mono font-bold whitespace-nowrap tabular-nums ${
+            className={`inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-xl font-mono font-bold whitespace-nowrap tabular-nums ${
               isTeamFull
                 ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                 : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
@@ -284,7 +276,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
 
           <Link
             href={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-xs group/link active:scale-[0.97] shrink-0"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-xs group/link active:scale-[0.97] shrink-0"
             aria-label={`View details for ${project.title}`}
           >
             <span>{isTeamFull ? 'View' : 'Apply'}</span>

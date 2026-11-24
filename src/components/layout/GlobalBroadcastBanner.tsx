@@ -21,9 +21,9 @@ const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: s
   },
   emerald: {
     bg: 'bg-[#090B10]',
-    text: 'text-slate-300',
-    badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    button: 'bg-emerald-600/80 text-white hover:bg-emerald-600 border border-emerald-500/30',
+    text: 'text-slate-200',
+    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
+    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
   },
   amber: {
     bg: 'bg-[#090B10]',
@@ -33,9 +33,9 @@ const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: s
   },
   rose: {
     bg: 'bg-[#090B10]',
-    text: 'text-slate-300',
-    badge: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-    button: 'bg-rose-600/80 text-white hover:bg-rose-600 border border-rose-500/30',
+    text: 'text-slate-200',
+    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
+    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
   },
 };
 

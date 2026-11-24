@@ -593,7 +593,7 @@ export default function ExploreProjectsPage() {
         {/* Projects Viewport with Blur-to-Focus Mask */}
         <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-8 lg:gap-y-10">
               {Array.from({ length: 6 }).map((_, i) => (
                 <ProjectCardSkeleton key={i} />
               ))}
@@ -625,7 +625,7 @@ export default function ExploreProjectsPage() {
             </div>
           ) : isStatusFiltered ? (
             /* Standard Grid when a single status is explicitly filtered */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-8 lg:gap-y-10 items-stretch">
               {projects.map((project, idx) => (
                 <div
                   key={project.id}
@@ -638,42 +638,42 @@ export default function ExploreProjectsPage() {
             </div>
           ) : (
             /* Normal Unified Grid with 3-Column Stages: Col 1 Recruiting | Col 2 In Progress | Col 3 Completed */
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Column Stage Headers (Desktop 3-Column) */}
-              <div className="hidden lg:grid grid-cols-3 gap-6 px-1">
-                <div className="flex items-center justify-between pb-3 border-b-2 border-amber-500/30">
-                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-amber-500 tracking-wider">
-                    <Flame className="w-4 h-4" />
+              <div className="hidden lg:grid grid-cols-3 gap-8 px-1">
+                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-700/60">
+                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-300 tracking-wider">
+                    <Flame className="w-4 h-4 text-emerald-400" />
                     <span>Recruiting</span>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/10 text-amber-500 border border-amber-500/25">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
                     {recruitingProjects.length}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pb-3 border-b-2 border-violet-500/30">
-                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-violet-400 tracking-wider">
-                    <Zap className="w-4 h-4" />
+                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-700/60">
+                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-300 tracking-wider">
+                    <Zap className="w-4 h-4 text-amber-400" />
                     <span>In Progress</span>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-violet-500/10 text-violet-400 border border-violet-500/25">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
                     {inProgressProjects.length}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pb-3 border-b-2 border-emerald-500/30">
-                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-emerald-400 tracking-wider">
-                    <Trophy className="w-4 h-4" />
+                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-700/60">
+                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-300 tracking-wider">
+                    <Trophy className="w-4 h-4 text-cyan-400" />
                     <span>Completed</span>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
                     {completedProjects.length}
                   </span>
                 </div>
               </div>
 
               {/* Row-by-Row 3-Column Matrix */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 gap-y-8 lg:gap-y-10 items-stretch">
                 {Array.from({ length: maxLifecycleRows }).map((_, rowIndex) => {
                   const recruiting = recruitingProjects[rowIndex];
                   const inProgress = inProgressProjects[rowIndex];

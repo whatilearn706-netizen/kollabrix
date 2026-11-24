@@ -268,18 +268,9 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={handleStartProjectClick}
-                  style={{
-                    borderRadius: theme.borderRadius,
-                    backgroundColor: isNavbarDark ? undefined : theme.brandColor,
-                  }}
-                  className={clsx(
-                    "inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 text-white shadow-xs transition-all active:scale-[0.98] hover:opacity-95",
-                    isNavbarDark
-                      ? "bg-gradient-to-r from-orange-600 to-amber-500 shadow-orange-950/30"
-                      : "shadow-xs"
-                  )}
+                  className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 hover:from-white hover:to-white shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
-                  <PlusCircle className="w-3.5 h-3.5 text-white" />
+                  <PlusCircle className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
                   <span>{theme.navbarCtaText || 'Start Project'}</span>
                 </button>
               )}
@@ -449,16 +440,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => openAuthModal('signup')}
-                style={{
-                  borderRadius: theme.borderRadius,
-                  backgroundColor: isNavbarDark ? undefined : theme.brandColor,
-                }}
-                className={clsx(
-                  "text-xs font-extrabold px-4 py-2 shadow-xs transition-all active:scale-[0.98] hover:opacity-95 rounded-full cursor-pointer",
-                  isNavbarDark
-                    ? "bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:from-white hover:to-white text-slate-950 font-bold shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 hover:scale-[1.02]"
-                    : "text-white shadow-xs"
-                )}
+                className="text-xs font-black uppercase tracking-wider px-4 py-2 bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:from-white hover:to-white text-slate-950 shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 hover:scale-[1.02] active:scale-[0.98] rounded-full transition-all cursor-pointer"
               >
                 Join Free
               </button>

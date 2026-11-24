@@ -914,14 +914,13 @@ export default function TeammatesPage() {
           </Button>
           {!isFacultyUser(user, profile) && (
             <Link href="/projects/new">
-              <Button
-                variant="primary"
-                size="sm"
-                leftIcon={<FolderPlus className="w-4 h-4" />}
-                className="bg-gradient-to-r from-white via-slate-100 to-slate-200 hover:from-white hover:to-white text-slate-950 font-extrabold shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 rounded-xl transition-all hover:scale-[1.02]"
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 hover:from-white hover:to-white shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
-                Start New Project
-              </Button>
+                <FolderPlus className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                <span className="text-slate-950 font-black">Start New Project</span>
+              </button>
             </Link>
           )}
         </div>

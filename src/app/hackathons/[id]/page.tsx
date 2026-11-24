@@ -1511,58 +1511,31 @@ export default function HackathonDetailPage() {
                 </div>
               </div>
 
-              {/* Unstop Location & Team Size Rows */}
-              <div className="space-y-1.5 pt-2 border-t border-charcoal-800 text-xs sm:text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-charcoal-950 border border-charcoal-800 flex items-center justify-center text-cyan-400 shrink-0">
-                    <MapPin className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-normal">Location: </span>
-                    <span className="text-slate-200 font-medium">{hackathon.location || 'Campus Innovation Lab, CS Department'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-charcoal-950 border border-charcoal-800 flex items-center justify-center text-cyan-400 shrink-0">
-                    <Users className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-normal">Team Size: </span>
-                    <span className="text-slate-200 font-medium">
-                      {hackathon.min_team_size === 1 && hackathon.max_team_size === 1
-                        ? 'Individual Participation'
-                        : `${hackathon.min_team_size || 1} – ${hackathon.max_team_size || 4} Builders`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               {/* Unstop-Style Metadata Chips Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-charcoal-800">
-                <div className="p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-1 shadow-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 pt-4 border-t border-charcoal-800/80">
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
                     📍 Venue / Mode
                   </span>
-                  <span className="text-xs font-semibold text-slate-200 block truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-slate-200 block truncate">
                     {hackathon.location || 'Campus Tech Lab'}
                   </span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-1 shadow-sm">
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
                     👥 Team Size
                   </span>
-                  <span className="text-xs font-semibold text-slate-200 block truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-slate-200 block truncate">
                     {hackathon.min_team_size || 1} – {hackathon.max_team_size || 4} Builders
                   </span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-1 shadow-sm">
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
                   <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
                     📅 Schedule
                   </span>
-                  <span className="text-xs font-semibold text-slate-200 block truncate">
+                  <span className="text-xs sm:text-sm font-semibold text-slate-200 block truncate">
                     {new Date(hackathon.start_date).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',
@@ -1580,11 +1553,11 @@ export default function HackathonDetailPage() {
                   </span>
                 </div>
 
-                <div className="p-3 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-1 shadow-sm">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400/90 block font-medium">
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
                     🏆 Total Prize Pool
                   </span>
-                  <span className="text-xs font-semibold text-amber-300 block truncate">
+                  <span className="text-xs sm:text-sm font-bold text-white block truncate">
                     {hackathon.prize_pool || '₹50,000 + Mentorship'}
                   </span>
                 </div>
@@ -1592,11 +1565,11 @@ export default function HackathonDetailPage() {
 
               {/* Category Pills */}
               {hackathon.themes && hackathon.themes.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                <div className="flex items-center gap-2 flex-wrap pt-2">
                   {hackathon.themes.slice(0, 5).map((theme) => (
                     <span
                       key={theme}
-                      className="px-2.5 py-0.5 rounded-lg text-xs font-mono font-medium bg-charcoal-950 text-cyan-400/90 border border-charcoal-800 shadow-xs"
+                      className="px-3 py-1 rounded-xl text-xs font-mono font-medium bg-charcoal-950 text-cyan-400/90 border border-charcoal-800 shadow-xs"
                     >
                       #{theme}
                     </span>
@@ -1605,11 +1578,11 @@ export default function HackathonDetailPage() {
               )}
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-charcoal-800 pb-2">
+            {/* Navigation Tabs with Clean Generous Spacing */}
+            <div className="flex items-center gap-3 border-b border-charcoal-800 pb-3 pt-2">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`px-4 py-2 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
                   activeTab === 'overview'
                     ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
@@ -1619,7 +1592,7 @@ export default function HackathonDetailPage() {
               </button>
               <button
                 onClick={() => setActiveTab('themes')}
-                className={`px-4 py-2 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
                   activeTab === 'themes'
                     ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
@@ -1629,7 +1602,7 @@ export default function HackathonDetailPage() {
               </button>
               <button
                 onClick={() => setActiveTab('schedule')}
-                className={`px-4 py-2 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
                   activeTab === 'schedule'
                     ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
@@ -1639,7 +1612,7 @@ export default function HackathonDetailPage() {
               </button>
               <button
                 onClick={() => setActiveTab('rules')}
-                className={`px-4 py-2 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
                   activeTab === 'rules'
                     ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
@@ -1651,24 +1624,24 @@ export default function HackathonDetailPage() {
 
             {/* Tab Contents */}
             {activeTab === 'overview' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* Unstop-Style Eligibility Section */}
-                <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-2.5 shadow-xl">
-                  <div className="flex items-center gap-2 text-base sm:text-lg font-bold text-white">
+                <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-3.5 shadow-xl">
+                  <div className="flex items-center gap-2.5 text-base sm:text-lg font-bold text-white">
                     <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
                     <span>Eligibility</span>
                   </div>
-                  <p className="text-sm text-slate-300 font-normal leading-relaxed whitespace-pre-line">
+                  <p className="text-[14.5px] text-slate-300 font-normal leading-relaxed whitespace-pre-line">
                     {hackathon.eligibility || 'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'}
                   </p>
                 </div>
 
-                <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-3.5 shadow-xl">
-                  <div className="flex items-center gap-2 text-base sm:text-lg font-bold text-white">
+                <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-4 shadow-xl">
+                  <div className="flex items-center gap-2.5 text-base sm:text-lg font-bold text-white">
                     <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
                     <span>All that you need to know about {hackathon.title}</span>
                   </div>
-                  <div className="text-sm text-slate-300 font-normal leading-relaxed whitespace-pre-line space-y-3">
+                  <div className="text-[14.5px] text-slate-300 font-normal leading-relaxed whitespace-pre-line space-y-3.5">
                     <p>{hackathon.description}</p>
                   </div>
                 </div>
@@ -2262,26 +2235,26 @@ export default function HackathonDetailPage() {
                 )}
 
                 {/* Prize Pool & Timeline Mini Summary */}
-                <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2.5 shadow-sm">
-                  <div className="flex items-center justify-between text-xs gap-2">
+                <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-950/90 border border-charcoal-800 space-y-3.5 shadow-sm">
+                  <div className="flex items-center justify-between text-xs sm:text-[13px] gap-2 py-0.5">
                     <span className="text-slate-400 font-medium shrink-0">Total Prize Pool</span>
-                    <strong className="text-amber-300 font-semibold text-xs text-right truncate">
+                    <strong className="text-amber-300 font-semibold text-xs sm:text-[13px] text-right truncate">
                       {hackathon.prize_pool || (sponsoredMeta.isSponsored ? `₹1,50,000 + ${sponsoredMeta.companyName || 'Sponsor'} Credits` : '₹50,000 + Incubation')}
                     </strong>
                   </div>
-                  <div className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center justify-between text-xs sm:text-[13px] gap-2 py-0.5">
                     <span className="text-slate-400 font-medium shrink-0">Team Size</span>
-                    <strong className="text-slate-200 font-semibold text-xs text-right">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
+                    <strong className="text-slate-200 font-semibold text-xs sm:text-[13px] text-right">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
                   </div>
-                  <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2 gap-2">
+                  <div className="flex items-center justify-between text-xs sm:text-[13px] border-t border-charcoal-850 pt-2.5 gap-2">
                     <span className="text-slate-400 font-medium shrink-0">Submission Cut-off</span>
-                    <span className="text-slate-200 font-medium font-mono text-xs text-right">
+                    <span className="text-slate-200 font-medium font-mono text-xs sm:text-[13px] text-right">
                       {sponsoredMeta.submissionCutoff || formatEventDateTime(hackathon.submission_deadline || (hackathon as any).submissionDeadline || hackathon.end_date)}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-xs border-t border-charcoal-850 pt-2 gap-2">
+                  <div className="flex items-center justify-between text-xs sm:text-[13px] border-t border-charcoal-850 pt-2.5 gap-2">
                     <span className="text-slate-400 font-medium shrink-0">Result Announcement</span>
-                    <span className="text-slate-200 font-medium font-mono text-xs text-right">
+                    <span className="text-slate-200 font-medium font-mono text-xs sm:text-[13px] text-right">
                       {sponsoredMeta.resultAnnouncement || formatEventDateTime(hackathon.results_date || (hackathon as any).resultsDate || hackathon.end_date)}
                     </span>
                   </div>
@@ -2300,12 +2273,12 @@ export default function HackathonDetailPage() {
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block pt-1"
+                    className="block pt-1.5"
                   >
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full justify-center text-xs font-semibold text-slate-200 hover:text-white bg-slate-900/60 border-slate-700 hover:border-cyan-500/50"
+                      className="w-full justify-center text-xs sm:text-sm font-semibold text-slate-200 hover:text-white bg-slate-900/60 border-slate-700 hover:border-cyan-500/50 py-2.5"
                       rightIcon={<ExternalLink className="w-3.5 h-3.5 text-cyan-400" />}
                     >
                       Official Guidelines &amp; Portal
@@ -2314,17 +2287,17 @@ export default function HackathonDetailPage() {
                 )}
 
                 {/* Verified Trust Guarantees */}
-                <div className="pt-3 border-t border-charcoal-800 space-y-2 text-xs text-slate-300 font-normal">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <div className="pt-4 border-t border-charcoal-800 space-y-2.5 text-xs text-slate-300 font-normal">
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span>Verified Collegiate Credentials &amp; Proof of Work</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
                     <span>Real-Time Team Workspace &amp; Closer Pitch Deck Kit</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                  <div className="flex items-center gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
                     <span>Jury Evaluation &amp; Digital Certificate on Completion</span>
                   </div>
                 </div>
@@ -2332,7 +2305,7 @@ export default function HackathonDetailPage() {
             </div>
 
             {/* Unstop-Style "Share with Friends" Card (Exact Match) */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-charcoal-900 border border-blue-500/30 flex items-center justify-between gap-3 shadow-lg">
+            <div className="mt-5 sm:mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-charcoal-900 border border-blue-500/30 flex items-center justify-between gap-3 shadow-lg">
               <div>
                 <div className="text-xs font-black text-white">Share with Friends</div>
                 <div className="text-[11px] text-slate-300 font-medium">Invite classmates &amp; teammates</div>
