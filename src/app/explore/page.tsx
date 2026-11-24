@@ -497,11 +497,29 @@ export default function ExploreProjectsPage() {
     };
   }, [projects]);
 
-  const [visibleCounts, setVisibleCounts] = useState<Record<'Recruiting' | 'In Progress' | 'Completed', number>>({
-    Recruiting: 3,
-    'In Progress': 3,
-    Completed: 3,
-  });
+  const rowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [rowScrollState, setRowScrollState] = useState<
+    Record<string, { canLeft: boolean; canRight: boolean }>
+  >({});
+
+  const updateRowScrollState = useCallback((key: string) => {
+    const el = rowRefs.current[key];
+    if (!el) return;
+    const canLeft = el.scrollLeft > 12;
+    const canRight = el.scrollLeft + el.clientWidth < el.scrollWidth - 12;
+    setRowScrollState((prev) => {
+      const cur = prev[key];
+      if (cur && cur.canLeft === canLeft && cur.canRight === canRight) return prev;
+      return { ...prev, [key]: { canLeft, canRight } };
+    });
+  }, []);
+
+  const scrollRowBy = useCallback((key: string, dir: 'left' | 'right') => {
+    const el = rowRefs.current[key];
+    if (!el) return;
+    const step = Math.max(el.clientWidth * 0.7, 320);
+    el.scrollBy({ left: dir === 'right' ? step : -step, behavior: 'smooth' });
+  }, []);
 
   const lifecycleSections = useMemo(() => {
     return [
@@ -525,6 +543,13 @@ export default function ExploreProjectsPage() {
       },
     ].filter((sec) => sec.items.length > 0);
   }, [recruitingProjects, inProgressProjects, completedProjects]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      lifecycleSections.forEach((sec) => updateRowScrollState(sec.key));
+    }, 60);
+    return () => clearTimeout(t);
+  }, [lifecycleSections, updateRowScrollState]);
 
   const isStatusFiltered = Boolean(filters.status && filters.status !== 'All');
 
@@ -605,14 +630,9 @@ export default function ExploreProjectsPage() {
         </div>
       </div>
 
-      {/* Scrollable Container with Blur-to-Focus Stack */}
-      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
-        {/* Blur Curtains for Upper & Lower Margins */}
-        <div className="scroll-blur-curtain-top" />
-        <div className="scroll-blur-curtain-bottom" />
-
-        {/* Projects Viewport with Blur-to-Focus Mask */}
-        <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
+      {/* Natural Page Flow Container (no trapped nested vertical scrollbar) */}
+      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs">
+        <div className="px-1 py-2">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-8 lg:gap-y-10">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -658,69 +678,71 @@ export default function ExploreProjectsPage() {
               ))}
             </div>
           ) : (
-            /* Horizontal Lifecycle Rows (Recruiting -> In Progress -> Completed) with Get More */
+            /* Horizontal Lifecycle Rows (Recruiting -> In Progress -> Completed) with Lateral Arrow Scroll */
             <div className="space-y-10">
               {lifecycleSections.map((section) => {
-                const limit = visibleCounts[section.key] ?? 3;
-                const visibleItems = section.items.slice(0, limit);
-                const remaining = section.items.length - visibleItems.length;
-                const isExpanded = limit > 3 && section.items.length > 3;
+                const scrollInfo = rowScrollState[section.key];
+                const canLeft = scrollInfo?.canLeft ?? false;
+                const canRight =
+                  scrollInfo?.canRight ?? section.items.length > 3;
 
                 return (
                   <div key={section.key} className="space-y-4">
-                    {/* Row Header */}
+                    {/* Row Header (Medium-Bold Typography) */}
                     <div className="flex items-center justify-between pb-3 border-b border-slate-700/60 px-1">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-200 tracking-wider">
+                        <div className="flex items-center gap-2 text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                           {section.icon}
                           <span>{section.label}</span>
                         </div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-white/10 text-white border border-white/20">
                           {section.items.length}
                         </span>
                       </div>
-
-                      <div className="flex items-center gap-2">
-                        {isExpanded && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setVisibleCounts((prev) => ({ ...prev, [section.key]: 3 }))
-                            }
-                            className="px-3 py-1 rounded-lg text-[11px] font-mono font-semibold text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-colors cursor-pointer"
-                          >
-                            Show Less
-                          </button>
-                        )}
-                        {remaining > 0 && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setVisibleCounts((prev) => ({
-                                ...prev,
-                                [section.key]: (prev[section.key] ?? 3) + 3,
-                              }))
-                            }
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-mono font-bold text-white bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 transition-all cursor-pointer"
-                          >
-                            <span>Get More Projects (+{remaining})</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
                     </div>
 
-                    {/* Horizontal 3-Column Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
-                      {visibleItems.map((project, idx) => (
-                        <div
-                          key={project.id}
-                          className="blur-to-focus-card h-full"
-                          style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                    {/* Horizontal Scrollable Row with Right/Left Tap Arrows */}
+                    <div className="relative group/row">
+                      {canLeft && (
+                        <button
+                          type="button"
+                          onClick={() => scrollRowBy(section.key, 'left')}
+                          aria-label={`Scroll ${section.label} left`}
+                          className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-slate-950/90 hover:bg-white text-white hover:text-slate-950 border border-white/25 shadow-[0_8px_24px_rgba(0,0,0,0.65)] backdrop-blur-md items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
                         >
-                          <ProjectCard project={project} />
-                        </div>
-                      ))}
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+                      )}
+
+                      <div
+                        ref={(el) => {
+                          rowRefs.current[section.key] = el;
+                        }}
+                        onScroll={() => updateRowScrollState(section.key)}
+                        className="flex gap-6 lg:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch pb-1"
+                      >
+                        {section.items.map((project, idx) => (
+                          <div
+                            key={project.id}
+                            className="blur-to-focus-card shrink-0 w-[85%] sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-64px)/3)] snap-start flex flex-col"
+                            style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                          >
+                            <ProjectCard project={project} />
+                          </div>
+                        ))}
+                      </div>
+
+                      {canRight && (
+                        <button
+                          type="button"
+                          onClick={() => scrollRowBy(section.key, 'right')}
+                          aria-label={`More ${section.label} projects`}
+                          title={`See more ${section.label} projects`}
+                          className="flex absolute right-1 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-slate-950/90 hover:bg-white text-white hover:text-slate-950 border border-white/25 shadow-[0_8px_24px_rgba(0,0,0,0.65)] backdrop-blur-md items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
