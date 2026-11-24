@@ -54,6 +54,7 @@ import {
   Minimize2,
   Info,
   Upload,
+  Plus,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { ArenaBackgroundMatrix } from '@/components/arena/ArenaBackgroundMatrix';
@@ -1451,6 +1452,69 @@ export function FullArenaExperience({
   // Image 6 Parity: Maximize pane state for Preview and Output
   const [maximizedPane, setMaximizedPane] = useState<'none' | 'preview' | 'output'>('none');
   const [renderNonce, setRenderNonce] = useState<number>(0);
+
+  // Resizable Battle Split Panes (Left Editor vs Right Output/Preview, and Top vs Bottom in Right Pane)
+  const [editorSplitPercent, setEditorSplitPercent] = useState<number>(50);
+  const [rightSplitPercent, setRightSplitPercent] = useState<number>(50);
+  const [isDraggingSplit, setIsDraggingSplit] = useState<boolean>(false);
+  const battleSplitContainerRef = useRef<HTMLDivElement | null>(null);
+  const rightSplitContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const startHorizontalSplitDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDraggingSplit(true);
+    const onMove = (clientX: number) => {
+      const el = battleSplitContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      const pct = ((clientX - rect.left) / rect.width) * 100;
+      setEditorSplitPercent(Math.min(72, Math.max(28, Math.round(pct * 10) / 10)));
+    };
+    const handleMouseMove = (ev: MouseEvent) => onMove(ev.clientX);
+    const handleTouchMove = (ev: TouchEvent) => {
+      if (ev.touches[0]) onMove(ev.touches[0].clientX);
+    };
+    const cleanup = () => {
+      setIsDraggingSplit(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', cleanup);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', cleanup);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', cleanup);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', cleanup);
+  };
+
+  const startVerticalSplitDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDraggingSplit(true);
+    const onMove = (clientY: number) => {
+      const el = rightSplitContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.height <= 0) return;
+      const pct = ((clientY - rect.top) / rect.height) * 100;
+      setRightSplitPercent(Math.min(75, Math.max(25, Math.round(pct * 10) / 10)));
+    };
+    const handleMouseMove = (ev: MouseEvent) => onMove(ev.clientY);
+    const handleTouchMove = (ev: TouchEvent) => {
+      if (ev.touches[0]) onMove(ev.touches[0].clientY);
+    };
+    const cleanup = () => {
+      setIsDraggingSplit(false);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', cleanup);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', cleanup);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', cleanup);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', cleanup);
+  };
 
   // Relay Role in 2v2 (swaps every 2.5 mins)
   const [relayPlayer, setRelayPlayer] = useState<'Driver (You)' | 'Navigator (Teammate)'>('Driver (You)');
@@ -3585,12 +3649,12 @@ export function FullArenaExperience({
 
         {/* ================= STEPS 0-4: FLOATING RECTANGULAR COMMAND CENTER (IMAGE 1 & 2 WITCHER POSTER STYLE) ================= */}
         {step <= 4 && (
-          <div className={`w-full max-w-[1140px] xl:max-w-[1240px] mx-auto my-auto transition-all duration-700 ease-out ${
+          <div className={`w-full max-w-[1320px] xl:max-w-[1440px] mx-auto my-auto transition-all duration-700 ease-out ${
             isBoxDissolving
               ? 'scale-110 opacity-0 blur-2xl pointer-events-none'
               : 'scale-100 opacity-100 animate-fadeIn'
           }`}>
-            <div className="relative w-full rounded-3xl bg-[#080d1e]/40 sm:bg-[#080d1e]/35 border border-amber-400/40 border-t-white/35 shadow-[0_0_50px_rgba(245,158,11,0.2),0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_0_25px_rgba(245,158,11,0.06)] backdrop-blur-2xl p-5 sm:p-7 overflow-hidden">
+            <div className="relative w-full rounded-3xl bg-[#080d1e]/40 sm:bg-[#080d1e]/35 border border-amber-400/40 border-t-white/35 shadow-[0_0_50px_rgba(245,158,11,0.2),0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_0_25px_rgba(245,158,11,0.06)] backdrop-blur-2xl p-6 sm:p-8 lg:p-10 overflow-hidden">
               {/* Glossy top-left reflective sheen */}
               <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-white/[0.09] via-amber-400/[0.04] to-transparent rounded-full blur-2xl pointer-events-none" />
               {/* Subtle ambient warm ember highlights inside the command glass */}
@@ -3689,57 +3753,41 @@ export function FullArenaExperience({
                                   </button>
                                 );
                               })}
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Paste image URL or upload */}
-                        <div className="relative flex items-center">
-                          <input
-                            type="text"
-                            value={avatarUrlInput}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setAvatarUrlInput(val);
-                              if (val.trim()) {
-                                setCustomAvatarUrl(val.trim());
-                              } else {
-                                setCustomAvatarUrl('');
-                              }
-                            }}
-                            placeholder="Paste avatar image URL (https://...)"
-                            className="w-full pl-3 pr-20 py-2 rounded-xl bg-black/50 border border-amber-400/40 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/60 text-xs font-mono font-bold text-amber-200 placeholder:text-slate-400 placeholder:font-medium transition-all outline-none backdrop-blur-md"
-                          />
-                          <div className="absolute right-1.5 flex items-center">
-                            <label
-                              className="cursor-pointer px-2.5 py-1 rounded-lg bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400/50 text-[10px] font-mono text-amber-200 font-black transition-all flex items-center gap-1 active:scale-95"
-                              title="Upload avatar image from device"
-                            >
-                              <Upload className="w-3 h-3" />
-                              <span>Upload</span>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    if (file.size > 2 * 1024 * 1024) {
-                                      alert('Please select an image under 2MB.');
-                                      return;
-                                    }
-                                    const reader = new FileReader();
-                                    reader.onload = () => {
-                                      if (typeof reader.result === 'string') {
-                                        setCustomAvatarUrl(reader.result);
-                                        setAvatarUrlInput('Custom Avatar Uploaded');
+                              {/* + Custom Avatar Upload Button right after presets */}
+                              <label
+                                className={`relative shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-dashed flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                                  customAvatarUrl
+                                    ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-2 ring-amber-400/70'
+                                    : 'border-amber-400/50 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400 text-amber-300'
+                                }`}
+                                title="Upload custom avatar image"
+                              >
+                                <Plus className="w-4 h-4 stroke-[2.5]" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      if (file.size > 2 * 1024 * 1024) {
+                                        alert('Please select an image under 2MB.');
+                                        return;
                                       }
-                                    };
-                                    reader.readAsDataURL(file);
-                                  }
-                                }}
-                              />
-                            </label>
+                                      const reader = new FileReader();
+                                      reader.onload = () => {
+                                        if (typeof reader.result === 'string') {
+                                          setCustomAvatarUrl(reader.result);
+                                          setAvatarUrlInput('Custom Avatar Uploaded');
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -4755,11 +4803,15 @@ export function FullArenaExperience({
               </div>
             )}
 
-            {/* Split Screen Grid: Left Studio & Opponent Telemetry, Right Preview & Output / Compiler Terminal */}
-            <div className={`flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 ${isQuestionExpanded ? 'min-h-[430px]' : 'min-h-[560px]'} transition-all duration-300`}>
+            {/* Split Screen Resizable Container: Left Studio & Opponent Telemetry, Right Preview & Output / Compiler Terminal */}
+            <div
+              ref={battleSplitContainerRef}
+              style={{ '--left-w': `${editorSplitPercent}%` } as React.CSSProperties}
+              className={`flex-1 flex flex-col lg:flex-row gap-4 lg:gap-0 ${isQuestionExpanded ? 'min-h-[430px]' : 'min-h-[560px]'} ${isDraggingSplit ? 'select-none' : ''}`}
+            >
               
               {/* LEFT: Team Alpha (Code Studio + Live Opponent Telemetry HUD) */}
-              <div className="flex flex-col rounded-2xl bg-slate-950/90 border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.1)] overflow-hidden">
+              <div className="w-full lg:w-[var(--left-w)] shrink-0 flex flex-col rounded-2xl bg-slate-950/90 border border-cyan-500/30 shadow-[0_0_20px_rgba(6,182,212,0.1)] overflow-hidden min-w-0">
                 {/* Editor Header Bar */}
                 <div className="h-10 bg-slate-900 border-b border-slate-800 px-3 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-1.5 overflow-x-auto py-1">
@@ -5264,16 +5316,36 @@ export function FullArenaExperience({
                 </div>
               </div>
 
+              {/* DRAGGABLE HORIZONTAL SPLIT HANDLE (Left Editor <-> Right Output/Preview) */}
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Resize editor and preview panels"
+                onMouseDown={startHorizontalSplitDrag}
+                onTouchStart={startHorizontalSplitDrag}
+                onDoubleClick={() => setEditorSplitPercent(50)}
+                title="Drag to resize • Double-click to reset 50/50"
+                className="hidden lg:flex w-3.5 shrink-0 items-center justify-center cursor-col-resize group select-none"
+              >
+                <div className="w-1 h-12 rounded-full bg-slate-700/80 group-hover:bg-cyan-400 group-active:bg-cyan-300 group-hover:h-16 transition-all shadow-sm" />
+              </div>
+
               {/* RIGHT: DYNAMIC SPLIT VIEW — WEB PREVIEW/OUTPUT (FOR WEB) OR COMPILER TERMINAL (FOR JAVA/C++/PYTHON) */}
-              <div className={`flex flex-col gap-3 ${isQuestionExpanded ? 'min-h-[420px]' : 'min-h-[500px]'} transition-all duration-300`}>
+              <div
+                ref={rightSplitContainerRef}
+                style={{ '--top-h': `${rightSplitPercent}%` } as React.CSSProperties}
+                className={`flex-1 min-w-0 flex flex-col gap-3 lg:gap-0 ${isQuestionExpanded ? 'min-h-[420px]' : 'min-h-[500px]'}`}
+              >
                 {/* ================= IF WEB MATCH: IMAGE 6 PARITY (PREVIEW ON TOP, OUTPUT ON BOTTOM) ================= */}
                 {isWebMatch ? (
                   <>
                     {/* TOP: PREVIEW CONTAINER (Target Component Blueprint) */}
                     {maximizedPane !== 'output' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-300 ${
-                          maximizedPane === 'preview' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden ${
+                          maximizedPane === 'preview'
+                            ? 'flex-1 h-full'
+                            : 'h-[250px] sm:h-[280px] lg:h-[var(--top-h)] shrink-0'
                         }`}
                       >
                         {/* Preview Title Bar (Image 6 Parity) */}
@@ -5375,18 +5447,36 @@ ${
 <\\/script>`
     : ''
 }</body></html>`}
-                            className="w-full h-full border-0 block"
+                            className={`w-full h-full border-0 block ${isDraggingSplit ? 'pointer-events-none' : ''}`}
                             sandbox="allow-scripts allow-modals"
                           />
                         </div>
                       </div>
                     )}
 
+                    {/* DRAGGABLE VERTICAL SPLIT HANDLE (Preview <-> Output) */}
+                    {maximizedPane === 'none' && (
+                      <div
+                        role="separator"
+                        aria-orientation="horizontal"
+                        aria-label="Resize preview and output height"
+                        onMouseDown={startVerticalSplitDrag}
+                        onTouchStart={startVerticalSplitDrag}
+                        onDoubleClick={() => setRightSplitPercent(50)}
+                        title="Drag to resize • Double-click to reset"
+                        className="hidden lg:flex h-3 shrink-0 items-center justify-center cursor-row-resize group select-none"
+                      >
+                        <div className="h-1 w-12 rounded-full bg-slate-700/80 group-hover:bg-cyan-400 group-active:bg-cyan-300 group-hover:w-16 transition-all shadow-sm" />
+                      </div>
+                    )}
+
                     {/* BOTTOM: OUTPUT CONTAINER (Student's Live Code Rendering in Sandboxed Iframe) */}
                     {maximizedPane !== 'preview' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-300 ${
-                          maximizedPane === 'output' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden ${
+                          maximizedPane === 'output'
+                            ? 'flex-1 h-full'
+                            : 'h-[250px] sm:h-[280px] lg:h-auto lg:flex-1 min-h-0'
                         }`}
                       >
                         {/* Output Title Bar (Image 6 Parity) */}
@@ -5435,7 +5525,7 @@ window.onerror = function(msg, url, line) {
 <script>
 ${jsCode || ''}
 </script></body></html>`}
-                            className="w-full h-full border-0 block"
+                            className={`w-full h-full border-0 block ${isDraggingSplit ? 'pointer-events-none' : ''}`}
                             sandbox="allow-scripts allow-modals"
                           />
                         </div>
@@ -5448,8 +5538,10 @@ ${jsCode || ''}
                     {/* TOP: PROBLEM STATEMENT, EXAMPLES & CONSTRAINTS */}
                     {maximizedPane !== 'output' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden transition-all duration-300 ${
-                          maximizedPane === 'preview' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-slate-700 shadow-md overflow-hidden ${
+                          maximizedPane === 'preview'
+                            ? 'flex-1 h-full'
+                            : 'h-[250px] sm:h-[280px] lg:h-[var(--top-h)] shrink-0'
                         }`}
                       >
                         {/* Problem Header Bar */}
@@ -5533,11 +5625,29 @@ ${jsCode || ''}
                       </div>
                     )}
 
+                    {/* DRAGGABLE VERTICAL SPLIT HANDLE (Problem Description <-> Compiler Terminal) */}
+                    {maximizedPane === 'none' && (
+                      <div
+                        role="separator"
+                        aria-orientation="horizontal"
+                        aria-label="Resize problem description and compiler terminal height"
+                        onMouseDown={startVerticalSplitDrag}
+                        onTouchStart={startVerticalSplitDrag}
+                        onDoubleClick={() => setRightSplitPercent(50)}
+                        title="Drag to resize • Double-click to reset"
+                        className="hidden lg:flex h-3 shrink-0 items-center justify-center cursor-row-resize group select-none"
+                      >
+                        <div className="h-1 w-12 rounded-full bg-slate-700/80 group-hover:bg-cyan-400 group-active:bg-cyan-300 group-hover:w-16 transition-all shadow-sm" />
+                      </div>
+                    )}
+
                     {/* BOTTOM: REAL COMPILER TERMINAL & TEST RESULTS */}
                     {maximizedPane !== 'preview' && (
                       <div
-                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden transition-all duration-300 ${
-                          maximizedPane === 'output' ? 'flex-1 h-full' : isQuestionExpanded ? 'h-[200px] sm:h-[225px]' : 'h-[270px] sm:h-[300px]'
+                        className={`flex flex-col rounded-2xl bg-slate-900 border border-cyan-500/40 shadow-md overflow-hidden ${
+                          maximizedPane === 'output'
+                            ? 'flex-1 h-full'
+                            : 'h-[250px] sm:h-[280px] lg:h-auto lg:flex-1 min-h-0'
                         }`}
                       >
                         {/* Terminal Header Bar */}

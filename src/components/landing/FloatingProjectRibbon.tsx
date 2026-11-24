@@ -13,49 +13,46 @@ import {
 } from 'lucide-react';
 import { FeaturedDeckCardConfig, DEFAULT_FEATURED_DECK_CARDS } from '@/types/masterControl';
 
-// Vibrant chromatic mesh gradients matching the Pinterest reference video
-const CARD_PALETTES = [
+// 90/10 Real Coder Discipline: uniform obsidian dark glass with 10% surgical laser accents
+const CARD_ACCENTS = [
   {
-    // Card 01: Deep Electric Violet / Magenta / Indigo (matches "v2.0" video card)
-    bg: 'from-[#8b5cf6] via-[#6d28d9] to-[#1e113a]',
-    glow: 'rgba(168, 85, 247, 0.55)',
-    ambient: '#9333ea',
-    ring: '#c084fc',
-    badge: 'border-violet-400/40 bg-violet-500/20 text-violet-200',
+    laser: 'via-violet-400/80',
+    glow: 'rgba(139, 92, 246, 0.16)',
+    ambient: '#8b5cf6',
+    dot: 'bg-violet-400',
+    coordText: 'text-violet-300/90',
   },
   {
-    // Card 02: Platinum Chrome / Cyber Opal / Sky Cyan
-    bg: 'from-[#38bdf8] via-[#0284c7] to-[#0c1f38]',
-    glow: 'rgba(56, 189, 248, 0.55)',
-    ambient: '#0284c7',
-    ring: '#7dd3fc',
-    badge: 'border-cyan-400/40 bg-cyan-500/20 text-cyan-200',
+    laser: 'via-sky-400/80',
+    glow: 'rgba(56, 189, 248, 0.16)',
+    ambient: '#38bdf8',
+    dot: 'bg-sky-400',
+    coordText: 'text-sky-300/90',
   },
   {
-    // Card 03: Sun Gold / Lime Green / Emerald (matches "95th" video card)
-    bg: 'from-[#eab308] via-[#16a34a] to-[#064e3b]',
-    glow: 'rgba(234, 179, 8, 0.55)',
-    ambient: '#16a34a',
-    ring: '#fde047',
-    badge: 'border-amber-400/40 bg-amber-500/20 text-amber-200',
+    laser: 'via-emerald-400/80',
+    glow: 'rgba(52, 211, 153, 0.16)',
+    ambient: '#34d399',
+    dot: 'bg-emerald-400',
+    coordText: 'text-emerald-300/90',
   },
   {
-    // Card 04: Deep Royal Blue / Ice Azure (matches "25%" video card)
-    bg: 'from-[#3b82f6] via-[#1d4ed8] to-[#091533]',
-    glow: 'rgba(59, 130, 246, 0.55)',
-    ambient: '#2563eb',
-    ring: '#93c5fd',
-    badge: 'border-blue-400/40 bg-blue-500/20 text-blue-200',
+    laser: 'via-cyan-400/80',
+    glow: 'rgba(34, 211, 238, 0.16)',
+    ambient: '#22d3ee',
+    dot: 'bg-cyan-400',
+    coordText: 'text-cyan-300/90',
   },
   {
-    // Card 05: Crimson Red / Blood Orange / Deep Amber (matches "720" video card)
-    bg: 'from-[#ef4444] via-[#b91c1c] to-[#2d080a]',
-    glow: 'rgba(239, 68, 68, 0.55)',
-    ambient: '#dc2626',
-    ring: '#fca5a5',
-    badge: 'border-rose-400/40 bg-rose-500/20 text-rose-200',
+    laser: 'via-amber-400/80',
+    glow: 'rgba(251, 191, 36, 0.16)',
+    ambient: '#fbbf24',
+    dot: 'bg-amber-400',
+    coordText: 'text-amber-300/90',
   },
 ];
+
+const SYNTAX_DOTS = ['bg-amber-400', 'bg-sky-400', 'bg-emerald-400'];
 
 // Exact continuous loop durations per card:
 // Card 1 -> 2: 3 sec
@@ -169,7 +166,7 @@ export function FloatingProjectRibbon() {
     }
   };
 
-  const currentPalette = CARD_PALETTES[activeIndex % CARD_PALETTES.length];
+  const currentAccent = CARD_ACCENTS[activeIndex % CARD_ACCENTS.length];
 
   return (
     <section
@@ -181,17 +178,17 @@ export function FloatingProjectRibbon() {
       onTouchEnd={handleTouchEnd}
     >
       {/* ============================================================== */}
-      {/* AMBIENT CHROMATIC HORIZONTAL GLOWS (Matching Pinterest Video) */}
+      {/* AMBIENT SURGICAL GLOWS (Subtle 10% Ray-Traced Atmosphere) */}
       {/* ============================================================== */}
       <div
         style={{
-          background: `radial-gradient(ellipse 70% 30% at 50% 0%, ${currentPalette.ambient}33, transparent 75%)`,
+          background: `radial-gradient(ellipse 70% 30% at 50% 0%, ${currentAccent.ambient}1F, transparent 75%)`,
         }}
         className="absolute top-0 inset-x-0 h-40 pointer-events-none transition-all duration-700 blur-2xl"
       />
       <div
         style={{
-          background: `radial-gradient(ellipse 70% 30% at 50% 100%, ${currentPalette.ambient}26, transparent 75%)`,
+          background: `radial-gradient(ellipse 70% 30% at 50% 100%, ${currentAccent.ambient}14, transparent 75%)`,
         }}
         className="absolute bottom-0 inset-x-0 h-40 pointer-events-none transition-all duration-700 blur-2xl"
       />
@@ -294,7 +291,12 @@ export function FloatingProjectRibbon() {
                 zIndex = 10;
               }
 
-              const palette = CARD_PALETTES[index % CARD_PALETTES.length];
+              const accent = CARD_ACCENTS[index % CARD_ACCENTS.length];
+              const slug = (card.title || 'project')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '')
+                .slice(0, 18);
 
               return (
                 <motion.div
@@ -317,105 +319,115 @@ export function FloatingProjectRibbon() {
                       goToCard(index);
                     }
                   }}
-                  className={`absolute w-[260px] sm:w-[290px] md:w-[315px] h-[385px] sm:h-[415px] rounded-[26px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    e.currentTarget.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+                    e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
+                  }}
+                  className={`group/card absolute w-[275px] sm:w-[305px] md:w-[330px] h-[385px] sm:h-[415px] rounded-[22px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
                     isCenter ? 'pointer-events-auto' : 'pointer-events-auto hover:opacity-95'
                   }`}
                   style={{
                     boxShadow: isCenter
-                      ? `0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 35px ${palette.glow}`
-                      : '0 20px 45px -15px rgba(0, 0, 0, 0.85)',
+                      ? `0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 36px ${accent.glow}`
+                      : '0 20px 45px -15px rgba(0, 0, 0, 0.9)',
                   }}
                 >
-                  {/* Outer Card Body with Vibrant Gradient */}
+                  {/* 90% Obsidian / Carbon Dark Glass Substrate */}
                   <div
-                    className={`relative w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-gradient-to-br ${palette.bg} border border-white/20 text-white rounded-[26px] overflow-hidden backdrop-blur-2xl`}
+                    className="relative w-full h-full p-4 sm:p-5 flex flex-col justify-between bg-gradient-to-b from-[#0f141e] via-[#0a0d14] to-[#07090e] border border-white/[0.08] border-t-white/20 text-white rounded-[22px] overflow-hidden backdrop-blur-2xl"
                   >
-                    {/* Chromatic Noise / Glass Refraction Overlay */}
-                    <div className="absolute inset-0 bg-radial-gradient pointer-events-none opacity-40 mix-blend-overlay" />
-                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+                    {/* Subtle micro-grid mesh + Cursor-reactive ray-traced spotlight */}
+                    <div
+                      className="absolute inset-0 pointer-events-none opacity-[0.04]"
+                      style={{
+                        backgroundImage:
+                          'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
+                        backgroundSize: '20px 20px',
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 pointer-events-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"
+                      style={{
+                        background:
+                          'radial-gradient(240px circle at var(--mx, 50%) var(--my, 30%), rgba(255,255,255,0.07), transparent 70%)',
+                      }}
+                    />
 
-                    {/* TOP BAR: Category & Recruiting Pill */}
-                    <div className="relative z-10 flex items-center justify-between gap-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase bg-black/40 border border-white/20 text-white backdrop-blur-md">
-                        {card.category}
+                    {/* 10% Surgical Accent: 1px Laser Edge on Top */}
+                    <div
+                      className={`absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent ${accent.laser} to-transparent`}
+                    />
+
+                    {/* TOP TERMINAL HEADER BAR */}
+                    <div className="relative z-10 flex items-center justify-between gap-2 pb-2.5 border-b border-white/[0.06]">
+                      <span className="text-[10px] font-mono text-slate-500 truncate">
+                        ~/squads/{slug}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono text-white bg-black/35 border border-white/15 backdrop-blur-md">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
-                        {card.recruitingBadge}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="w-2 h-2 rounded-full bg-white/15" />
+                        <span className="w-2 h-2 rounded-full bg-white/15" />
+                        <span className={`w-2 h-2 rounded-full ${accent.dot} opacity-75`} />
+                      </div>
+                    </div>
+
+                    {/* ENGINEERING COORDINATE + STATUS BEACON */}
+                    <div className="relative z-10 flex items-center justify-between gap-2 pt-2.5">
+                      <span className={`text-[10px] font-mono font-bold tracking-wider uppercase ${accent.coordText}`}>
+                        {card.number} // {card.category}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono text-slate-300 bg-white/[0.04] border border-white/[0.08]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse" />
+                        <span>{card.recruitingBadge}</span>
                       </span>
                     </div>
 
-                    {/* CENTER HERO: Futuristic Radial Meter Dial */}
-                    <div className="relative z-10 my-auto flex flex-col items-center justify-center text-center">
-                      {/* Radial Tick Dial with Project Number */}
-                      <div className="relative flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 mb-1.5">
-                        {/* Circular Radial Ticks SVG */}
-                        <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 120 120">
-                          {/* Radial dash ring */}
-                          <circle
-                            cx="60"
-                            cy="60"
-                            r="50"
-                            fill="none"
-                            stroke="rgba(255, 255, 255, 0.25)"
-                            strokeWidth="4"
-                            strokeDasharray="2 6"
-                          />
-                          {/* Vibrant Accent Arc */}
-                          <circle
-                            cx="60"
-                            cy="60"
-                            r="50"
-                            fill="none"
-                            stroke={palette.ring}
-                            strokeWidth="4"
-                            strokeDasharray="240"
-                            strokeDashoffset="70"
-                            strokeLinecap="round"
-                            className="filter drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]"
-                          />
-                        </svg>
-
-                        {/* Center Metric Typography */}
-                        <div className="flex flex-col items-center justify-center">
-                          <span className="text-3xl sm:text-4xl font-black font-heading text-white tracking-tighter drop-shadow-[0_4px_12px_rgba(0,0,0,0.6)]">
-                            {card.number}
-                          </span>
-                          <span className="text-[9px] uppercase font-mono tracking-widest text-white/80 font-semibold mt-0.5">
-                            CIRCUIT
-                          </span>
-                        </div>
+                    {/* CENTER CONTENT: Title, Institution & Terminal Spec Block */}
+                    <div className="relative z-10 my-auto space-y-3 py-2 text-left">
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight font-heading line-clamp-1">
+                          {card.title}
+                        </h3>
+                        <p className="text-[11px] font-mono text-slate-400 mt-1 flex items-center gap-1.5">
+                          <span className="text-slate-500">@</span>
+                          <span className="line-clamp-1">{card.college}</span>
+                        </p>
                       </div>
 
-                      {/* Project Title & College */}
-                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight font-heading drop-shadow-md line-clamp-1">
-                        {card.title}
-                      </h3>
-                      <p className="text-[11px] sm:text-xs font-medium text-white/85 mt-0.5 flex items-center gap-1">
-                        <span>🏛️</span>
-                        <span className="line-clamp-1">{card.college}</span>
-                      </p>
-
-                      {/* Description */}
-                      <p className="text-[11px] sm:text-xs text-white/75 mt-1.5 max-w-[250px] line-clamp-2 leading-relaxed">
-                        {card.description}
-                      </p>
+                      {/* IDE Terminal Snippet Box */}
+                      <div className="p-2.5 sm:p-3 rounded-xl bg-black/50 border border-white/[0.07] font-mono text-[10.5px] sm:text-[11px] space-y-1.5 shadow-inner">
+                        <div className="flex items-center gap-1.5 text-slate-400 truncate">
+                          <span className="text-emerald-400 select-none">$</span>
+                          <span className="text-slate-200 truncate">
+                            git checkout -b squad/{slug}
+                          </span>
+                        </div>
+                        <p className="text-slate-400 leading-relaxed line-clamp-2 font-sans text-[11.5px]">
+                          {card.description}
+                        </p>
+                        <div className="pt-1 border-t border-white/[0.06] flex items-center justify-between text-[10px] text-slate-500">
+                          <span>branch: main</span>
+                          <span className="text-slate-300 font-semibold">{card.teamJoined}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* BOTTOM BAR: Tags & Interactive CTA */}
-                    <div className="relative z-10 pt-2.5 border-t border-white/15 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* BOTTOM BAR: Syntax Tech Tags & Titanium Inspect CTA */}
+                    <div className="relative z-10 pt-2.5 border-t border-white/[0.07] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                         {card.tags.slice(0, 2).map((tag, tIdx) => (
                           <span
                             key={tIdx}
-                            className="px-2 py-0.5 rounded-md text-[9px] font-mono bg-black/30 border border-white/15 text-white/90"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9.5px] font-mono bg-white/[0.04] border border-white/[0.08] text-slate-300"
                           >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                SYNTAX_DOTS[tIdx % SYNTAX_DOTS.length]
+                              }`}
+                            />
                             {tag}
                           </span>
                         ))}
-                        <span className="text-[10px] font-mono text-white/70 ml-1">
-                          {card.teamJoined}
-                        </span>
                       </div>
 
                       <Link
@@ -426,10 +438,10 @@ export function FloatingProjectRibbon() {
                             goToCard(index);
                           }
                         }}
-                        className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-950 hover:bg-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.4)] hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] transition-all duration-200 active:scale-95 group/btn"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-mono font-bold bg-gradient-to-r from-slate-100 to-slate-300 text-slate-950 hover:from-white hover:to-slate-200 border border-white/40 shadow-sm transition-all duration-200 active:scale-95 shrink-0 group/btn"
                       >
-                        <span>Explore</span>
-                        <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+                        <span>Inspect</span>
+                        <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
                       </Link>
                     </div>
                   </div>
