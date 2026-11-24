@@ -497,13 +497,34 @@ export default function ExploreProjectsPage() {
     };
   }, [projects]);
 
-  const maxLifecycleRows = useMemo(() => {
-    return Math.max(
-      recruitingProjects.length,
-      inProgressProjects.length,
-      completedProjects.length
-    );
-  }, [recruitingProjects.length, inProgressProjects.length, completedProjects.length]);
+  const [visibleCounts, setVisibleCounts] = useState<Record<'Recruiting' | 'In Progress' | 'Completed', number>>({
+    Recruiting: 3,
+    'In Progress': 3,
+    Completed: 3,
+  });
+
+  const lifecycleSections = useMemo(() => {
+    return [
+      {
+        key: 'Recruiting' as const,
+        label: 'Recruiting',
+        items: recruitingProjects,
+        icon: <Flame className="w-4 h-4 text-emerald-400" />,
+      },
+      {
+        key: 'In Progress' as const,
+        label: 'In Progress',
+        items: inProgressProjects,
+        icon: <Zap className="w-4 h-4 text-amber-400" />,
+      },
+      {
+        key: 'Completed' as const,
+        label: 'Completed',
+        items: completedProjects,
+        icon: <Trophy className="w-4 h-4 text-cyan-400" />,
+      },
+    ].filter((sec) => sec.items.length > 0);
+  }, [recruitingProjects, inProgressProjects, completedProjects]);
 
   const isStatusFiltered = Boolean(filters.status && filters.status !== 'All');
 
@@ -637,95 +658,73 @@ export default function ExploreProjectsPage() {
               ))}
             </div>
           ) : (
-            /* Normal Unified Grid with 3-Column Stages: Col 1 Recruiting | Col 2 In Progress | Col 3 Completed */
-            <div className="space-y-8">
-              {/* Column Stage Headers (Desktop 3-Column) */}
-              <div className="hidden lg:grid grid-cols-3 gap-8 px-1">
-                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-700/60">
-                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-300 tracking-wider">
-                    <Flame className="w-4 h-4 text-emerald-400" />
-                    <span>Recruiting</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
-                    {recruitingProjects.length}
-                  </span>
-                </div>
+            /* Horizontal Lifecycle Rows (Recruiting -> In Progress -> Completed) with Get More */
+            <div className="space-y-10">
+              {lifecycleSections.map((section) => {
+                const limit = visibleCounts[section.key] ?? 3;
+                const visibleItems = section.items.slice(0, limit);
+                const remaining = section.items.length - visibleItems.length;
+                const isExpanded = limit > 3 && section.items.length > 3;
 
-                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-700/60">
-                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-300 tracking-wider">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>In Progress</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
-                    {inProgressProjects.length}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pb-3 border-b-2 border-slate-700/60">
-                  <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-300 tracking-wider">
-                    <Trophy className="w-4 h-4 text-cyan-400" />
-                    <span>Completed</span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
-                    {completedProjects.length}
-                  </span>
-                </div>
-              </div>
-
-              {/* Row-by-Row 3-Column Matrix */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 gap-y-8 lg:gap-y-10 items-stretch">
-                {Array.from({ length: maxLifecycleRows }).map((_, rowIndex) => {
-                  const recruiting = recruitingProjects[rowIndex];
-                  const inProgress = inProgressProjects[rowIndex];
-                  const completed = completedProjects[rowIndex];
-
-                  return (
-                    <React.Fragment key={rowIndex}>
-                      {/* Column 1: Recruiting */}
-                      <div className="h-full">
-                        {recruiting ? (
-                          <div
-                            className="blur-to-focus-card h-full"
-                            style={{ animationDelay: `${Math.min(rowIndex * 40, 350)}ms` }}
-                          >
-                            <ProjectCard project={recruiting} />
-                          </div>
-                        ) : (
-                          <div className="hidden lg:block h-full" aria-hidden="true" />
-                        )}
+                return (
+                  <div key={section.key} className="space-y-4">
+                    {/* Row Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-700/60 px-1">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2 font-mono text-xs font-black uppercase text-slate-200 tracking-wider">
+                          {section.icon}
+                          <span>{section.label}</span>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-white border border-white/20">
+                          {section.items.length}
+                        </span>
                       </div>
 
-                      {/* Column 2: In Progress */}
-                      <div className="h-full">
-                        {inProgress ? (
-                          <div
-                            className="blur-to-focus-card h-full"
-                            style={{ animationDelay: `${Math.min(rowIndex * 40, 350)}ms` }}
+                      <div className="flex items-center gap-2">
+                        {isExpanded && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setVisibleCounts((prev) => ({ ...prev, [section.key]: 3 }))
+                            }
+                            className="px-3 py-1 rounded-lg text-[11px] font-mono font-semibold text-slate-400 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-colors cursor-pointer"
                           >
-                            <ProjectCard project={inProgress} />
-                          </div>
-                        ) : (
-                          <div className="hidden lg:block h-full" aria-hidden="true" />
+                            Show Less
+                          </button>
+                        )}
+                        {remaining > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setVisibleCounts((prev) => ({
+                                ...prev,
+                                [section.key]: (prev[section.key] ?? 3) + 3,
+                              }))
+                            }
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-mono font-bold text-white bg-white/[0.08] hover:bg-white/[0.15] border border-white/20 transition-all cursor-pointer"
+                          >
+                            <span>Get More Projects (+{remaining})</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
                         )}
                       </div>
+                    </div>
 
-                      {/* Column 3: Completed */}
-                      <div className="h-full">
-                        {completed ? (
-                          <div
-                            className="blur-to-focus-card h-full"
-                            style={{ animationDelay: `${Math.min(rowIndex * 40, 350)}ms` }}
-                          >
-                            <ProjectCard project={completed} />
-                          </div>
-                        ) : (
-                          <div className="hidden lg:block h-full" aria-hidden="true" />
-                        )}
-                      </div>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
+                    {/* Horizontal 3-Column Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
+                      {visibleItems.map((project, idx) => (
+                        <div
+                          key={project.id}
+                          className="blur-to-focus-card h-full"
+                          style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
+                        >
+                          <ProjectCard project={project} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
