@@ -485,8 +485,14 @@ export default function ArenaPage() {
   return (
     <Suspense
       fallback={
-        <div className="fixed inset-0 bg-[#000000] flex flex-col items-center justify-center font-mono text-cyan-400 gap-3 z-50">
-          <div className="w-8 h-8 border-2 border-cyan-400/40 border-t-cyan-400 rounded-full animate-spin" />
+        <div className="fixed inset-0 bg-[#02040a] flex flex-col items-center justify-center font-mono text-amber-400 gap-3 z-50 select-none">
+          <div className="relative flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full border border-amber-500/20 animate-ping absolute" />
+            <div className="w-9 h-9 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+          </div>
+          <span className="text-[11px] font-mono tracking-[0.2em] uppercase text-amber-300/80 mt-1">
+            ENTERING THE ARENA...
+          </span>
         </div>
       }
     >

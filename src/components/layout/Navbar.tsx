@@ -115,6 +115,12 @@ export function Navbar() {
   };
 
   useEffect(() => {
+    try {
+      router.prefetch('/arena');
+    } catch {}
+  }, [router]);
+
+  useEffect(() => {
     const handleExam = (e: any) => {
       setIsExamMode(Boolean(e.detail?.active));
     };

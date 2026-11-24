@@ -309,10 +309,23 @@ export function MiniArcadeLaptop({ onLaunchBattle, className = '', isLive = true
     } catch {}
   };
 
+  const handleTouchStart = () => {
+    try {
+      router.prefetch('/arena');
+    } catch {}
+  };
+
+  useEffect(() => {
+    try {
+      router.prefetch('/arena');
+    } catch {}
+  }, [router]);
+
   return (
     <div
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
+      onTouchStart={handleTouchStart}
       onMouseLeave={() => setIsHovered(false)}
       className={`relative group cursor-pointer select-none shrink-0 transition-all duration-200 hover:scale-110 active:scale-90 flex items-center ${
         isLaunching ? 'scale-95 opacity-80' : ''

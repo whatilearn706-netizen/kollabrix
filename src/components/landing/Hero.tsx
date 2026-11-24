@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, useScroll, useTransform } from 'motion/react';
 import {
   Play,
@@ -169,9 +170,26 @@ const renderCodeTokens = (line: string, lang: 'py' | 'cpp') => {
 };
 
 export function LandingHero() {
+  const router = useRouter();
   const { user } = useAuth();
   const prevUserRef = useRef(user);
   const [triggerLightPowerOn, setTriggerLightPowerOn] = useState(false);
+
+  // Eagerly prefetch the Battle Arena route and preload its visual background for instant navigation
+  useEffect(() => {
+    try {
+      router.prefetch('/arena');
+      router.prefetch('/arena?action=create');
+
+      // Preload the arena's high-res background image so the transition is instant with zero asset flash
+      if (typeof window !== 'undefined') {
+        const bgImg = new window.Image();
+        bgImg.src = '/images/arena-fluted-amber-background.webp';
+        const colosseumImg = new window.Image();
+        colosseumImg.src = '/images/arena-proving-grounds-colosseum.jpg';
+      }
+    } catch {}
+  }, [router]);
 
   useEffect(() => {
     // When user authenticates (login), fire the dramatic studio lights power-on reveal
@@ -371,7 +389,10 @@ export function LandingHero() {
         >
           <Link
             href="/arena"
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-[#0e1017]/90 hover:bg-[#151926] text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer backdrop-blur-md"
+            prefetch={true}
+            onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
+            onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-amber-500/35 bg-[#0e1017]/90 hover:bg-[#151926] text-amber-400 text-xs sm:text-sm font-mono tracking-tight shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all cursor-pointer backdrop-blur-md active:scale-95"
           >
             <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
             <span className="font-semibold text-slate-200">1v1 Proctored Code Combat</span>
@@ -404,7 +425,10 @@ export function LandingHero() {
           {/* Primary Button */}
           <Link
             href="/arena"
-            className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-sm sm:text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] shadow-[0_0_30px_rgba(255,255,255,0.45)] cursor-pointer"
+            prefetch={true}
+            onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
+            onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
+            className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-sm sm:text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.96] shadow-[0_0_30px_rgba(255,255,255,0.45)] cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
             <span>Start Battle →</span>
@@ -413,7 +437,10 @@ export function LandingHero() {
           {/* Secondary Button */}
           <Link
             href="/arena?action=create"
-            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-white text-sm sm:text-base font-semibold backdrop-blur-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+            prefetch={true}
+            onMouseEnter={() => { try { router.prefetch('/arena?action=create'); } catch {} }}
+            onTouchStart={() => { try { router.prefetch('/arena?action=create'); } catch {} }}
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-white/20 bg-white/[0.08] hover:bg-white/[0.16] text-white text-sm sm:text-base font-semibold backdrop-blur-md transition-all duration-200 hover:scale-[1.03] active:scale-[0.96] cursor-pointer shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
           >
             <Users className="w-4 h-4 text-slate-300" />
             <span>Challenge a Friend</span>
@@ -446,13 +473,15 @@ export function LandingHero() {
           {/* Interactive 3D Cursor Tilt Container */}
           <Link
             href="/arena"
-            prefetch={false}
+            prefetch={true}
+            onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
+            onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
             title="Click to enter 1v1 Battle Arena"
             style={{
               transform: `perspective(1400px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
               transformStyle: 'preserve-3d',
             }}
-            className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer"
+            className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer active:scale-[0.99]"
           >
             {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
             <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left z-10">
