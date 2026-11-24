@@ -491,7 +491,7 @@ export function LandingHero() {
             <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left z-10 pointer-events-none">
                   
                   {/* Top HUD: Brand & Live Match Clock */}
-                  <div className="h-7 sm:h-9 bg-[#0b0e17] px-2.5 sm:px-3.5 flex items-center justify-between border-b border-neutral-800 text-[10px] sm:text-xs font-mono select-none z-10">
+                  <div className="relative h-7 sm:h-9 bg-[#0b0e17] px-2.5 sm:px-3.5 flex items-center justify-between border-b border-neutral-800 text-[10px] sm:text-xs font-mono select-none z-10">
                     <div className="flex items-center gap-1.5 text-slate-300 font-bold">
                       <span className="text-amber-400 font-black">▲</span>
                       <span>KOLLABRIX</span>
@@ -501,14 +501,9 @@ export function LandingHero() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black border border-neutral-800 text-cyan-300 text-[10px] sm:text-xs font-bold shadow-[0_0_10px_rgba(6,182,212,0.3)]">
-                      <Clock className="w-3 h-3 text-cyan-400 animate-pulse" />
+                    <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-950/60 border border-red-500/40 text-red-400 text-[10px] sm:text-xs font-bold shadow-[0_0_10px_rgba(239,68,68,0.3)]">
+                      <Clock className="w-3 h-3 text-red-400 animate-pulse" />
                       <span>{formatTimer(timerSeconds)}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-emerald-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="hidden sm:inline">LIVE</span>
                     </div>
                   </div>
 
