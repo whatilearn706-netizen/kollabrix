@@ -293,15 +293,16 @@ export function LandingHero() {
     target: heroRef,
     offset: ['start start', 'end start'],
   });
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
-  const contentY = useTransform(scrollYProgress, [0, 0.6], [0, -30]);
+  // Do NOT fade out while in the hero viewport; only gently dim when exiting at the very bottom
+  const contentOpacity = useTransform(scrollYProgress, [0.85, 1], [1, 0.4]);
+  const contentY = useTransform(scrollYProgress, [0, 1], [0, -20]);
 
   return (
     <section
       ref={heroRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-24 sm:pt-28 pb-12 sm:pb-16 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
+      className="relative min-h-[92vh] lg:min-h-screen flex flex-col justify-center pt-20 sm:pt-24 pb-8 sm:pb-12 px-4 sm:px-8 lg:px-14 overflow-hidden bg-black text-white select-none"
     >
       {/* =========================================================================
           MOTION VIDEO HERO BACKGROUND (Pinterest Reference Style: https://pin.it/299AB5ISY)
@@ -372,7 +373,7 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.1 }}
-          className="text-3xl sm:text-5xl md:text-6xl lg:text-[3.5rem] xl:text-[4.2rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2"
+          className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.8rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2"
         >
           <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
             Where Reputations Are Proven{' '}
@@ -387,7 +388,7 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
+          className="mt-3 sm:mt-4 text-xs sm:text-sm md:text-base text-slate-300 leading-relaxed font-normal max-w-2xl mx-auto drop-shadow-[0_2px_10px_rgba(0,0,0,0.85)]"
         >
           No resume fluff. No fake GitHub stars. Real-time 1v1 code combat under fog-of-war proctoring. Step into the arena and defend your campus.
         </motion.p>
@@ -397,7 +398,7 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="mt-6 sm:mt-7 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
+          className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
         >
           {/* Primary Button */}
           <Link
@@ -423,7 +424,7 @@ export function LandingHero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-400"
+          className="mt-4 flex flex-wrap items-center justify-center gap-4 text-xs font-mono text-slate-400"
         >
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -441,16 +442,29 @@ export function LandingHero() {
           </div>
         </motion.div>
 
-        {/* ================= CENTERED PHOTOREALISTIC AWWWARDS MACBOOK ================= */}
+        {/* ================= CENTERED PHOTOREALISTIC AWWWARDS MACBOOK (ELEVATED 3D STAGE) ================= */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.25 }}
-          className="w-full max-w-[1020px] xl:max-w-[1140px] mt-8 sm:mt-11 transition-transform duration-300 ease-out mx-auto"
+          className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-6 sm:mt-8 transition-transform duration-300 ease-out mx-auto"
           style={{
             perspective: '1400px',
           }}
         >
+          {/* ================= 3D STAGE ELEVATION & BACKLIGHTING ================= */}
+          {/* A. Dark Ambient Stage Shield: Blocks background video dots from washing out or blending with the laptop */}
+          <div className="absolute -inset-6 sm:-inset-10 bg-radial-gradient from-black/95 via-black/75 to-transparent rounded-[48px] blur-2xl pointer-events-none -z-10" />
+
+          {/* B. Dual Luminous Rim Backlight: Illuminates the MacBook lid from behind in cyan & amber */}
+          <div className="absolute -top-10 sm:-top-16 left-1/2 -translate-x-1/2 w-[78%] h-36 bg-gradient-to-b from-cyan-500/25 via-indigo-600/10 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
+          <div className="absolute -top-4 sm:-top-8 left-1/2 -translate-x-1/2 w-[55%] h-24 bg-gradient-to-b from-amber-400/20 via-orange-500/5 to-transparent rounded-full blur-2xl pointer-events-none -z-10" />
+
+          {/* C. Physical Ground Contact Shadow & Stage Elevation: Creates real physical separation from the background */}
+          <div className="absolute -bottom-8 sm:-bottom-12 left-1/2 -translate-x-1/2 w-[92%] h-14 bg-black/95 rounded-[100%] blur-2xl pointer-events-none -z-10" />
+          <div className="absolute -bottom-3 sm:-bottom-5 left-1/2 -translate-x-1/2 w-[75%] h-6 bg-black/90 rounded-[100%] blur-md pointer-events-none -z-10" />
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-[55%] h-3 bg-cyan-400/20 rounded-full blur-sm pointer-events-none -z-10" />
+
           {/* Interactive 3D Cursor Tilt Container */}
           <Link
             href="/arena"
@@ -462,6 +476,13 @@ export function LandingHero() {
             }}
             className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer"
           >
+            {/* SOLID CHASSIS & KEYBOARD BASE BACKING: 100% blocks video background dots through keyboard/body */}
+            <div
+              className="absolute left-[3.2%] top-[14.7%] w-[93.7%] h-[71%] bg-[#080a11] pointer-events-none z-10"
+              style={{
+                clipPath: 'polygon(7.5% 0%, 92.5% 0%, 92.5% 77%, 100% 90%, 98.5% 100%, 1.5% 100%, 0% 90%, 7.5% 77%)',
+              }}
+            />
             {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
             <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left">
                   
