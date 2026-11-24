@@ -43,8 +43,6 @@ import {
 } from '@/components/profile/MandatoryOnboardingModal';
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
-import { MiniArcadeLaptop } from '@/components/arena/MiniArcadeLaptop';
-import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
 import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 
 export function Navbar() {
@@ -59,60 +57,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isVoxelTransitionActive, setIsVoxelTransitionActive] = useState(false);
-  const [isArenaLive, setIsArenaLive] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
-  const arenaCacheRef = useRef<{ isLive: boolean; time: number } | null>(null);
-
-  const checkArenaStatus = useCallback((force = false) => {
-    const now = Date.now();
-    if (!force && arenaCacheRef.current && now - arenaCacheRef.current.time < 60000) {
-      setIsArenaLive(arenaCacheRef.current.isLive);
-      return;
-    }
-    fetch('/api/arena/status')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && typeof data.isLive === 'boolean') {
-          arenaCacheRef.current = { isLive: data.isLive, time: Date.now() };
-          setIsArenaLive(data.isLive);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    checkArenaStatus();
-
-    const handleStatusEvent = (e: any) => {
-      if (e?.detail && typeof e.detail.isLive === 'boolean') {
-        setIsArenaLive(e.detail.isLive);
-      } else {
-        checkArenaStatus(true);
-      }
-    };
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'kollabrix_arena_is_live' && e.newValue !== null) {
-        setIsArenaLive(e.newValue === 'true');
-      }
-    };
-
-    window.addEventListener('kollabrix:arena_status_changed', handleStatusEvent);
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener('focus', () => checkArenaStatus());
-
-    return () => {
-      window.removeEventListener('kollabrix:arena_status_changed', handleStatusEvent);
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('focus', () => checkArenaStatus());
-    };
-  }, [checkArenaStatus]);
-
-  const handleLaunchArena = () => {
-    router.push('/arena');
-  };
 
   useEffect(() => {
     try {
@@ -299,14 +244,6 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Real-time Fighting Game Laptop Trigger (Visible when LIVE in Admin Control Center or for platform admins) */}
-          {(isAdmin || isArenaLive) && (
-            <MiniArcadeLaptop
-              onLaunchBattle={handleLaunchArena}
-              className="shrink-0"
-            />
-          )}
-
           {/* Clean Resources Link (Opens in new tab) */}
           <Link
             href="/resources"
@@ -532,9 +469,6 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          {(isAdmin || isArenaLive) && (
-            <MiniArcadeLaptop onLaunchBattle={handleLaunchArena} className="shrink-0" />
-          )}
           {mounted && user && <NotificationBell />}
 
           <button

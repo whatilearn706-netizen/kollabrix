@@ -219,6 +219,33 @@ export function LandingHero() {
     setTilt({ x: 0, y: -2 });
   };
 
+  const isNavigatingRef = useRef(false);
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const navigateToArena = (e?: React.SyntheticEvent | MouseEvent) => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+    if (e && 'preventDefault' in e) {
+      e.preventDefault();
+    }
+    router.push('/arena');
+  };
+
+  const handleLaptopPointerDown = (e: React.PointerEvent) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleLaptopPointerUp = (e: React.PointerEvent) => {
+    if (!pointerStartRef.current) return;
+    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+    pointerStartRef.current = null;
+    if (dx < 12 && dy < 12) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      navigateToArena(e);
+    }
+  };
+
   const [timerSeconds, setTimerSeconds] = useState(172); // 02:52 match clock
   const [roundCount, setRoundCount] = useState(0);
   const [roundPhase, setRoundPhase] = useState<'duel' | 'win'>('duel');
@@ -474,6 +501,12 @@ export function LandingHero() {
           <Link
             href="/arena"
             prefetch={true}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              navigateToArena(e);
+            }}
+            onPointerDown={handleLaptopPointerDown}
+            onPointerUp={handleLaptopPointerUp}
             onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
             onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
             title="Click to enter 1v1 Battle Arena"
@@ -483,8 +516,14 @@ export function LandingHero() {
             }}
             className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer active:scale-[0.99]"
           >
+            {/* Full-coverage transparent click overlay ensuring 100% of the laptop surface reliably responds to clicks and taps */}
+            <div
+              className="absolute inset-0 z-40 cursor-pointer pointer-events-auto"
+              aria-label="Enter Battle Arena"
+            />
+
             {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
-            <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left z-10">
+            <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left z-10 pointer-events-none">
                   
                   {/* Top HUD: Brand & Live Match Clock */}
                   <div className="h-7 sm:h-9 bg-[#0b0e17] px-2.5 sm:px-3.5 flex items-center justify-between border-b border-neutral-800 text-[10px] sm:text-xs font-mono select-none z-10">
@@ -691,6 +730,14 @@ export function LandingHero() {
 
                 {/* 3. VOLUMETRIC SOFT SMOKE / MIST DRIFTING ACROSS BASE */}
                 <div className="absolute bottom-[8%] left-1/2 -translate-x-1/2 w-[85%] h-16 bg-gradient-to-t from-white/[0.04] via-slate-400/[0.02] to-transparent rounded-full blur-xl pointer-events-none z-30" />
+
+                {/* 4. FLOATING HOVER CALLOUT (Appears when hovering anywhere on the laptop) */}
+                <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:-translate-y-1">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/90 border border-amber-400/50 text-amber-300 text-xs font-mono font-semibold shadow-[0_0_20px_rgba(245,158,11,0.45)] backdrop-blur-md">
+                    <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 animate-pulse" />
+                    <span>Click to enter 1v1 Battle Arena →</span>
+                  </span>
+                </div>
               </Link>
             </motion.div>
       </motion.div>
