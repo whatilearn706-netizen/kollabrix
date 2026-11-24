@@ -38,6 +38,7 @@ export interface HomepageSectionToggles {
   colleges?: boolean;
   badges?: boolean;
   campusPulse?: boolean;
+  hackathonBadges?: boolean;
   pulseLeaderboard?: boolean;
   pulseAiMatchmaker?: boolean;
   pulseLivePresence?: boolean;
@@ -313,11 +314,13 @@ export interface MasterControlConfig {
   visualTemplates?: VisualTemplatesConfig;
   featuredDeckCards?: FeaturedDeckCardConfig[];
   featuredHackathonBadges?: FeaturedHackathonBadgeConfig[];
+  featuredHackathonBadgesEnabled?: boolean;
 }
 
 export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
   featuredDeckCards: DEFAULT_FEATURED_DECK_CARDS,
   featuredHackathonBadges: DEFAULT_FEATURED_HACKATHON_BADGES,
+  featuredHackathonBadgesEnabled: false,
   visualTemplates: DEFAULT_VISUAL_TEMPLATES_CONFIG,
   workspaceFeatures: {
     aiCloserKit: false,
@@ -352,6 +355,7 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
     ctaBanner: true,
     colleges: true,
     badges: true,
+    hackathonBadges: false,
     campusPulse: false,
     pulseLeaderboard: true,
     pulseAiMatchmaker: true,

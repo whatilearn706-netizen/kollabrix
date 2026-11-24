@@ -89,28 +89,76 @@ export function HangingHackathonPasses() {
     DEFAULT_FEATURED_HACKATHON_BADGES
   );
   const [hoveredBadgeId, setHoveredBadgeId] = useState<string | null>(null);
+  const [isLive, setIsLive] = useState<boolean>(false);
 
   // Sync dynamic badge config from Master Control API
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Try local cache for instant determination
+    try {
+      const cached = localStorage.getItem('linkora_master_control_v1');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const live =
+          parsed?.featuredHackathonBadgesEnabled === true ||
+          parsed?.sections?.hackathonBadges === true;
+        setIsLive(Boolean(live));
+        if (
+          Array.isArray(parsed?.featuredHackathonBadges) &&
+          parsed.featuredHackathonBadges.length > 0
+        ) {
+          setBadges(parsed.featuredHackathonBadges);
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fetch fresh from public API
     fetch('/api/master-control', { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        if (
-          isMounted &&
-          data?.config?.featuredHackathonBadges &&
-          Array.isArray(data.config.featuredHackathonBadges) &&
-          data.config.featuredHackathonBadges.length > 0
-        ) {
-          setBadges(data.config.featuredHackathonBadges);
+        if (isMounted && data?.config) {
+          const live =
+            data.config.featuredHackathonBadgesEnabled === true ||
+            data.config.sections?.hackathonBadges === true;
+          setIsLive(Boolean(live));
+          if (
+            Array.isArray(data.config.featuredHackathonBadges) &&
+            data.config.featuredHackathonBadges.length > 0
+          ) {
+            setBadges(data.config.featuredHackathonBadges);
+          }
         }
       })
       .catch(() => {});
 
+    // Listen for custom broadcast update event
+    const handleUpdate = () => {
+      try {
+        const cached = localStorage.getItem('linkora_master_control_v1');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setIsLive(
+            Boolean(
+              parsed?.featuredHackathonBadgesEnabled === true ||
+              parsed?.sections?.hackathonBadges === true
+            )
+          );
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('linkora_master_control_updated', handleUpdate);
     return () => {
       isMounted = false;
+      window.removeEventListener('linkora_master_control_updated', handleUpdate);
     };
   }, []);
+
+  // If Not Live, do not render on the public landing page!
+  if (!isLive) {
+    return null;
+  }
 
   return (
     <section className="relative py-16 sm:py-24 bg-[#07090e] border-t border-white/[0.06] overflow-hidden select-none">

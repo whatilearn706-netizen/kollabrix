@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
             visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(row.value.visualTemplates || {}) },
             featuredDeckCards: Array.isArray(row.value.featuredDeckCards) ? row.value.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
             featuredHackathonBadges: Array.isArray(row.value.featuredHackathonBadges) ? row.value.featuredHackathonBadges : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || []),
+            featuredHackathonBadgesEnabled: row.value.featuredHackathonBadgesEnabled ?? (row.value.sections?.hackathonBadges ?? false),
           };
         }
 
@@ -219,6 +220,7 @@ export async function POST(request: NextRequest) {
       visualTemplates: { ...DEFAULT_MASTER_CONTROL_CONFIG.visualTemplates!, ...(incoming.visualTemplates || {}) },
       featuredDeckCards: Array.isArray(incoming.featuredDeckCards) ? incoming.featuredDeckCards : (DEFAULT_MASTER_CONTROL_CONFIG.featuredDeckCards || []),
       featuredHackathonBadges: Array.isArray(incoming.featuredHackathonBadges) ? incoming.featuredHackathonBadges : (DEFAULT_MASTER_CONTROL_CONFIG.featuredHackathonBadges || []),
+      featuredHackathonBadgesEnabled: incoming.featuredHackathonBadgesEnabled ?? (incoming.sections?.hackathonBadges ?? false),
     };
 
     let savedToDb = false;

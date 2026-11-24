@@ -1139,6 +1139,67 @@ ${config.colleges.map((c) => `- **${c.name}** (\`@${c.domain}\`) — ${c.city ||
             </div>
           </div>
 
+          {/* Live Visibility Status Switch Card */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-950 border border-charcoal-750 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-inner">
+            <div className="flex items-center gap-3.5">
+              <span className={`w-4 h-4 rounded-full shrink-0 ${
+                Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges)
+                  ? 'bg-emerald-400 shadow-[0_0_12px_#34d399] animate-pulse'
+                  : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
+              }`} />
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300">
+                    HOMEPAGE SECTION STATUS:
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-black uppercase tracking-wider ${
+                    Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges)
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                  }`}>
+                    {Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges)
+                      ? '🟢 LIVE ON HOMEPAGE'
+                      : '🔴 NOT LIVE (HIDDEN / DRAFT MODE)'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  {Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges)
+                    ? 'The 3D hanging lanyard passes are currently LIVE and visible to all students on kollabrix.in.'
+                    : 'The section is currently NOT LIVE and hidden from students so you can configure each pass in private.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const current = Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges);
+                  const nextVal = !current;
+                  const updated = {
+                    ...config,
+                    featuredHackathonBadgesEnabled: nextVal,
+                    sections: {
+                      ...config.sections,
+                      hackathonBadges: nextVal,
+                    },
+                  };
+                  setConfig(updated);
+                  handleSave(updated);
+                }}
+                className={`px-5 py-2.5 rounded-xl text-xs font-mono font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 select-none shadow-md ${
+                  Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges)
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white active:scale-95'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                }`}
+              >
+                {Boolean(config.featuredHackathonBadgesEnabled || config.sections?.hackathonBadges)
+                  ? 'Switch to NOT LIVE (Hide)'
+                  : 'Switch to LIVE (Publish)'}
+              </button>
+            </div>
+          </div>
+
           {/* 5-Badge Slot Selector */}
           <div>
             <label className="block text-xs font-mono font-semibold text-slate-300 uppercase tracking-wider mb-2.5">
