@@ -252,20 +252,13 @@ export function LoginForm({
   const isAnyLoading = isGoogleLoading || isGitHubLoading || isEmailLoading;
 
   return (
-    <div className="w-full space-y-5 text-white select-none">
-      {/* Optional In-Card Header (Stratis UI style) */}
+    <div className="w-full space-y-6 text-white select-none">
+      {/* Clean In-Card Header */}
       {!hideHeader && (
-        <div className="text-left space-y-1.5 pb-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-white/[0.06] text-slate-300 border border-white/10 mb-1">
-            <Lock className="w-3 h-3 text-amber-400" />
-            <span>Collegiate Sign In</span>
-          </div>
+        <div className="text-left pb-1">
           <h2 className="text-2xl font-black text-white tracking-tight font-heading">
             Welcome back
           </h2>
-          <p className="text-xs text-slate-400 font-normal leading-relaxed">
-            Enter your collegiate account to explore live squads, hackathons, and verify proof-of-work.
-          </p>
         </div>
       )}
 
@@ -284,25 +277,33 @@ export function LoginForm({
         </div>
       )}
 
-      {/* 1-Click Fast OAuth Actions (Google + GitHub - Stratis UI Dark Mode) */}
-      <div className="space-y-2.5">
+      {/* 1-Click Fast OAuth Actions (Google + GitHub with comfortable non-congested spacing) */}
+      <div className="space-y-4 pt-1">
         {/* Google 1-Click */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
           disabled={isAnyLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
         >
           <GoogleIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 group-hover:scale-105 transition-transform" />
           <span>{isGoogleLoading ? 'Connecting to Google...' : 'Continue with Google'}</span>
         </button>
+
+        {/* Elegant 'or' Divider between OAuth providers */}
+        <div className="relative flex items-center justify-center py-0.5">
+          <div className="w-full border-t border-white/[0.08]" />
+          <span className="absolute bg-[#0c1017] px-3.5 text-[11px] font-mono uppercase text-slate-500 tracking-wider">
+            or
+          </span>
+        </div>
 
         {/* GitHub 1-Click */}
         <button
           type="button"
           onClick={handleGitHubSignIn}
           disabled={isAnyLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
         >
           <GitHubIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-slate-200 group-hover:scale-105 transition-transform" />
           <span>{isGitHubLoading ? 'Connecting to GitHub...' : 'Continue with GitHub'}</span>

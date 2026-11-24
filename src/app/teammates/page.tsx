@@ -908,7 +908,7 @@ export default function TeammatesPage() {
             size="sm"
             onClick={loadData}
             leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />}
-            className="border-slate-200 text-slate-700 hover:text-slate-900 font-bold"
+            className="border-white/10 bg-white/[0.04] text-slate-300 hover:text-white hover:bg-white/[0.08] font-bold"
           >
             Refresh Candidates
           </Button>
@@ -916,7 +916,7 @@ export default function TeammatesPage() {
             <Link href="/projects/new">
               <button
                 type="button"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 hover:from-white hover:to-white shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-400/40 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 <FolderPlus className="w-4 h-4 text-slate-950 stroke-[2.5]" />
                 <span className="text-slate-950 font-black">Start New Project</span>

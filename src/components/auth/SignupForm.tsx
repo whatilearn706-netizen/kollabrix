@@ -7,11 +7,7 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import {
   AlertCircle,
   CheckCircle2,
-  Mail,
-  ArrowRight,
   ShieldCheck,
-  Sparkles,
-  UserPlus,
 } from 'lucide-react';
 
 export interface SignupFormProps {
@@ -67,8 +63,6 @@ export function SignupForm({
   // General States
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
-  const [isEmailLoading, setIsEmailLoading] = useState(false);
-  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -176,65 +170,16 @@ export function SignupForm({
     }
   };
 
-  // 3. Email Magic Link
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid student or developer email address.');
-      return;
-    }
-
-    setError(null);
-    setSuccessMessage(null);
-
-    if (!isSupabaseConfigured()) {
-      setError('Supabase credentials are not configured yet.');
-      return;
-    }
-
-    const canonicalOrigin =
-      typeof window !== 'undefined'
-        ? window.location.origin
-        : 'https://kollabrix.in';
-
-    try {
-      setIsEmailLoading(true);
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: {
-          emailRedirectTo: `${canonicalOrigin}/auth/callback?next=${redirectUrl}`,
-        },
-      });
-
-      if (otpError) {
-        setError(otpError.message);
-      } else {
-        setSuccessMessage('Magic sign-up link sent! Check your inbox to finish registration.');
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to send magic link.');
-    } finally {
-      setIsEmailLoading(false);
-    }
-  };
-
-  const isAnyLoading = isGoogleLoading || isGitHubLoading || isEmailLoading;
+  const isAnyLoading = isGoogleLoading || isGitHubLoading;
 
   return (
-    <div className="w-full space-y-5 text-white select-none">
-      {/* Optional In-Card Header */}
+    <div className="w-full space-y-6 text-white select-none">
+      {/* Clean In-Card Header */}
       {!hideHeader && (
-        <div className="text-left space-y-1.5 pb-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-white/[0.06] text-slate-300 border border-white/10 mb-1">
-            <UserPlus className="w-3 h-3 text-cyan-400" />
-            <span>New Builder Account</span>
-          </div>
+        <div className="text-left pb-1">
           <h2 className="text-2xl font-black text-white tracking-tight font-heading">
-            Join Kollabrix
+            Create an account
           </h2>
-          <p className="text-xs text-slate-400 font-normal leading-relaxed">
-            Create your collegiate account to find hackathon dream teams and showcase verified projects.
-          </p>
         </div>
       )}
 
@@ -253,63 +198,39 @@ export function SignupForm({
         </div>
       )}
 
-      {/* 1-Click Fast OAuth Actions */}
-      <div className="space-y-2.5">
+      {/* 1-Click Fast OAuth Actions with distinct 'or' divider and non-congested spacing */}
+      <div className="space-y-4 pt-1">
         <button
           type="button"
           onClick={handleGoogleSignUp}
           disabled={isAnyLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
         >
           <GoogleIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 group-hover:scale-105 transition-transform" />
           <span>{isGoogleLoading ? 'Connecting to Google...' : 'Sign up with Google'}</span>
         </button>
 
+        {/* Distinct 'or' divider with comfortable breathing room */}
+        <div className="relative flex items-center justify-center py-1">
+          <div className="w-full border-t border-white/[0.08]" />
+          <span className="absolute bg-[#0c1017] px-3.5 text-[11px] font-mono uppercase text-slate-500 tracking-wider">
+            or
+          </span>
+        </div>
+
         <button
           type="button"
           onClick={handleGitHubSignUp}
           disabled={isAnyLoading}
-          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
+          className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl bg-[#121722] hover:bg-[#1a2130] border border-white/10 hover:border-white/20 text-white font-semibold text-xs sm:text-sm shadow-sm transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer group"
         >
           <GitHubIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-slate-200 group-hover:scale-105 transition-transform" />
           <span>{isGitHubLoading ? 'Connecting to GitHub...' : 'Sign up with GitHub'}</span>
         </button>
       </div>
 
-      {/* Divider */}
-      <div className="relative flex items-center justify-center">
-        <div className="w-full border-t border-white/[0.08]" />
-        <span className="absolute bg-[#0c1017] px-3 text-[11px] font-mono uppercase text-slate-500 tracking-wider">
-          or email
-        </span>
-      </div>
-
-      {/* Email Form */}
-      <form onSubmit={handleEmailSignUp} className="space-y-2.5">
-        <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@college.edu or personal email"
-            disabled={isAnyLoading}
-            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-[#080b11] border border-white/10 focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30 text-white placeholder-slate-500 text-xs sm:text-sm transition-all outline-none"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isAnyLoading || !email}
-          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          <span>{isEmailLoading ? 'Creating Account...' : 'Continue with Email'}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </form>
-
       {/* Footer Navigation */}
-      <div className="pt-2 border-t border-white/[0.06] flex flex-col items-center gap-3 text-center">
+      <div className="pt-3 border-t border-white/[0.06] flex flex-col items-center gap-3 text-center">
         <div className="text-xs text-slate-400">
           Already have an account?{' '}
           {onSwitchToLogin ? (
