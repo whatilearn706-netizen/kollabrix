@@ -3912,6 +3912,10 @@ export function FullArenaExperience({
                     {!isCreateUnlocked && (
                       <div
                         onClick={() => {
+                          if (usernameCheckStatus === 'taken') {
+                            playCheatWarningSiren?.();
+                            return;
+                          }
                           playBattleSlamSound();
                           setIsCreateUnlocked(true);
                           setIsHost(true);
@@ -3924,16 +3928,9 @@ export function FullArenaExperience({
                         <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center mb-3 shadow-[0_0_25px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
                           <Lock className="w-7 h-7 text-amber-400" />
                         </div>
-                        <h4 className="font-mono font-bold text-white text-base tracking-wider uppercase">
-                          Arena &amp; Topics Locked
-                        </h4>
-                        <p className="text-xs text-slate-300 max-w-sm mt-2 leading-relaxed font-sans">
+                        <p className="text-xs text-slate-300 max-w-sm mt-1 leading-relaxed font-sans">
                           Click <span className="text-amber-400 font-bold font-mono underline">CREATE TOURNAMENT</span> on the left to configure arena, languages &amp; battle parameters.
                         </p>
-                        <span className="mt-4 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/25 text-amber-300 border border-amber-500/40 font-mono text-xs font-bold group-hover:bg-amber-500/35 transition-colors shadow-sm">
-                          <span>Click to Unlock</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
                       </div>
                     )}
 
