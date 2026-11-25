@@ -138,9 +138,9 @@ export function Navbar() {
       icon: Users,
     },
     {
-      href: '/my-projects',
-      label: 'Workspace',
-      icon: Briefcase,
+      href: '/hackathons',
+      label: 'Hackathons',
+      icon: Trophy,
     },
   ];
 
@@ -176,64 +176,70 @@ export function Navbar() {
           />
         </Link>
 
-        {/* Desktop Primary Navigation */}
-        <nav className="hidden md:flex items-center gap-1.5" aria-label="Main Navigation">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
-            const isActive = pathname.startsWith(link.href);
+        {/* Desktop Primary Navigation: Liquid-Glass Segmented Capsule (Pin Reference) */}
+        <div
+          className={clsx(
+            'hidden md:inline-flex p-[1px] rounded-full transition-all',
+            isNavbarDark
+              ? 'bg-gradient-to-b from-white/25 via-zinc-500/20 to-white/40 shadow-[0_12px_28px_-6px_rgba(0,0,0,0.85)]'
+              : 'bg-gradient-to-b from-stone-300/80 to-stone-400/70 shadow-sm'
+          )}
+        >
+          <nav
+            className={clsx(
+              'grid grid-cols-3 items-center p-1 rounded-full backdrop-blur-xl',
+              isNavbarDark
+                ? 'bg-[#090b10]/85 shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),inset_0_-1px_2px_rgba(255,255,255,0.25),inset_0_0_12px_rgba(0,0,0,0.5)]'
+                : 'bg-white/80 shadow-inner'
+            )}
+            aria-label="Main Navigation"
+          >
+            {navLinks.map((link) => {
+              const Icon = link.icon;
+              const isActive = pathname.startsWith(link.href);
 
-            const handleWarmup = () => {
-              if (link.href === '/explore') prefetchExploreData();
-              else if (link.href === '/teammates') prefetchTeammatesData();
-              else if (link.href === '/hackathons') prefetchHackathonsData();
-            };
+              const handleWarmup = () => {
+                if (link.href === '/explore') prefetchExploreData();
+                else if (link.href === '/teammates') prefetchTeammatesData();
+                else if (link.href === '/hackathons') prefetchHackathonsData();
+              };
 
-            const handleClick = (e: React.MouseEvent) => {
-              if (link.href === '/my-projects' && !user) {
-                e.preventDefault();
-                openAuthModal('login');
-              }
-            };
-
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                prefetch={false}
-                onClick={handleClick}
-                onMouseEnter={handleWarmup}
-                onTouchStart={handleWarmup}
-                className={clsx(
-                  'px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all duration-150 inline-flex items-center gap-2 border select-none active:scale-[0.96]',
-                  isActive
-                    ? isNavbarDark
-                      ? 'bg-white/12 text-white border-white/25 shadow-xs shadow-white/10'
-                      : 'bg-stone-200/70 text-stone-900 border-stone-300/90 shadow-xs'
-                    : isNavbarDark
-                    ? 'text-stone-300 border-transparent hover:text-white hover:bg-white/8 hover:border-white/10'
-                    : 'text-stone-600 border-transparent hover:text-stone-900 hover:bg-stone-100 hover:border-stone-200/60'
-                )}
-              >
-                <Icon
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  prefetch={false}
+                  onMouseEnter={handleWarmup}
+                  onTouchStart={handleWarmup}
                   className={clsx(
-                    'w-3.5 h-3.5 transition-colors',
+                    'px-4 sm:px-5 py-1.5 rounded-full text-xs font-medium tracking-[-0.01em] transition-all duration-200 inline-flex items-center justify-center gap-1.5 select-none active:scale-[0.97]',
                     isActive
                       ? isNavbarDark
-                        ? 'text-white'
-                        : 'text-slate-800'
+                        ? 'bg-gradient-to-b from-zinc-800/90 via-zinc-900/95 to-black/95 text-zinc-50 ring-1 ring-white/20 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.12),0_2px_8px_rgba(0,0,0,0.65)]'
+                        : 'bg-white text-stone-900 ring-1 ring-stone-200 shadow-sm font-semibold'
                       : isNavbarDark
-                      ? 'text-stone-400'
-                      : 'text-stone-500'
+                      ? 'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]'
+                      : 'bg-transparent text-stone-600 hover:text-stone-900 hover:bg-stone-100/60'
                   )}
-                />
-                <span>{link.label}</span>
-                {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] animate-pulse shrink-0" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
+                >
+                  <Icon
+                    className={clsx(
+                      'w-3.5 h-3.5 transition-colors shrink-0',
+                      isActive
+                        ? isNavbarDark
+                          ? 'text-zinc-100'
+                          : 'text-slate-900'
+                        : isNavbarDark
+                        ? 'text-zinc-500'
+                        : 'text-stone-500'
+                    )}
+                  />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
