@@ -1,17 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Trophy,
   Lightbulb,
   Sparkles,
-  Command,
   Terminal,
-  Calendar,
-  FolderClosed,
   MessageSquare,
   Compass,
   Users,
@@ -22,523 +17,303 @@ import {
   GraduationCap,
   Clock,
   BookOpen,
-  ChevronDown,
-  ChevronUp,
+  LayoutGrid,
+  ArrowUpRight,
 } from 'lucide-react';
-
-interface DockItem {
-  id: string;
-  label: string;
-  sub: string;
-  href: string;
-  icon: React.ElementType;
-  tone: 'indigo' | 'amber' | 'cyan' | 'purple' | 'rose' | 'emerald' | 'sky';
-  openInNewTab?: boolean;
-}
-
-// Dock items faithfully mapped to the user's reference (Image 2)
-const DOCK_ITEMS: DockItem[] = [
-  {
-    id: 'war',
-    label: 'Campus War ⚔️',
-    sub: 'Inter-College Clash & Bounties',
-    href: '/war',
-    icon: Swords,
-    tone: 'indigo',
-  },
-  {
-    id: 'hackathons',
-    label: 'College Hackathons',
-    sub: 'Arena & Squad Matchmaking',
-    href: '/hackathons',
-    icon: Trophy,
-    tone: 'amber',
-  },
-  {
-    id: 'icpc',
-    label: 'Competitive Practice',
-    sub: 'Placement OAs & Speedrun',
-    href: '/icpc',
-    icon: Terminal,
-    tone: 'cyan',
-  },
-  {
-    id: 'problems',
-    label: 'Faculty Problems',
-    sub: 'Professor Engineering Briefs',
-    href: '/problems',
-    icon: Lightbulb,
-    tone: 'purple',
-  },
-  {
-    id: 'faculty',
-    label: 'Faculty Portal 🎓',
-    sub: 'Professor Verification & Dashboard',
-    href: '/teacher/dashboard',
-    icon: GraduationCap,
-    tone: 'emerald',
-  },
-  {
-    id: 'deadlines',
-    label: 'Deadlines Radar',
-    sub: 'Live Hackathon Countdowns',
-    href: '/deadlines',
-    icon: Calendar,
-    tone: 'rose',
-  },
-  {
-    id: 'resources',
-    label: 'Resources Hub',
-    sub: 'Curated Roadmaps & Toolkits',
-    href: '/resources',
-    icon: FolderClosed,
-    tone: 'emerald',
-    openInNewTab: true,
-  },
-  {
-    id: 'feedback',
-    label: 'Community Feedback',
-    sub: 'Direct Suggestions & Ideas',
-    href: '/feedback',
-    icon: MessageSquare,
-    tone: 'sky',
-  },
-];
-
-const TONE_STYLES: Record<string, {
-  bg: string;
-  border: string;
-  text: string;
-  activeRing: string;
-  glow: string;
-  indicator: string;
-}> = {
-  indigo: {
-    bg: 'bg-indigo-500/15 hover:bg-indigo-500/25',
-    border: 'border-indigo-500/40 hover:border-indigo-400',
-    text: 'text-indigo-400 group-hover:text-indigo-300',
-    activeRing: 'ring-2 ring-indigo-400/80',
-    glow: 'shadow-[0_0_14px_rgba(99,102,241,0.45)]',
-    indicator: 'bg-indigo-400 shadow-[0_0_6px_#818cf8]',
-  },
-  amber: {
-    bg: 'bg-amber-500/15 hover:bg-amber-500/25',
-    border: 'border-amber-500/40 hover:border-amber-400',
-    text: 'text-amber-400 group-hover:text-amber-300',
-    activeRing: 'ring-2 ring-amber-400/80',
-    glow: 'shadow-[0_0_14px_rgba(245,158,11,0.45)]',
-    indicator: 'bg-amber-400 shadow-[0_0_6px_#f59e0b]',
-  },
-  cyan: {
-    bg: 'bg-cyan-500/15 hover:bg-cyan-500/25',
-    border: 'border-cyan-500/40 hover:border-cyan-400',
-    text: 'text-cyan-400 group-hover:text-cyan-300',
-    activeRing: 'ring-2 ring-cyan-400/80',
-    glow: 'shadow-[0_0_14px_rgba(6,182,212,0.45)]',
-    indicator: 'bg-cyan-400 shadow-[0_0_6px_#06b6d4]',
-  },
-  purple: {
-    bg: 'bg-purple-500/15 hover:bg-purple-500/25',
-    border: 'border-purple-500/40 hover:border-purple-400',
-    text: 'text-purple-400 group-hover:text-purple-300',
-    activeRing: 'ring-2 ring-purple-400/80',
-    glow: 'shadow-[0_0_14px_rgba(168,85,247,0.45)]',
-    indicator: 'bg-purple-400 shadow-[0_0_6px_#a855f7]',
-  },
-  rose: {
-    bg: 'bg-rose-500/15 hover:bg-rose-500/25',
-    border: 'border-rose-500/40 hover:border-rose-400',
-    text: 'text-rose-400 group-hover:text-rose-300',
-    activeRing: 'ring-2 ring-rose-400/80',
-    glow: 'shadow-[0_0_14px_rgba(244,63,94,0.45)]',
-    indicator: 'bg-rose-400 shadow-[0_0_6px_#f43f5e]',
-  },
-  emerald: {
-    bg: 'bg-emerald-500/15 hover:bg-emerald-500/25',
-    border: 'border-emerald-500/40 hover:border-emerald-400',
-    text: 'text-emerald-400 group-hover:text-emerald-300',
-    activeRing: 'ring-2 ring-emerald-400/80',
-    glow: 'shadow-[0_0_14px_rgba(16,185,129,0.45)]',
-    indicator: 'bg-emerald-400 shadow-[0_0_6px_#10b981]',
-  },
-  sky: {
-    bg: 'bg-sky-500/15 hover:bg-sky-500/25',
-    border: 'border-sky-500/40 hover:border-sky-400',
-    text: 'text-sky-400 group-hover:text-sky-300',
-    activeRing: 'ring-2 ring-sky-400/80',
-    glow: 'shadow-[0_0_14px_rgba(14,165,233,0.45)]',
-    indicator: 'bg-sky-400 shadow-[0_0_6px_#0ea5e9]',
-  },
-};
 
 interface AppItem {
   id: string;
   name: string;
-  category: 'competitions' | 'academics' | 'tools' | 'community';
+  sub: string;
+  category: 'compete' | 'build' | 'academics';
   href: string;
   icon: React.ElementType;
-  gradient: string;
+  featured?: boolean;
+  live?: boolean;
   openInNewTab?: boolean;
 }
 
 const APPS_LIST: AppItem[] = [
   {
-    id: 'war',
-    name: 'Campus War',
-    category: 'competitions',
-    href: '/war',
-    icon: Swords,
-    gradient: 'from-amber-500 to-red-600',
-  },
-  {
     id: 'arena',
     name: 'Battle Arena',
-    category: 'competitions',
+    sub: '1v1 ELO Duels',
+    category: 'compete',
     href: '/arena',
     icon: Swords,
-    gradient: 'from-rose-500 to-purple-600',
+    featured: true,
+    live: true,
   },
   {
     id: 'hackathons',
     name: 'Hackathons',
-    category: 'competitions',
+    sub: 'Campus Sprints',
+    category: 'compete',
     href: '/hackathons',
     icon: Trophy,
-    gradient: 'from-orange-500 to-amber-600',
+    featured: true,
+    live: true,
   },
   {
     id: 'icpc',
-    name: 'Practice',
-    category: 'competitions',
+    name: 'Practice IDE',
+    sub: 'Timed OA & ICPC',
+    category: 'compete',
     href: '/icpc',
     icon: Terminal,
-    gradient: 'from-cyan-500 to-blue-600',
   },
   {
-    id: 'problems',
-    name: 'Problems',
-    category: 'academics',
-    href: '/problems',
-    icon: Lightbulb,
-    gradient: 'from-violet-500 to-fuchsia-600',
-  },
-  {
-    id: 'teacher',
-    name: 'Faculty Portal',
-    category: 'academics',
-    href: '/teacher/dashboard',
-    icon: GraduationCap,
-    gradient: 'from-emerald-500 to-teal-600',
-  },
-  {
-    id: 'spark',
-    name: 'AI Spark',
-    category: 'tools',
-    href: '/spark',
-    icon: Sparkles,
-    gradient: 'from-amber-400 to-rose-500',
-  },
-  {
-    id: 'resources',
-    name: 'Resources',
-    category: 'tools',
-    href: '/resources',
-    icon: BookOpen,
-    gradient: 'from-indigo-500 to-purple-600',
-    openInNewTab: true,
-  },
-  {
-    id: 'deadlines',
-    name: 'Deadlines',
-    category: 'competitions',
-    href: '/deadlines',
-    icon: Clock,
-    gradient: 'from-rose-500 to-red-600',
-  },
-  {
-    id: 'explore',
-    name: 'Explore',
-    category: 'community',
-    href: '/explore',
-    icon: Compass,
-    gradient: 'from-blue-500 to-indigo-600',
+    id: 'war',
+    name: 'Campus War',
+    sub: 'Inter-College Clash',
+    category: 'compete',
+    href: '/war',
+    icon: Swords,
+    live: true,
   },
   {
     id: 'teammates',
     name: 'Teammates',
-    category: 'community',
+    sub: 'Squad Matching',
+    category: 'build',
     href: '/teammates',
     icon: Users,
-    gradient: 'from-teal-500 to-emerald-600',
+  },
+  {
+    id: 'explore',
+    name: 'Explore',
+    sub: 'Active Projects',
+    category: 'build',
+    href: '/explore',
+    icon: Compass,
   },
   {
     id: 'workspace',
-    name: 'Workspace',
-    category: 'tools',
+    name: 'My Projects',
+    sub: 'Team Workspaces',
+    category: 'build',
     href: '/my-projects',
     icon: Briefcase,
-    gradient: 'from-stone-700 to-stone-900',
+  },
+  {
+    id: 'spark',
+    name: 'AI Spark',
+    sub: 'Stack Co-Pilot',
+    category: 'build',
+    href: '/spark',
+    icon: Sparkles,
+  },
+  {
+    id: 'problems',
+    name: 'Problems',
+    sub: 'Faculty Briefs',
+    category: 'academics',
+    href: '/problems',
+    icon: Lightbulb,
+  },
+  {
+    id: 'teacher',
+    name: 'Faculty Desk',
+    sub: 'Mentor Portal',
+    category: 'academics',
+    href: '/teacher/dashboard',
+    icon: GraduationCap,
+  },
+  {
+    id: 'deadlines',
+    name: 'Deadlines',
+    sub: 'Live Countdowns',
+    category: 'compete',
+    href: '/deadlines',
+    icon: Clock,
   },
   {
     id: 'leaderboard',
     name: 'Leaderboard',
-    category: 'competitions',
+    sub: 'Campus Ranks',
+    category: 'compete',
     href: '/leaderboard',
     icon: Trophy,
-    gradient: 'from-yellow-400 to-amber-600',
+  },
+  {
+    id: 'resources',
+    name: 'Resources',
+    sub: 'Docs & Kits',
+    category: 'academics',
+    href: '/resources',
+    icon: BookOpen,
+    openInNewTab: true,
   },
   {
     id: 'feedback',
     name: 'Feedback',
-    category: 'community',
+    sub: 'Share Ideas',
+    category: 'build',
     href: '/feedback',
     icon: MessageSquare,
-    gradient: 'from-purple-500 to-pink-600',
   },
 ];
 
+const CATEGORIES = [
+  { id: 'all', label: 'All' },
+  { id: 'compete', label: 'Compete' },
+  { id: 'build', label: 'Build' },
+  { id: 'academics', label: 'Academics' },
+] as const;
+
+type CategoryId = (typeof CATEGORIES)[number]['id'];
+
+/**
+ * Anchored translucent frosted-glass command dropdown attached directly
+ * below the top-right navbar trigger button (zero full-screen backdrop).
+ */
 export function KollabrixQuickDock() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Active Index
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-
-  // Deck Fold State: when true, deck is outside; when false, whole deck is inside logo
-  const [isDeckOpen, setIsDeckOpen] = useState<boolean>(true);
-
-  // Auto-peek onboarding cues: show deck open for 2.5s on site open or /explore, then smoothly suck inside logo
-  const isHoveredRef = useRef(false);
-  const autoCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const userInteractedRef = useRef(false);
-
-  const handleToggleDeck = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    userInteractedRef.current = true;
-    if (autoCloseTimerRef.current) {
-      clearTimeout(autoCloseTimerRef.current);
-      autoCloseTimerRef.current = null;
-    }
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.05);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.07);
-      }
-    } catch {}
-
-    setIsDeckOpen((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem('kollabrix_quick_dock_open', String(next));
-      } catch {}
-      return next;
-    });
-  }, []);
-
-  // Web Audio Context for authentic tactile UI clicks
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const lastWheelTimeRef = useRef<number>(0);
-  const dockAsideRef = useRef<HTMLDivElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
-
-  // Smoothly scroll active item into view inside the 4-item viewport
-  useEffect(() => {
-    const activeEl = itemRefs.current[activeIndex];
-    if (activeEl && scrollContainerRef.current) {
-      activeEl.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
-      });
-    }
-  }, [activeIndex]);
-
-  // Hover state for floating callout card
-  const [hoveredNode, setHoveredNode] = useState<{
-    id: string;
-    label: string;
-    sub: string;
-    x: number;
-    y: number;
-  } | null>(null);
-
-  // Hydration mount guard for portals
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // macOS Applications launchpad modal
-  const [isAppsModalOpen, setIsAppsModalOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'all' | 'competitions' | 'academics' | 'tools' | 'community'>('all');
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<CategoryId>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
   const [isExamMode, setIsExamMode] = useState(false);
 
-  // Scroll visibility & direction tracking for dock
-  const [isAtBottom, setIsAtBottom] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const updateScrollState = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    const maxScroll = scrollHeight - clientHeight;
-    // When scrolled past the halfway mark (~60px of 144px max scroll), toggle to "Back to Top" mode
-    setIsAtBottom(maxScroll > 0 && scrollTop >= maxScroll / 2);
-  }, []);
-
-  useEffect(() => {
-    updateScrollState();
-  }, [updateScrollState]);
-
-  useEffect(() => {
-    if (isDeckOpen) {
-      const timer = setTimeout(() => {
-        updateScrollState();
-      }, 60);
-      return () => clearTimeout(timer);
-    }
-  }, [isDeckOpen, updateScrollState]);
-
-  // Sync active dock item with current route
-  useEffect(() => {
-    const foundIndex = DOCK_ITEMS.findIndex(
-      (item) => pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href))
-    );
-    if (foundIndex !== -1) {
-      setActiveIndex(foundIndex);
-    }
-  }, [pathname]);
-
-  // Auto-peek onboarding cues: show deck open for 2.5s on site open or /explore, then smoothly suck inside logo
-  useEffect(() => {
-    // Show peek on website opening (/) or on (/explore)
-    if (pathname === '/' || pathname === '/explore') {
-      setIsDeckOpen(true);
-
-      if (autoCloseTimerRef.current) {
-        clearTimeout(autoCloseTimerRef.current);
-      }
-
-      autoCloseTimerRef.current = setTimeout(() => {
-        if (!isHoveredRef.current && !userInteractedRef.current) {
-          setIsDeckOpen(false);
-        }
-      }, 2500);
-    }
-
-    return () => {
-      if (autoCloseTimerRef.current) {
-        clearTimeout(autoCloseTimerRef.current);
-      }
-    };
-  }, [pathname]);
-
-  // Synthesize crisp tactile UI pop sound via Web Audio API
-  const playTactileClick = useCallback(() => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-
-      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-        audioCtxRef.current = new AudioCtx();
-      }
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-
-      const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      // Soft crisp haptic tactile pop
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(820, now);
-      osc.frequency.exponentialRampToValueAtTime(280, now + 0.035);
-
-      gain.gain.setValueAtTime(0.18, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.045);
-    } catch {
-      // Graceful suppression
-    }
-  }, []);
-
-  // Toggle between Top view (Items 1-4) and Bottom view (Items 4-7)
-  const handleToggleScroll = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-    playTactileClick();
-    if (isAtBottom) {
-      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: 'smooth',
-      });
-    }
-    setTimeout(updateScrollState, 300);
-  }, [isAtBottom, playTactileClick, updateScrollState]);
-
-  // Check if exam arena or proctored exam is active
   useEffect(() => {
     const checkExam = () => {
       if (typeof document !== 'undefined') {
         setIsExamMode(
           document.body.classList.contains('icpc-exam-mode') ||
-          window.location.pathname.startsWith('/icpc/arena')
+            window.location.pathname.startsWith('/icpc/arena')
         );
       }
     };
     checkExam();
-    const handleExam = (e: any) => {
+    const handleExam = (e: CustomEvent<{ active?: boolean }>) => {
       setIsExamMode(Boolean(e.detail?.active));
     };
-    window.addEventListener('linkora_exam_mode', handleExam);
-    return () => window.removeEventListener('linkora_exam_mode', handleExam);
+    window.addEventListener('linkora_exam_mode', handleExam as EventListener);
+    return () =>
+      window.removeEventListener('linkora_exam_mode', handleExam as EventListener);
   }, [pathname]);
 
-  // Clear hover card on window scroll
+  // Close on route change
   useEffect(() => {
-    const handleWindowScroll = () => setHoveredNode(null);
-    window.addEventListener('scroll', handleWindowScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleWindowScroll);
-  }, []);
+    setIsOpen(false);
+  }, [pathname]);
 
-  // Global ⌘K / Ctrl+K keyboard shortcut opens macOS App Launcher
+  // Close when clicking outside popover
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  const showFeaturedRow =
+    activeCategory === 'all' && searchQuery.trim() === '';
+
+  const featuredApps = useMemo(
+    () => APPS_LIST.filter((app) => app.featured),
+    []
+  );
+
+  const listApps = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return APPS_LIST.filter((app) => {
+      if (showFeaturedRow && app.featured) return false;
+      const matchesCat =
+        activeCategory === 'all' || app.category === activeCategory;
+      const matchesQuery =
+        !q ||
+        app.name.toLowerCase().includes(q) ||
+        app.sub.toLowerCase().includes(q) ||
+        app.category.toLowerCase().includes(q);
+      return matchesCat && matchesQuery;
+    });
+  }, [activeCategory, searchQuery, showFeaturedRow]);
+
+  const visibleApps = useMemo(
+    () => (showFeaturedRow ? [...featuredApps, ...listApps] : listApps),
+    [showFeaturedRow, featuredApps, listApps]
+  );
+
+  useEffect(() => {
+    setFocusedIndex(0);
+  }, [activeCategory, searchQuery, isOpen]);
+
+  const launchApp = useCallback(
+    (app: AppItem) => {
+      setIsOpen(false);
+      setSearchQuery('');
+      if (app.openInNewTab) {
+        window.open(app.href, '_blank', 'noopener,noreferrer');
+      } else {
+        router.push(app.href);
+      }
+    },
+    [router]
+  );
+
+  // Global ⌘K shortcut + keyboard navigation while open
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCmdK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k';
       if (isCmdK) {
-        const target = e.target as HTMLElement;
-        if (target && target.closest('input, textarea, [contenteditable="true"]')) {
+        const target = e.target as HTMLElement | null;
+        if (
+          target &&
+          target.closest('input, textarea, [contenteditable="true"]') &&
+          !isOpen
+        ) {
           return;
         }
         e.preventDefault();
-        playTactileClick();
-        setIsAppsModalOpen((prev) => !prev);
-      } else if (e.key === 'Escape' && isAppsModalOpen) {
-        setIsAppsModalOpen(false);
+        setIsOpen((prev) => !prev);
+        return;
+      }
+
+      if (!isOpen) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsOpen(false);
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        setFocusedIndex((prev) =>
+          visibleApps.length ? (prev + 1) % visibleApps.length : 0
+        );
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setFocusedIndex((prev) =>
+          visibleApps.length
+            ? (prev - 1 + visibleApps.length) % visibleApps.length
+            : 0
+        );
+      } else if (e.key === 'Enter' && visibleApps[focusedIndex]) {
+        e.preventDefault();
+        launchApp(visibleApps[focusedIndex]);
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isAppsModalOpen, playTactileClick]);
+  }, [isOpen, visibleApps, focusedIndex, launchApp]);
 
-  // Hide on admin, control-center, battle arena, or during active proctored exam
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 20);
+    }
+  }, [isOpen]);
+
   if (
     pathname?.startsWith('/control-center-7x9') ||
     pathname?.startsWith('/arena') ||
@@ -548,356 +323,180 @@ export function KollabrixQuickDock() {
     return null;
   }
 
-  const filteredApps = APPS_LIST.filter((app) => {
-    const matchesCategory = activeCategory === 'all' || app.category === activeCategory;
-    const matchesSearch = app.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
   return (
-    <>
-      {/* =========================================================================
-          KOLLABRIX QUICK DOCK — SHIFTED TO RIGHT OF MAYANK GOYAL
-          - Top Kollabrix Logo Button sits right in navbar next to user profile
-          - Tap Logo Button -> Whole deck smoothly gets sucked inside the logo
-          - Tap Logo Button Again -> Whole deck springs outside and appears
-         ========================================================================= */}
-      <div
-        ref={dockAsideRef}
-        aria-label="Kollabrix Quick Navigation Deck"
-        onMouseEnter={() => {
-          isHoveredRef.current = true;
-        }}
-        onMouseLeave={() => {
-          isHoveredRef.current = false;
-          if (!userInteractedRef.current && (pathname === '/' || pathname === '/explore')) {
-            if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
-            autoCloseTimerRef.current = setTimeout(() => {
-              if (!isHoveredRef.current && !userInteractedRef.current) {
-                setIsDeckOpen(false);
-              }
-            }, 1200);
-          }
-        }}
-        className="relative select-none flex items-center pointer-events-auto"
+    <div ref={containerRef} className="relative inline-flex items-center">
+      {/* Top-Right Navbar Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+        aria-label="Open Kollabrix Apps Menu (⌘K)"
+        title="Platform Apps (⌘K)"
+        className={`inline-flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 rounded-full border transition-all active:scale-95 cursor-pointer shadow-sm focus:outline-none focus-visible:outline-none ${
+          isOpen
+            ? 'bg-white/15 border-white/35 text-white'
+            : 'bg-white/[0.04] hover:bg-white/[0.09] border-white/15 hover:border-white/30 text-zinc-300 hover:text-white'
+        }`}
       >
-        {/* The Official Logo Key Button (Shifted to right of Mayank Goyal) */}
-        <button
-          type="button"
-          onClick={handleToggleDeck}
-          onMouseEnter={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setHoveredNode({
-              id: 'dock-toggle',
-              label: isDeckOpen ? 'Tuck Deck Inside Logo' : 'Expand Deck Outside',
-              sub: 'Click to fold or reveal navigation dock',
-              x: rect.left,
-              y: rect.top + rect.height / 2,
-            });
-          }}
-          onMouseLeave={() => setHoveredNode(null)}
-          aria-label={isDeckOpen ? 'Tuck deck inside logo' : 'Expand deck outside'}
-          className={`relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition-all duration-300 active:scale-95 group cursor-pointer shadow-sm ${
-            isDeckOpen
-              ? 'bg-amber-500/20 border border-amber-400 text-white shadow-[0_0_12px_rgba(245,158,11,0.35)]'
-              : 'bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.14] hover:border-amber-400/50 text-slate-300'
-          }`}
-        >
-          <img
-            src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
-            alt="Kollabrix Quick Dock"
-            className={`w-5 h-5 max-w-[20px] max-h-[20px] object-contain filter drop-shadow-[0_1px_6px_rgba(245,158,11,0.6)] transition-all duration-300 ${
-              isDeckOpen ? 'scale-105' : 'group-hover:scale-110'
-            }`}
-          />
-          {/* Subtle amber indicator when deck is folded inside logo */}
-          {!isDeckOpen && (
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400 border border-black animate-pulse shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
-          )}
-        </button>
+        <LayoutGrid className="w-3.5 h-3.5 text-zinc-200" />
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono font-semibold text-zinc-400 bg-white/[0.06] border border-white/10 px-1.5 py-0.5 rounded-md leading-none">
+          ⌘K
+        </kbd>
+      </button>
 
-        {/* The Entire Deck: Sucks inside the logo when closed, emerges outside when open */}
+      {/* Anchored Translucent Frosted-Glass Dropdown (directly below button) */}
+      {isOpen && (
         <div
-          className={`absolute right-0 top-full mt-2 z-50 select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top-right ${
-            isDeckOpen
-              ? 'scale-100 opacity-100 translate-y-0 pointer-events-auto'
-              : 'scale-0 opacity-0 -translate-y-4 pointer-events-none'
-          }`}
+          role="dialog"
+          aria-label="Kollabrix Platform Menu"
+          className="absolute right-0 top-full mt-3 z-[9999] w-[calc(100vw-2rem)] sm:w-[392px] origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150 select-none"
         >
-          {/* Sleek Dark Pill Capsule (Exact Match to User's Image 2) */}
-          <div className="relative rounded-full py-2.5 px-1.5 bg-[#12141D]/95 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_20px_rgba(99,102,241,0.06)] backdrop-blur-2xl flex flex-col items-center">
-            {/* Scrollable Container (Shows EXACTLY 4 items visible without awkward cutoffs) */}
-            <div
-              ref={scrollContainerRef}
-              onScroll={() => {
-                updateScrollState();
-                const now = Date.now();
-                if (now - lastWheelTimeRef.current > 120) {
-                  lastWheelTimeRef.current = now;
-                  playTactileClick();
-                }
-              }}
-              className="flex flex-col items-center gap-2.5 h-[196px] max-h-[196px] overflow-y-auto overflow-x-visible py-1.5 px-0.5 overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {DOCK_ITEMS.map((item, index) => {
-                const Icon = item.icon;
-                const style = TONE_STYLES[item.tone] || TONE_STYLES.amber;
-                const isSelected = activeIndex === index;
-                const isRouteActive =
-                  pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-                const isHighlighted = isSelected || isRouteActive;
+          <div className="relative rounded-2xl bg-black/40 backdrop-blur-2xl backdrop-saturate-150 border border-white/20 shadow-[0_28px_70px_rgba(0,0,0,0.7),_inset_0_1px_0_rgba(255,255,255,0.22)] overflow-hidden">
+            {/* Subtle specular top-left glass reflection */}
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.09] via-transparent to-white/[0.02]" />
 
-                return (
-                  <Link
-                    key={item.id}
-                    ref={(el) => {
-                      itemRefs.current[index] = el;
-                    }}
-                    href={item.href}
-                    target={item.openInNewTab ? '_blank' : undefined}
-                    rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                    onClick={() => {
-                      setActiveIndex(index);
-                      playTactileClick();
-                    }}
-                    onMouseEnter={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setHoveredNode({
-                        id: item.id,
-                        label: item.label,
-                        sub: item.sub,
-                        x: rect.left,
-                        y: rect.top + rect.height / 2,
-                      });
-                    }}
-                    onMouseLeave={() => setHoveredNode(null)}
-                    aria-label={item.label}
-                    className={`relative flex items-center justify-center shrink-0 w-10 h-10 rounded-full border transition-all duration-200 active:scale-90 group focus:outline-none cursor-pointer ${style.bg} ${style.border} ${style.text} ${
-                      isHighlighted
-                        ? `${style.activeRing} ${style.glow} scale-105`
-                        : 'hover:scale-105'
-                    }`}
+            <div className="relative z-10 p-3 space-y-2.5">
+              {/* Compact Translucent Search Input (explicitly strips Safari accent outline) */}
+              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.06] border border-white/12 focus-within:border-white/35 transition-colors">
+                <Search className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Jump to portal or tool..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent border-0 !outline-none focus:!outline-none focus-visible:!outline-none ring-0 focus:ring-0 text-xs text-white placeholder-zinc-400/80 min-w-0"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="p-0.5 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                    aria-label="Clear search"
                   >
-                    <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-                    {isHighlighted && (
-                      <span className={`absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${style.indicator}`} />
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Smart Bottom Chevron Nudge Arrow (Exact match to Image 2: 1-click flips between More & Top) */}
-            <button
-              type="button"
-              onClick={handleToggleScroll}
-              onMouseEnter={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setHoveredNode({
-                  id: 'dock-scroll-nudge',
-                  label: isAtBottom ? 'Back to Top' : 'More Portals',
-                  sub: isAtBottom ? 'Click to return to top portals' : 'Click to view remaining portals',
-                  x: rect.left,
-                  y: rect.top + rect.height / 2,
-                });
-              }}
-              onMouseLeave={() => setHoveredNode(null)}
-              aria-label={isAtBottom ? 'Scroll back to top of dock' : 'Scroll down dock'}
-              className="relative flex items-center justify-center w-8 h-6 my-0.5 text-amber-500/80 hover:text-amber-400 transition-all duration-200 cursor-pointer hover:scale-110 active:scale-90 group focus:outline-none"
-            >
-              <ChevronDown
-                className={`w-4 h-4 transition-transform duration-300 ease-out ${
-                  isAtBottom ? '-rotate-180 text-amber-400' : 'rotate-0 text-amber-500/80'
-                }`}
-              />
-            </button>
-
-            {/* Subtle Divider Line */}
-            <div className="w-5 h-[1px] bg-white/10 my-0.5" />
-
-            {/* Bottom ⌘ Command Trigger Button (Exact match to Image 2: Purple circle with Orange Command icon) */}
-            <button
-              type="button"
-              onClick={() => {
-                playTactileClick();
-                setIsAppsModalOpen(true);
-              }}
-              onMouseEnter={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setHoveredNode({
-                  id: 'apps',
-                  label: 'Platform Hub (⌘K)',
-                  sub: 'Search all portals & tools',
-                  x: rect.left,
-                  y: rect.top + rect.height / 2,
-                });
-              }}
-              onMouseLeave={() => setHoveredNode(null)}
-              className="relative flex items-center justify-center w-10 h-10 rounded-full border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/25 transition-all duration-300 active:scale-90 group focus:outline-none cursor-pointer shadow-sm"
-              aria-label="Open Platform Hub"
-            >
-              <Command className="w-5 h-5 text-amber-500 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Floating Callout Card to the LEFT with Leader Pointer Line */}
-      {mounted && typeof document !== 'undefined' && hoveredNode && createPortal(
-        <div
-          style={{
-            top: `${hoveredNode.y}px`,
-            left: `${hoveredNode.x - 12}px`,
-          }}
-          className="fixed -translate-x-full -translate-y-1/2 pointer-events-none z-[99999] animate-in fade-in slide-in-from-right-2 duration-150"
-        >
-          <div className="relative flex items-center gap-2.5">
-            {/* Callout Card */}
-            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#0d0e14]/98 border border-white/15 shadow-[0_16px_40px_rgba(0,0,0,0.95),0_0_15px_rgba(255,255,255,0.05)] text-white backdrop-blur-2xl whitespace-nowrap">
-              {/* Text Information */}
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-bold text-white tracking-tight leading-tight">
-                  {hoveredNode.label}
-                </span>
-                {hoveredNode.sub && (
-                  <span className="text-[10px] text-zinc-400 font-medium leading-tight mt-0.5">
-                    {hoveredNode.sub}
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <span className="text-[9px] font-mono text-zinc-400 bg-white/[0.06] border border-white/12 px-1.5 py-0.5 rounded-md">
+                    ESC
                   </span>
                 )}
               </div>
-            </div>
 
-            {/* Dotted Leader Line */}
-            <div className="flex items-center">
-              <div className="w-2.5 border-t-2 border-dotted border-white/60" />
-              <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_#ffffff]" />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* =========================================================================
-          macOS APPLICATIONS LAUNCHPAD MODAL
-         ========================================================================= */}
-      {mounted && typeof document !== 'undefined' && isAppsModalOpen && createPortal(
-        <div
-          onClick={() => setIsAppsModalOpen(false)}
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-xl animate-in fade-in duration-200"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[580px] max-h-[90vh] flex flex-col rounded-3xl bg-[#181614]/98 border border-white/15 shadow-[0_30px_100px_rgba(0,0,0,0.95)] p-6 backdrop-blur-3xl animate-in zoom-in-95 duration-200 text-white select-none pointer-events-auto"
-          >
-            {/* Window Top Bar: macOS Traffic Lights + Title */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 shrink-0">
-              <div className="flex items-center gap-2.5">
-                {/* Traffic lights */}
-                <div className="flex items-center gap-1.5">
-                  <span
-                    onClick={() => setIsAppsModalOpen(false)}
-                    className="w-3 h-3 rounded-full bg-[#FF5F56] border border-[#E0443E] cursor-pointer hover:opacity-80 transition-opacity"
-                  />
-                  <span className="w-3 h-3 rounded-full bg-[#FFBD2E] border border-[#DEA123]" />
-                  <span className="w-3 h-3 rounded-full bg-[#27C93F] border border-[#1AAB29]" />
-                </div>
-                <h3 className="text-sm font-black tracking-tight text-white/95 flex items-center gap-1.5 ml-2">
-                  <span>⚡ Applications</span>
-                </h3>
+              {/* Minimal Frosted Filter Capsules */}
+              <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {CATEGORIES.map((cat) => {
+                  const isCatActive = activeCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all cursor-pointer focus:outline-none ${
+                        isCatActive
+                          ? 'bg-white/15 text-white border border-white/25 shadow-xs font-semibold'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.06] border border-transparent'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => setIsAppsModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-stone-300 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+              {/* Pinned Top 2 Featured Cards (Battle Arena & Hackathons) */}
+              {showFeaturedRow && featuredApps.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  {featuredApps.map((app, idx) => {
+                    const Icon = app.icon;
+                    const isActive = focusedIndex === idx;
+                    const isRouteActive =
+                      pathname === app.href ||
+                      Boolean(app.href !== '/' && pathname?.startsWith(app.href));
+                    return (
+                      <button
+                        key={app.id}
+                        type="button"
+                        onClick={() => launchApp(app)}
+                        onMouseEnter={() => setFocusedIndex(idx)}
+                        className={`group flex items-center gap-2.5 p-2.5 rounded-xl text-left border transition-all cursor-pointer focus:outline-none ${
+                          isActive || isRouteActive
+                            ? 'bg-white/[0.14] border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]'
+                            : 'bg-white/[0.06] hover:bg-white/[0.11] border-white/12 hover:border-white/25'
+                        }`}
+                      >
+                        <div className="relative w-8 h-8 rounded-lg bg-white/[0.08] border border-white/15 flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 text-zinc-100" />
+                          {app.live && (
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-white truncate leading-tight">
+                            {app.name}
+                          </div>
+                          <div className="text-[10px] text-zinc-400 truncate mt-0.5">
+                            {app.sub}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* Search Input */}
-            <div className="relative mt-4 shrink-0">
-              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search portals, tools, or challenges..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="w-full rounded-2xl bg-white/6 border border-white/10 pl-10 pr-4 py-2 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-amber-400/80 focus:bg-white/10 transition-all"
-              />
-            </div>
-
-            {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5 mt-3 pb-1 overflow-x-auto scrollbar-none shrink-0">
-              {(
-                [
-                  { id: 'all', label: 'All' },
-                  { id: 'competitions', label: 'Competitions' },
-                  { id: 'academics', label: 'Academics' },
-                  { id: 'tools', label: 'Tools' },
-                  { id: 'community', label: 'Community' },
-                ] as const
-              ).map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
-                    activeCategory === cat.id
-                      ? 'bg-amber-500 text-stone-950 shadow-md font-bold'
-                      : 'bg-white/6 hover:bg-white/10 text-stone-300'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Grid of Apps (macOS Launchpad style) */}
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-4 py-5 flex-1 overflow-y-auto overscroll-contain min-h-0 [scrollbar-width:thin]">
-              {filteredApps.map((app) => {
-                const Icon = app.icon;
-                return (
-                  <button
-                    key={app.id}
-                    type="button"
-                    onClick={() => {
-                      setIsAppsModalOpen(false);
-                      if (app.openInNewTab) {
-                        window.open(app.href, '_blank', 'noopener,noreferrer');
-                      } else {
-                        router.push(app.href);
-                      }
-                    }}
-                    className="group flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-white/6 transition-all duration-200 cursor-pointer text-center"
-                  >
-                    {/* App Squircle Icon */}
-                    <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr ${app.gradient} border border-white/20 shadow-xl flex items-center justify-center group-hover:scale-110 active:scale-95 transition-all duration-200 group-hover:shadow-[0_10px_25px_rgba(0,0,0,0.5)]`}
-                    >
-                      <Icon className="w-7 h-7 sm:w-8 sm:h-8 text-white drop-shadow-md" />
-                    </div>
-
-                    {/* App Name */}
-                    <span className="text-xs font-semibold text-white/90 group-hover:text-amber-300 mt-2 tracking-tight transition-colors truncate max-w-full">
-                      {app.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Window Footer */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-stone-400 shrink-0">
-              <span className="font-mono">Press <kbd className="bg-white/10 px-1 py-0.5 rounded text-[10px] text-white">ESC</kbd> to dismiss</span>
-              <span className="text-stone-400 font-semibold">Kollabrix Platform Hub</span>
+              {/* Compact 2-Column Translucent Glass Menu */}
+              {visibleApps.length === 0 ? (
+                <div className="py-8 text-center text-xs text-zinc-400">
+                  No portals match &ldquo;{searchQuery}&rdquo;
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1 max-h-[270px] overflow-y-auto overscroll-contain pt-1 border-t border-white/10">
+                  {listApps.map((app, idx) => {
+                    const globalIdx = showFeaturedRow
+                      ? featuredApps.length + idx
+                      : idx;
+                    const Icon = app.icon;
+                    const isActive = focusedIndex === globalIdx;
+                    const isRouteActive =
+                      pathname === app.href ||
+                      Boolean(app.href !== '/' && pathname?.startsWith(app.href));
+                    return (
+                      <button
+                        key={app.id}
+                        type="button"
+                        onClick={() => launchApp(app)}
+                        onMouseEnter={() => setFocusedIndex(globalIdx)}
+                        className={`group flex items-center gap-2.5 p-2 rounded-xl text-left border transition-all cursor-pointer focus:outline-none ${
+                          isActive || isRouteActive
+                            ? 'bg-white/[0.12] border-white/25'
+                            : 'bg-transparent hover:bg-white/[0.08] border-transparent hover:border-white/15'
+                        }`}
+                      >
+                        <div className="relative w-7 h-7 rounded-lg bg-white/[0.07] border border-white/12 flex items-center justify-center shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-zinc-200 group-hover:text-white transition-colors" />
+                          {app.live && (
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] font-semibold text-zinc-100 group-hover:text-white truncate leading-tight flex items-center justify-between gap-1">
+                            <span className="truncate">{app.name}</span>
+                            <ArrowUpRight className="w-2.5 h-2.5 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                          </div>
+                          <div className="text-[10px] text-zinc-400 truncate">
+                            {app.sub}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
-    </>
+    </div>
   );
 }
