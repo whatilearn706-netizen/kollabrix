@@ -709,9 +709,6 @@ export default function TeammatesPage() {
 
         if (data?.value?.weights) {
           setMatchWeights(data.value.weights);
-          if (data.value.min_recommendation_score) {
-            setMinScore((prev) => (prev === 0 ? data.value.min_recommendation_score : prev));
-          }
         }
       } catch {}
     }
