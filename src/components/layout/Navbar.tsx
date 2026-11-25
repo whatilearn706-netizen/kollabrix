@@ -212,14 +212,14 @@ export function Navbar() {
                   onMouseEnter={handleWarmup}
                   onTouchStart={handleWarmup}
                   className={clsx(
-                    'px-4 sm:px-5 py-1.5 rounded-full text-xs font-medium tracking-[-0.01em] transition-all duration-200 inline-flex items-center justify-center gap-1.5 select-none active:scale-[0.97]',
+                    'px-4 sm:px-5 py-1.5 rounded-full text-xs font-bold tracking-[-0.01em] transition-all duration-200 inline-flex items-center justify-center gap-1.5 select-none active:scale-[0.97]',
                     isActive
                       ? isNavbarDark
-                        ? 'bg-gradient-to-b from-zinc-800/90 via-zinc-900/95 to-black/95 text-zinc-50 ring-1 ring-white/20 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.12),0_2px_8px_rgba(0,0,0,0.65)]'
-                        : 'bg-white text-stone-900 ring-1 ring-stone-200 shadow-sm font-semibold'
+                        ? 'bg-gradient-to-b from-zinc-800/90 via-zinc-900/95 to-black/95 text-white ring-1 ring-white/20 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.12),0_2px_8px_rgba(0,0,0,0.65)]'
+                        : 'bg-white text-stone-950 ring-1 ring-stone-200 shadow-sm'
                       : isNavbarDark
-                      ? 'bg-transparent text-zinc-400 hover:text-zinc-100 hover:bg-white/[0.04]'
-                      : 'bg-transparent text-stone-600 hover:text-stone-900 hover:bg-stone-100/60'
+                      ? 'bg-transparent text-zinc-200 hover:text-white hover:bg-white/[0.04]'
+                      : 'bg-transparent text-stone-700 hover:text-stone-950 hover:bg-stone-100/60'
                   )}
                 >
                   <Icon
@@ -227,11 +227,11 @@ export function Navbar() {
                       'w-3.5 h-3.5 transition-colors shrink-0',
                       isActive
                         ? isNavbarDark
-                          ? 'text-zinc-100'
-                          : 'text-slate-900'
+                          ? 'text-white'
+                          : 'text-slate-950'
                         : isNavbarDark
-                        ? 'text-zinc-500'
-                        : 'text-stone-500'
+                        ? 'text-zinc-300'
+                        : 'text-stone-600'
                     )}
                   />
                   <span>{link.label}</span>
