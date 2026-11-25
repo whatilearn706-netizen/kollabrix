@@ -35,22 +35,28 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
 
   const scoreBadgeColor =
     match_score >= 80
-      ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
       : match_score >= 60
-      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-      : 'bg-slate-500/15 text-slate-400 border-slate-500/30';
+      ? isCardDark
+        ? 'bg-white/[0.08] text-zinc-200 border-white/20'
+        : 'bg-stone-100 text-stone-700 border-stone-300'
+      : isCardDark
+      ? 'bg-white/[0.04] text-zinc-400 border-white/10'
+      : 'bg-slate-500/15 text-slate-500 border-slate-500/30';
 
   return (
     <div
       style={{
-        backgroundColor: theme.surfaceColor,
-        borderColor: theme.borderColor,
+        backgroundColor: isCardDark ? '#090C12' : theme.surfaceColor,
+        borderColor: isCardDark ? 'rgba(255,255,255,0.1)' : theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className="site-card card-hover-lift border p-5 sm:p-6 flex flex-col justify-between h-full group relative overflow-hidden shadow-xs hover:shadow-md transition-all duration-200"
+      className={`site-card card-hover-lift border p-5 sm:p-6 flex flex-col justify-between h-full group relative overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 ${
+        isCardDark ? 'hover:border-white/25' : ''
+      }`}
     >
-      {/* Top glowing accent gradient bar on hover */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-indigo-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
+      {/* Top brushed-titanium hairline shimmer on hover */}
+      <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
 
       {/* Main Body */}
       <div className="flex-1 flex flex-col space-y-3.5">
@@ -62,7 +68,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                 name={profile.display_name}
                 src={profile.avatar_url}
                 size="lg"
-                className="ring-2 ring-slate-100 dark:ring-white/10 group-hover:ring-violet-400 group-hover:scale-105 transition-all duration-200"
+                className="ring-2 ring-slate-100 dark:ring-white/10 group-hover:ring-white/30 group-hover:scale-105 transition-all duration-200"
               />
             </Link>
             <div className="min-w-0 flex-1">
@@ -70,14 +76,16 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                 <Link
                   href={`/profile/${profile.username}`}
                   style={{ color: teammateNameColor }}
-                  className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 ${
-                    isCardDark ? 'text-white site-heading-white' : ''
+                  className={`font-black text-sm sm:text-base truncate block transition-colors duration-200 ${
+                    isCardDark
+                      ? 'text-white site-heading-white group-hover:text-zinc-200'
+                      : 'group-hover:text-stone-700'
                   }`}
                 >
                   {profile.display_name}
                 </Link>
                 {isCurrentUser && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-white/15 text-white border border-white/30">
                     You
                   </span>
                 )}
@@ -107,7 +115,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
             }}
             className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-xl border min-w-0"
           >
-            <GraduationCap className="w-3.5 h-3.5 text-violet-500 shrink-0 opacity-80" />
+            <GraduationCap className={`w-3.5 h-3.5 shrink-0 opacity-85 ${isCardDark ? 'text-zinc-300' : 'text-stone-600'}`} />
             <span
               style={{ color: theme.bodyTextColor }}
               className="truncate font-medium text-[11px] sm:text-xs flex-1 min-w-0"
@@ -145,18 +153,23 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
         {reasons && reasons.length > 0 && (
           <div
             style={{
-              backgroundColor: `${theme.brandColor}12`,
-              borderColor: `${theme.brandColor}25`,
+              backgroundColor: isCardDark ? 'rgba(255,255,255,0.035)' : '#f8fafc',
+              borderColor: isCardDark ? 'rgba(255,255,255,0.1)' : theme.borderColor,
             }}
             className="px-3 py-1.5 rounded-xl border flex items-center justify-between gap-2 text-xs"
           >
             <div className="flex items-center gap-1.5 min-w-0">
               <Sparkles
-                style={{ color: theme.brandColor }}
-                className="w-3.5 h-3.5 shrink-0"
+                className={`w-3.5 h-3.5 shrink-0 ${
+                  profile.college_verified
+                    ? 'text-emerald-400'
+                    : isCardDark
+                    ? 'text-zinc-300'
+                    : 'text-stone-600'
+                }`}
               />
               <span
-                style={{ color: theme.bodyTextColor }}
+                style={{ color: isCardDark ? '#e4e4e7' : theme.bodyTextColor }}
                 className="text-[11px] font-medium truncate"
               >
                 {reasons[0]}
@@ -164,8 +177,11 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
             </div>
             {reasons.length > 1 && (
               <span
-                style={{ color: theme.brandColor }}
-                className="text-[10px] font-bold font-mono shrink-0 px-1.5 py-0.2 rounded-md bg-white/60 dark:bg-black/20"
+                className={`text-[10px] font-bold font-mono shrink-0 px-1.5 py-0.2 rounded-md ${
+                  isCardDark
+                    ? 'bg-white/10 text-zinc-200'
+                    : 'bg-stone-200 text-stone-700'
+                }`}
                 title={reasons.slice(1).join(' • ')}
               >
                 +{reasons.length - 1}
@@ -198,12 +214,26 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                     key={skill}
                     style={{
                       backgroundColor: isMatching
-                        ? `${theme.accentColor}20`
-                        : isDark
-                        ? 'rgba(255,255,255,0.06)'
+                        ? isCardDark
+                          ? 'rgba(255,255,255,0.12)'
+                          : '#e7e5e4'
+                        : isCardDark
+                        ? 'rgba(255,255,255,0.04)'
                         : '#f1f5f9',
-                      borderColor: isMatching ? `${theme.accentColor}50` : theme.borderColor,
-                      color: isMatching ? theme.accentColor : theme.bodyTextColor,
+                      borderColor: isMatching
+                        ? isCardDark
+                          ? 'rgba(255,255,255,0.28)'
+                          : '#a8a29e'
+                        : isCardDark
+                        ? 'rgba(255,255,255,0.1)'
+                        : theme.borderColor,
+                      color: isMatching
+                        ? isCardDark
+                          ? '#ffffff'
+                          : '#1c1917'
+                        : isCardDark
+                        ? '#d4d4d8'
+                        : theme.bodyTextColor,
                     }}
                     className="text-[11px] px-2.5 py-0.5 rounded-md font-semibold border transition-all duration-150 hover:scale-105 cursor-default"
                   >
@@ -243,12 +273,26 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
                     key={role}
                     style={{
                       backgroundColor: isMatchingRole
-                        ? `${theme.brandColor}15`
-                        : isDark
-                        ? 'rgba(255,255,255,0.04)'
+                        ? isCardDark
+                          ? 'rgba(255,255,255,0.09)'
+                          : '#e7e5e4'
+                        : isCardDark
+                        ? 'rgba(255,255,255,0.03)'
                         : '#f8fafc',
-                      borderColor: isMatchingRole ? `${theme.brandColor}40` : theme.borderColor,
-                      color: isMatchingRole ? theme.brandColor : theme.bodyTextColor,
+                      borderColor: isMatchingRole
+                        ? isCardDark
+                          ? 'rgba(255,255,255,0.22)'
+                          : '#a8a29e'
+                        : isCardDark
+                        ? 'rgba(255,255,255,0.09)'
+                        : theme.borderColor,
+                      color: isMatchingRole
+                        ? isCardDark
+                          ? '#f4f4f5'
+                          : '#1c1917'
+                        : isCardDark
+                        ? '#a1a1aa'
+                        : theme.bodyTextColor,
                     }}
                     className="text-[10px] px-2.5 py-0.5 rounded-full border font-medium"
                   >
@@ -267,13 +311,13 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
 
       {/* Action Footer (Always pinned to bottom) */}
       <div
-        style={{ borderColor: theme.borderColor }}
+        style={{ borderColor: isCardDark ? 'rgba(255,255,255,0.08)' : theme.borderColor }}
         className="pt-4 mt-4 border-t flex items-center justify-between gap-2"
       >
         <Link
           href={`/profile/${profile.username}`}
-          style={{ color: theme.bodyTextColor }}
-          className="text-xs inline-flex items-center gap-1.5 font-bold transition-opacity hover:opacity-75 group/link"
+          style={{ color: isCardDark ? '#d4d4d8' : theme.bodyTextColor }}
+          className="text-xs inline-flex items-center gap-1.5 font-bold transition-colors hover:text-white group/link"
         >
           <span>View Profile</span>
           <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform opacity-70" />
@@ -283,10 +327,10 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
           <Link
             href={`/profile/${profile.username}`}
             style={{
-              backgroundColor: `${theme.brandColor}15`,
-              borderColor: `${theme.brandColor}40`,
+              backgroundColor: isCardDark ? 'rgba(255,255,255,0.08)' : '#f5f5f4',
+              borderColor: isCardDark ? 'rgba(255,255,255,0.2)' : theme.borderColor,
               borderRadius: theme.borderRadius,
-              color: theme.brandColor,
+              color: isCardDark ? '#f4f4f5' : theme.headingColor,
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold border transition-all duration-150 hover:brightness-110 active:scale-95 shrink-0"
           >
@@ -294,8 +338,8 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
             <span>Your Profile</span>
           </Link>
         ) : isInvited ? (
-          <span className="text-xs text-emerald-500 flex items-center gap-1.5 font-bold bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 select-none">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+          <span className="text-xs text-emerald-400 flex items-center gap-1.5 font-bold bg-emerald-500/10 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 select-none">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span>Invited</span>
           </span>
         ) : (
@@ -303,10 +347,13 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
             type="button"
             onClick={() => onInvite(match)}
             style={{
-              backgroundColor: theme.brandColor,
               borderRadius: theme.borderRadius,
             }}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white shadow-xs transition-all duration-150 hover:brightness-110 hover:shadow-md active:scale-95 cursor-pointer shrink-0"
+            className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-extrabold transition-all duration-150 hover:scale-[1.02] active:scale-95 cursor-pointer shrink-0 ${
+              isCardDark
+                ? 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 border border-white/50 shadow-[0_0_20px_rgba(255,255,255,0.18)] hover:from-white hover:to-white'
+                : 'bg-stone-900 text-white border border-stone-800 hover:bg-stone-800 shadow-xs'
+            }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>Invite to Project</span>

@@ -6,37 +6,20 @@ import { usePathname } from 'next/navigation';
 import { Sparkles, X, ArrowRight, Megaphone } from 'lucide-react';
 import { BroadcastBannerConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/masterControl';
 
+const OBSIDIAN_BANNER_STYLE = {
+  bg: 'bg-black',
+  text: 'text-slate-300',
+  badge: 'bg-white/[0.06] text-zinc-200 border-white/15',
+  button:
+    'bg-white/[0.08] hover:bg-white/[0.15] text-zinc-200 hover:text-white font-semibold border border-white/15 border-t-white/25 backdrop-blur-md transition-all',
+};
+
 const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: string; badge: string; button: string }> = {
-  gradient: {
-    bg: 'bg-black',
-    text: 'text-slate-200',
-    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
-    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
-  },
-  indigo: {
-    bg: 'bg-black',
-    text: 'text-slate-200',
-    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
-    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
-  },
-  emerald: {
-    bg: 'bg-black',
-    text: 'text-slate-200',
-    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
-    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
-  },
-  amber: {
-    bg: 'bg-black',
-    text: 'text-slate-200',
-    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
-    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
-  },
-  rose: {
-    bg: 'bg-black',
-    text: 'text-slate-200',
-    badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
-    button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
-  },
+  gradient: OBSIDIAN_BANNER_STYLE,
+  indigo: OBSIDIAN_BANNER_STYLE,
+  emerald: OBSIDIAN_BANNER_STYLE,
+  amber: OBSIDIAN_BANNER_STYLE,
+  rose: OBSIDIAN_BANNER_STYLE,
 };
 
 export function GlobalBroadcastBanner() {

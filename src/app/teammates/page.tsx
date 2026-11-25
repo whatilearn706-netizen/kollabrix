@@ -883,10 +883,9 @@ export default function TeammatesPage() {
       >
         <div>
           <div
-            style={{ color: theme.brandColor }}
-            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2 font-bold"
+            className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2 font-bold text-zinc-300"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4 text-zinc-300" />
             <span>{theme.teammatesBadgeText || 'Campus Builder Network'}</span>
           </div>
           <h1
@@ -1040,13 +1039,13 @@ export default function TeammatesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Search Input */}
           <div className="relative">
-            <Search className="w-4 h-4 text-violet-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by name, skill, bio..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-800/70 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 transition-colors shadow-2xs"
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-slate-50 dark:bg-charcoal-800/70 border border-slate-200 dark:border-charcoal-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-white/30 transition-colors shadow-2xs"
             />
             {searchQuery && (
               <button
@@ -1119,8 +1118,7 @@ export default function TeammatesPage() {
                 setSelectedRole('All');
                 setMinScore(0);
               }}
-              style={{ color: theme.accentColor || '#ec4899' }}
-              className="font-bold hover:underline cursor-pointer"
+              className="font-bold text-zinc-200 hover:text-white hover:underline cursor-pointer"
             >
               Reset Filters
             </button>
