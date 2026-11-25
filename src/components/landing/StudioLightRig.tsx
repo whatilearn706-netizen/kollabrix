@@ -23,39 +23,30 @@ interface StudioLightRigProps {
 export function StudioLightRig({
   triggerPowerOn = false,
   onPowerOnComplete,
-  showEmblemTile = true,
 }: StudioLightRigProps) {
-  // Lighting state: 'off' -> 'flicker' -> 'on'
-  const [lightState, setLightState] = useState<'off' | 'flicker' | 'on'>('off');
+  const [replayKey, setReplayKey] = useState(0);
 
   useEffect(() => {
-    // Check if user already saw the intro in this session or if triggered by login
-    const hasSeenIntro = typeof window !== 'undefined' ? sessionStorage.getItem('kbx_hero_light_on') : null;
-
-    if (triggerPowerOn || !hasSeenIntro) {
-      setLightState('off');
-      const timer1 = setTimeout(() => setLightState('flicker'), 60);
-      const timer2 = setTimeout(() => {
-        setLightState('on');
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('kbx_hero_light_on', 'true');
-        }
-        onPowerOnComplete?.();
-      }, 360);
-
-      return () => {
-        clearTimeout(timer1);
-        clearTimeout(timer2);
-      };
-    } else {
-      setLightState('on');
+    if (triggerPowerOn) {
+      setReplayKey((prev) => prev + 1);
     }
-  }, [triggerPowerOn, onPowerOnComplete]);
+  }, [triggerPowerOn]);
 
-  const isLightActive = lightState === 'on' || lightState === 'flicker';
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('kbx_hero_light_on', 'true');
+      }
+      onPowerOnComplete?.();
+    }, 550);
+    return () => clearTimeout(timer);
+  }, [replayKey, onPowerOnComplete]);
 
   return (
-    <div className="absolute inset-x-0 top-0 pointer-events-none z-10 flex flex-col items-center overflow-visible select-none">
+    <div
+      key={replayKey}
+      className="absolute inset-x-0 top-0 pointer-events-none z-10 flex flex-col items-center overflow-visible select-none"
+    >
       {/* =========================================================================
           1. SUSPENSION BRACKET & MOUNT (Subtle physical industrial detailing)
          ========================================================================= */}
@@ -71,27 +62,22 @@ export function StudioLightRig({
 
       {/* =========================================================================
           2. THE HORIZONTAL LIGHT BAR / TUBE (━)
-          Directly matches the Powerupz / Triopixels reference:
-          Crisp white linear light bar with soft outer bloom and liquid platinum core.
+          Single fluid GPU-accelerated ignition — no jarring flicker steps or late brightness shifts.
          ========================================================================= */}
       <div className="relative flex items-center justify-center">
         {/* Primary Light Bar Container */}
         <motion.div
-          initial={{ opacity: 0, scaleX: 0.8 }}
-          animate={{
-            opacity: lightState === 'off' ? 0.05 : lightState === 'flicker' ? [0.2, 0.9, 0.4, 1] : 1,
-            scaleX: lightState === 'off' ? 0.8 : 1,
-          }}
+          initial={{ opacity: 0, scaleX: 0.78 }}
+          animate={{ opacity: 1, scaleX: 1 }}
           transition={{
-            duration: lightState === 'flicker' ? 0.45 : 0.6,
-            ease: [0.16, 1, 0.3, 1],
+            duration: 0.5,
+            ease: [0.22, 1, 0.36, 1],
           }}
-          className="relative z-20 w-[240px] xs:w-[280px] sm:w-[340px] md:w-[420px] h-[5px] sm:h-[6px] rounded-full"
+          className="relative z-20 w-[240px] xs:w-[280px] sm:w-[340px] md:w-[420px] h-[5px] sm:h-[6px] rounded-full will-change-transform"
           style={{
             backgroundColor: '#ffffff',
-            boxShadow: isLightActive
-              ? '0 0 8px #ffffff, 0 0 20px rgba(255, 255, 255, 0.9), 0 0 45px rgba(255, 255, 255, 0.6), 0 0 90px rgba(255, 255, 255, 0.3)'
-              : 'none',
+            boxShadow:
+              '0 0 8px #ffffff, 0 0 20px rgba(255, 255, 255, 0.9), 0 0 45px rgba(255, 255, 255, 0.55), 0 0 90px rgba(255, 255, 255, 0.25)',
           }}
         >
           {/* Subtle liquid platinum / white core highlight inside the tube */}
@@ -100,27 +86,21 @@ export function StudioLightRig({
 
         {/* Ambient Halo directly hugging the light bar */}
         <motion.div
-          animate={{
-            opacity: isLightActive ? (lightState === 'flicker' ? 0.6 : 1) : 0,
-          }}
-          transition={{ duration: 0.5 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="absolute -top-3 w-[300px] sm:w-[460px] h-10 bg-radial-gradient from-white/40 via-white/10 to-transparent blur-md rounded-full pointer-events-none"
         />
       </div>
 
       {/* =========================================================================
           3. VOLUMETRIC CONICAL LIGHT BEAM (Theatrical Stage Spotlight)
-          Spreads downwards from the light tube, illuminating:
-          - The Mascot / Emblem Tile
-          - The Headline ("Where Reputations Are Proven In Seconds.")
-          - The 3D MacBook Pro Arena
+          Blooms smoothly once right after the tube ignites and remains completely steady.
          ========================================================================= */}
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{
-          opacity: lightState === 'off' ? 0 : lightState === 'flicker' ? 0.5 : 1,
-        }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
         className="relative w-full max-w-[1400px] h-[580px] sm:h-[700px] md:h-[820px] pointer-events-none -mt-[3px] flex justify-center overflow-visible"
       >
         {/* SVG Volumetric Light Cone with exact angular spread */}

@@ -374,14 +374,13 @@ export function LandingHero() {
         {/* Subtle Liquid Platinum / Silver Glow Centered above Headline */}
         <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[720px] h-[340px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),rgba(226,232,240,0.03),transparent_70%)] blur-[120px] pointer-events-none" />
 
-        {/* Subtle Cyan / Electric Atmosphere behind Centered 3D MacBook */}
-        <div className="absolute top-[38%] left-1/2 -translate-x-1/2 w-[880px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.08),rgba(99,102,241,0.03),transparent_70%)] blur-[140px] pointer-events-none" />
+        {/* Subtle Neutral Obsidian / Silver Atmosphere behind Centered 3D MacBook */}
+        <div className="absolute top-[38%] left-1/2 -translate-x-1/2 w-[880px] h-[520px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.03),rgba(148,163,184,0.02),transparent_70%)] blur-[140px] pointer-events-none" />
 
         {/* Soft Radial Vignette for Contrast */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/40 to-black pointer-events-none" />
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/30 to-black pointer-events-none" />
 
-        {/* Top & Bottom Cinematic Dissolves */}
-        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-black via-black/80 to-transparent pointer-events-none" />
+        {/* Bottom Cinematic Dissolve */}
         <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
       </div>
 
@@ -394,10 +393,10 @@ export function LandingHero() {
       >
         {/* Monolithic Single-Row Headline */}
         <motion.h1
-          initial={{ opacity: 0, y: 22 }}
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.9 }}
-          className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.8rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2"
+          transition={{ duration: 0.65, delay: 0.62, ease: [0.22, 1, 0.36, 1] }}
+          className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.8rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2 will-change-transform"
         >
           <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
             Where Reputations Are Proven{' '}
@@ -409,10 +408,10 @@ export function LandingHero() {
 
         {/* Action Buttons: Start Battle & Challenge a Friend */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 1.25 }}
-          className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
+          transition={{ duration: 0.55, delay: 0.88, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4 will-change-transform"
         >
           {/* Primary Button */}
           <Link
@@ -420,9 +419,9 @@ export function LandingHero() {
             prefetch={true}
             onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
             onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
-            className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-950 font-extrabold text-sm sm:text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.96] shadow-[0_0_30px_rgba(255,255,255,0.45)] cursor-pointer"
+            className="group relative inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gradient-to-b from-white via-zinc-100 to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/70 font-extrabold text-sm sm:text-base transition-all duration-200 hover:scale-[1.03] active:scale-[0.96] shadow-[0_0_28px_rgba(255,255,255,0.3)] cursor-pointer"
           >
-            <Play className="w-3.5 h-3.5 fill-slate-950 text-slate-950" />
+            <Play className="w-3.5 h-3.5 fill-zinc-950 text-zinc-950" />
             <span>Start Battle →</span>
           </Link>
 
@@ -441,26 +440,18 @@ export function LandingHero() {
 
         {/* ================= CENTERED PHOTOREALISTIC AWWWARDS MACBOOK (ELEVATED 3D STAGE) ================= */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 24 }}
+          initial={{ opacity: 0, scale: 0.97, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.45 }}
-          className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-4 sm:mt-6 transition-transform duration-300 ease-out mx-auto"
+          transition={{ duration: 0.75, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-4 sm:mt-6 transition-transform duration-300 ease-out mx-auto will-change-transform"
           style={{
             perspective: '1400px',
           }}
         >
-          {/* ================= 3D STAGE ELEVATION & BACKLIGHTING ================= */}
-          {/* A. Dark Ambient Stage Shield: Creates soft depth separation behind the laptop */}
-          <div className="absolute -inset-6 sm:-inset-10 bg-radial-gradient from-black/95 via-black/75 to-transparent rounded-[48px] blur-2xl pointer-events-none -z-10" />
-
-          {/* B. Dual Luminous Rim Backlight: Illuminates the MacBook lid from behind in cyan & silver platinum */}
-          <div className="absolute -top-10 sm:-top-16 left-1/2 -translate-x-1/2 w-[78%] h-36 bg-gradient-to-b from-cyan-500/25 via-indigo-600/10 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
-          <div className="absolute -top-4 sm:-top-8 left-1/2 -translate-x-1/2 w-[55%] h-24 bg-gradient-to-b from-white/20 via-slate-400/10 to-transparent rounded-full blur-2xl pointer-events-none -z-10" />
-
-          {/* C. Physical Ground Contact Shadow & Stage Elevation: Creates real physical separation from the background */}
+          {/* ================= 3D STAGE GROUNDING (Preserves overhead light beam cleanly) ================= */}
+          {/* Physical Ground Contact Shadow & Subtle Floor Rim */}
           <div className="absolute -bottom-8 sm:-bottom-12 left-1/2 -translate-x-1/2 w-[92%] h-14 bg-black/95 rounded-[100%] blur-2xl pointer-events-none -z-10" />
           <div className="absolute -bottom-3 sm:-bottom-5 left-1/2 -translate-x-1/2 w-[75%] h-6 bg-black/90 rounded-[100%] blur-md pointer-events-none -z-10" />
-          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-[55%] h-3 bg-cyan-400/20 rounded-full blur-sm pointer-events-none -z-10" />
 
           {/* Interactive 3D Cursor Tilt Container */}
           <Link
@@ -688,6 +679,9 @@ export function LandingHero() {
                 <img
                   src="/brand/hero-macbook-front-3d-v6.webp"
                   alt="Apple MacBook Pro 3D Space Black Hardware Frame"
+                  loading="eager"
+                  decoding="sync"
+                  style={{ contentVisibility: 'visible' }}
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20 drop-shadow-[0_40px_80px_rgba(0,0,0,0.98)]"
                 />
 
