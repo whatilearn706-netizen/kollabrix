@@ -148,7 +148,18 @@ export async function POST(request: NextRequest) {
       }
 
       case 'match_won': {
-        // Anti-Cheat Validation:
+        // First solver wins atomically: if already finished, return authoritative finished room so rival sees defeat
+        if (room.status === 'finished' && room.winnerTeam) {
+          return NextResponse.json(
+            { success: true, alreadyFinished: true, room },
+            {
+              headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+              },
+            }
+          );
+        }
+
         // 1. Match must currently be active or starting
         if (room.status !== 'in_progress' && room.status !== 'starting') {
           return NextResponse.json({ success: false, error: 'Match is not actively running' }, { status: 400 });
@@ -165,9 +176,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // 3. Winner must match the verified participant's squad
+        // 3. Winner is locked strictly to the first verified participant's squad
         const playerTeam = isAlpha ? 'Team Alpha' : 'Team Omega';
-        const declaredWinner = payload?.winnerTeam === 'Team Omega' ? 'Team Omega' : 'Team Alpha';
 
         // 4. Update winner's verified test case score
         const totalTests = room.question?.testCases?.length || 3;
@@ -182,7 +192,7 @@ export async function POST(request: NextRequest) {
         }
 
         room.status = 'finished';
-        room.winnerTeam = declaredWinner;
+        room.winnerTeam = playerTeam;
         break;
       }
 
