@@ -44,7 +44,13 @@ async function verifyBiometricWithGemini(
   const keys = getGeminiApiKeys();
   if (keys.length === 0) return null;
 
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+  const models = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
+  ];
   const prompt = `You are a bank-grade biometric forensics and facial landmark identity verification AI.
 Examine and compare these two facial images:
 - Image 1: Live camera selfie captured in real time.
@@ -336,7 +342,7 @@ export async function POST(request: NextRequest) {
         new CompareFacesCommand({
           SourceImage: { Bytes: sourceBufferToCompare },
           TargetImage: { Bytes: liveBuffer },
-          SimilarityThreshold: 80, // Bank-grade mathematical similarity threshold
+          SimilarityThreshold: 70, // Calibrated for webcam-captured printed ID card photos
         })
       );
 
@@ -344,7 +350,7 @@ export async function POST(request: NextRequest) {
       const unmatched = compareRes.UnmatchedFaces || [];
 
       // Same cardholder confirmed by AWS Rekognition
-      if (matches.length > 0 && matches[0]?.Similarity && matches[0].Similarity >= 80) {
+      if (matches.length > 0 && matches[0]?.Similarity && matches[0].Similarity >= 72) {
         const score = Math.round(matches[0].Similarity * 10) / 10;
         return NextResponse.json({
           success: true,

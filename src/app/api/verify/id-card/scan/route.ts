@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createWorker } from 'tesseract.js';
+import {
+  RekognitionClient,
+  DetectTextCommand,
+  DetectFacesCommand,
+} from '@aws-sdk/client-rekognition';
 import { createClient } from '@supabase/supabase-js';
 import {
   DEFAULT_SUPABASE_URL,
@@ -130,7 +135,13 @@ Return ONLY a valid JSON object matching this schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+  const modelsToTry = [
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
+  ];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -141,7 +152,7 @@ Return ONLY a valid JSON object matching this schema:
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(9000),
+          signal: AbortSignal.timeout(5500),
           body: JSON.stringify({
             contents: [
               {
@@ -448,6 +459,22 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
     .map((l) => l.trim())
     .filter((l) => l.length > 1);
 
+  if (lines.length < 2) {
+    return {
+      isCardDetected: false,
+      reason: 'No physical student ID card recognized in frame.',
+      college: '',
+      studentRollNo: '',
+      course: '',
+      academicYear: '',
+      studentName: '',
+      portraitBox: null,
+      cardNameFound: false,
+      confidence: 0,
+      source: 'ocr-heuristic-engine',
+    };
+  }
+
   const fullText = lines.join('\n');
 
   // 1. College Extraction
@@ -597,6 +624,80 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
   };
 }
 
+async function extractWithAwsRekognition(
+  base64Data: string,
+  userDisplayName?: string,
+  existingCollege?: string
+) {
+  const accessKeyId = (
+    process.env.AWS_ACCESS_KEY_ID ||
+    process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID ||
+    ''
+  ).trim();
+  const secretAccessKey = (
+    process.env.AWS_SECRET_ACCESS_KEY ||
+    process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY ||
+    ''
+  ).trim();
+  const region = (
+    process.env.AWS_REGION ||
+    process.env.NEXT_PUBLIC_AWS_REGION ||
+    'ap-southeast-2'
+  ).trim();
+
+  if (!accessKeyId || !secretAccessKey) return null;
+
+  const cleanBase64 = base64Data.includes('base64,') ? base64Data.split('base64,')[1] : base64Data;
+  const imgBytes = Buffer.from(cleanBase64, 'base64');
+  const client = new RekognitionClient({
+    region,
+    credentials: { accessKeyId, secretAccessKey },
+  });
+
+  const [textSettled, facesSettled] = await Promise.allSettled([
+    client.send(new DetectTextCommand({ Image: { Bytes: imgBytes } })),
+    client.send(new DetectFacesCommand({ Image: { Bytes: imgBytes }, Attributes: ['DEFAULT'] })),
+  ]);
+
+  if (textSettled.status !== 'fulfilled') {
+    console.warn('AWS Rekognition DetectText note:', textSettled.reason?.message || textSettled.reason);
+    return null;
+  }
+
+  const lineDetections = (textSettled.value.TextDetections || [])
+    .filter((t) => t.Type === 'LINE' && (t.Confidence || 0) >= 68 && t.DetectedText)
+    .map((t) => t.DetectedText!.trim());
+
+  const recognizedText = lineDetections.join('\n');
+  const parsed = parseCollegiateData(recognizedText, userDisplayName, existingCollege);
+
+  let portraitBox: { ymin: number; xmin: number; ymax: number; xmax: number } | null = null;
+  if (facesSettled.status === 'fulfilled') {
+    const face = (facesSettled.value.FaceDetails || [])[0];
+    const bb = face?.BoundingBox;
+    if (
+      bb &&
+      typeof bb.Top === 'number' &&
+      typeof bb.Left === 'number' &&
+      typeof bb.Height === 'number' &&
+      typeof bb.Width === 'number'
+    ) {
+      portraitBox = {
+        ymin: Math.max(0, bb.Top - bb.Height * 0.12),
+        xmin: Math.max(0, bb.Left - bb.Width * 0.1),
+        ymax: Math.min(1, bb.Top + bb.Height * 1.12),
+        xmax: Math.min(1, bb.Left + bb.Width * 1.1),
+      };
+    }
+  }
+
+  return {
+    ...parsed,
+    portraitBox: portraitBox || parsed.portraitBox,
+    source: 'aws-rekognition-ocr',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -641,7 +742,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 2. Secondary: Fast Optical OCR fallback with safety timeout
+    // 3. Zero-Quota AWS Rekognition OCR + Portrait Detection Fallback (Works 100% in Next.js standalone)
+    if (!extractedData) {
+      try {
+        extractedData = await extractWithAwsRekognition(cardImage, displayName, existingCollege);
+      } catch (awsErr: any) {
+        console.warn('AWS Rekognition OCR note:', awsErr?.message);
+      }
+    }
+
+    // 4. Last-Resort Tesseract Optical OCR Fallback
     if (!extractedData) {
       let recognizedText = '';
       try {

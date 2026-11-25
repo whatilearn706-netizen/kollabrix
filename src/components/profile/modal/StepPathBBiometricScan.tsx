@@ -531,14 +531,16 @@ export function StepPathBBiometricScan({
     try {
       const vw = video.videoWidth || 1280;
       const vh = video.videoHeight || 720;
+      const maxWidth = 960;
+      const scale = vw > maxWidth ? maxWidth / vw : 1;
       const offscreen = document.createElement('canvas');
-      offscreen.width = vw;
-      offscreen.height = vh;
+      offscreen.width = Math.round(vw * scale);
+      offscreen.height = Math.round(vh * scale);
       const ctx = offscreen.getContext('2d');
       if (!ctx) return null;
 
-      ctx.drawImage(video, 0, 0, vw, vh);
-      return offscreen.toDataURL('image/jpeg', 0.92);
+      ctx.drawImage(video, 0, 0, offscreen.width, offscreen.height);
+      return offscreen.toDataURL('image/jpeg', 0.86);
     } catch (e) {
       return null;
     }
@@ -704,9 +706,9 @@ export function StepPathBBiometricScan({
         });
       }, 1000);
 
-      // 2. Periodic Continuous Frame Sampling (Every 1.6s, cropped to card guide box to isolate card & speed up upload)
+      // 2. Periodic Continuous Frame Sampling (Every 1.6s — preserves full horizontal & vertical cards)
       frameIntervalRef.current = setInterval(() => {
-        const frame = captureCardCropFrame() || captureCurrentFrame();
+        const frame = captureCurrentFrame();
         if (frame) {
           setScanFramesCount((c) => c + 1);
           sendFrameToBackend(frame);
@@ -719,7 +721,7 @@ export function StepPathBBiometricScan({
       if (continuousScanTimerRef.current) clearInterval(continuousScanTimerRef.current);
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
     };
-  }, [stage, startCamera, captureCardCropFrame, captureCurrentFrame, sendFrameToBackend, finalizeCardScan]);
+  }, [stage, startCamera, captureCurrentFrame, sendFrameToBackend, finalizeCardScan]);
 
   // ── Face Continuous Camera Initializer ──
   useEffect(() => {
@@ -775,17 +777,9 @@ export function StepPathBBiometricScan({
 
       setTimeout(async () => {
         stopCamera();
-        setStage('verified_done');
 
         try {
-          if (typeof window !== 'undefined' && userId) {
-            localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
-            localStorage.setItem('linkora_college_verified', 'true');
-          }
-        } catch (e) {}
-
-        try {
-          await fetch('/api/verify/path-b-face-id', {
+          const persistRes = await fetch('/api/verify/path-b-face-id', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -801,9 +795,29 @@ export function StepPathBBiometricScan({
               matchScore: score,
             }),
           });
+          const persistData = await persistRes.json().catch(() => ({}));
+          if (persistRes.status === 409 || persistData?.isDuplicateCard) {
+            setDuplicateCardError(
+              persistData?.error ||
+                'Fraud Prevention: This student ID card is already verified on another Kollabrix account. Each card can only be used once.'
+            );
+            setIsCardDetected(false);
+            isCardDetectedRef.current = false;
+            setStage('card_continuous');
+            return;
+          }
         } catch (e) {
           console.warn('Path B persistence note:', e);
         }
+
+        setStage('verified_done');
+
+        try {
+          if (typeof window !== 'undefined' && userId) {
+            localStorage.setItem(`linkora_college_verified_${userId}`, 'true');
+            localStorage.setItem('linkora_college_verified', 'true');
+          }
+        } catch (e) {}
 
         onVerificationComplete({
           studentName: verifiedStudentName,
