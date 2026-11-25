@@ -7,11 +7,6 @@ import { isSupabaseConfigured } from '@/lib/supabase/isConfigured';
 import {
   AlertCircle,
   CheckCircle2,
-  Mail,
-  ArrowRight,
-  ShieldCheck,
-  Sparkles,
-  Lock,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
@@ -68,8 +63,6 @@ export function LoginForm({
   // General Loading & Feedback States
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isGitHubLoading, setIsGitHubLoading] = useState(false);
-  const [isEmailLoading, setIsEmailLoading] = useState(false);
-  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
@@ -206,49 +199,7 @@ export function LoginForm({
     }
   };
 
-  // 3. Email Magic Link Sign-in
-  const handleEmailSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid student or developer email address.');
-      return;
-    }
-
-    setError(null);
-    setInfoMessage(null);
-
-    if (!isSupabaseConfigured()) {
-      setError('Supabase credentials are not configured yet.');
-      return;
-    }
-
-    const canonicalOrigin =
-      typeof window !== 'undefined'
-        ? window.location.origin
-        : 'https://kollabrix.in';
-
-    try {
-      setIsEmailLoading(true);
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: {
-          emailRedirectTo: `${canonicalOrigin}/auth/callback?next=${redirectUrl}`,
-        },
-      });
-
-      if (otpError) {
-        setError(otpError.message);
-      } else {
-        setInfoMessage('Magic login link sent! Check your email inbox to sign in instantly.');
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Failed to send magic login link.');
-    } finally {
-      setIsEmailLoading(false);
-    }
-  };
-
-  const isAnyLoading = isGoogleLoading || isGitHubLoading || isEmailLoading;
+  const isAnyLoading = isGoogleLoading || isGitHubLoading;
 
   return (
     <div className="w-full space-y-6 text-white select-none">
@@ -307,71 +258,6 @@ export function LoginForm({
           <GitHubIcon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-slate-200 group-hover:scale-105 transition-transform" />
           <span>{isGitHubLoading ? 'Connecting to GitHub...' : 'Continue with GitHub'}</span>
         </button>
-      </div>
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center">
-        <div className="w-full border-t border-white/[0.08]" />
-        <span className="absolute bg-[#0c1017] px-3 text-[11px] font-mono uppercase text-slate-500 tracking-wider">
-          or magic email
-        </span>
-      </div>
-
-      {/* Email Magic Link Form */}
-      <form onSubmit={handleEmailSignIn} className="space-y-2.5">
-        <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@college.edu or personal email"
-            disabled={isAnyLoading}
-            className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-[#080b11] border border-white/10 focus:border-amber-400/60 focus:ring-1 focus:ring-amber-400/30 text-white placeholder-slate-500 text-xs sm:text-sm transition-all outline-none"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isAnyLoading || !email}
-          className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          <span>{isEmailLoading ? 'Sending Link...' : 'Send Magic Link'}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </form>
-
-      {/* Footer Navigation: Switch to Signup */}
-      <div className="pt-2 border-t border-white/[0.06] flex flex-col items-center gap-3 text-center">
-        <div className="text-xs text-slate-400">
-          Don&apos;t have an account?{' '}
-          {onSwitchToSignup ? (
-            <button
-              type="button"
-              onClick={onSwitchToSignup}
-              className="font-bold text-amber-400 hover:text-amber-300 transition-colors underline underline-offset-4 cursor-pointer"
-            >
-              Sign up free
-            </button>
-          ) : (
-            <a
-              href="/signup"
-              className="font-bold text-amber-400 hover:text-amber-300 transition-colors underline underline-offset-4"
-            >
-              Sign up free
-            </a>
-          )}
-        </div>
-
-        {/* Real Builder Trust Badges (The Anti-AI Trust Element) */}
-        <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-slate-500 pt-1">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            <span>256-bit Encrypted</span>
-          </span>
-          <span>•</span>
-          <span>100% Free for Students</span>
-        </div>
       </div>
     </div>
   );
