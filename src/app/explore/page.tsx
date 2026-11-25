@@ -533,13 +533,13 @@ export default function ExploreProjectsPage() {
         key: 'In Progress' as const,
         label: 'In Progress',
         items: inProgressProjects,
-        icon: <Zap className="w-4 h-4 text-amber-400" />,
+        icon: <Zap className="w-4 h-4 text-zinc-200" />,
       },
       {
         key: 'Completed' as const,
         label: 'Completed',
         items: completedProjects,
-        icon: <Trophy className="w-4 h-4 text-cyan-400" />,
+        icon: <Trophy className="w-4 h-4 text-zinc-300" />,
       },
     ].filter((sec) => sec.items.length > 0);
   }, [recruitingProjects, inProgressProjects, completedProjects]);
@@ -579,9 +579,9 @@ export default function ExploreProjectsPage() {
               <Link href="/projects/new">
                 <button
                   type="button"
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-[#121622] hover:bg-slate-800 text-slate-200 hover:text-white text-sm font-medium transition-all shadow-sm cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/60 bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 text-sm font-bold transition-all shadow-sm cursor-pointer"
                 >
-                  <span className="text-base leading-none font-semibold">+</span>
+                  <span className="text-base leading-none font-bold">+</span>
                   <span>Submit a project</span>
                 </button>
               </Link>
@@ -589,9 +589,9 @@ export default function ExploreProjectsPage() {
               <button
                 type="button"
                 onClick={handleCreateProjectClick}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 bg-[#121622] hover:bg-slate-800 text-slate-200 hover:text-white text-sm font-medium transition-all shadow-sm cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/60 bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 text-sm font-bold transition-all shadow-sm cursor-pointer"
               >
-                <span className="text-base leading-none font-semibold">+</span>
+                <span className="text-base leading-none font-bold">+</span>
                 <span>Submit a project</span>
               </button>
             )
@@ -611,27 +611,27 @@ export default function ExploreProjectsPage() {
 
       {/* Error notice if fallback active */}
       {fetchError && (
-        <div className="p-3.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs flex items-center justify-between font-medium">
+        <div className="p-3.5 rounded-xl bg-[#090C12] border border-white/15 text-zinc-200 text-xs flex items-center justify-between font-medium">
           <span>{fetchError}</span>
-          <Button variant="ghost" size="sm" onClick={() => fetchProjects()} className="text-amber-900 text-xs font-bold">
+          <Button variant="ghost" size="sm" onClick={() => fetchProjects()} className="text-white text-xs font-bold hover:bg-white/10">
             Retry
           </Button>
         </div>
       )}
 
       {/* Results Header */}
-      <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+      <div className="flex items-center justify-between text-xs text-zinc-400 font-medium">
         <div>
-          Showing <strong className="text-slate-900 dark:text-white">{startRecord}</strong> - <strong className="text-slate-900 dark:text-white">{endRecord}</strong> of{' '}
-          <strong className="text-violet-600 dark:text-violet-400 font-bold">{totalCount}</strong> projects
+          Showing <strong className="text-white">{startRecord}</strong> - <strong className="text-white">{endRecord}</strong> of{' '}
+          <strong className="text-white font-bold">{totalCount}</strong> projects
         </div>
-        <div className="font-mono text-[11px] text-slate-500">
+        <div className="font-mono text-[11px] text-zinc-500">
           Page {currentPage} of {totalPages}
         </div>
       </div>
 
       {/* Natural Page Flow Container (no trapped nested vertical scrollbar) */}
-      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-3 sm:p-5 shadow-xs">
+      <div className="relative rounded-3xl border border-white/10 bg-[#090C12]/70 p-3 sm:p-5 shadow-xs">
         <div className="px-1 py-2">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 gap-y-8 lg:gap-y-10">
@@ -641,23 +641,23 @@ export default function ExploreProjectsPage() {
             </div>
           ) : projects.length === 0 ? (
             /* Empty State */
-            <div className="rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-12 text-center max-w-lg mx-auto space-y-4 shadow-sm my-6">
-              <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto">
+            <div className="rounded-3xl bg-[#090C12] border border-white/10 p-12 text-center max-w-lg mx-auto space-y-4 shadow-sm my-6">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/15 text-zinc-200 flex items-center justify-center mx-auto">
                 <FolderSearch className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">No matching projects found</h3>
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                <h3 className="text-lg font-black text-white">No matching projects found</h3>
+                <p className="mt-1 text-xs text-zinc-400 leading-relaxed">
                   We couldn&apos;t find any projects matching your current combination of keywords and filters. Try adjusting your search or clearing active filters.
                 </p>
               </div>
               <div className="pt-2 flex justify-center gap-3">
-                <Button variant="outline" size="sm" onClick={handleClearFilters} className="font-bold border-slate-200 dark:border-charcoal-700">
+                <Button variant="outline" size="sm" onClick={handleClearFilters} className="font-bold border-white/15 text-zinc-200 hover:bg-white/[0.08]">
                   Clear All Filters
                 </Button>
                 {user && !isFaculty ? (
                   <Link href="/projects/new">
-                    <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white font-bold">
+                    <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-3.5 h-3.5" />} className="bg-gradient-to-b from-white to-zinc-200 text-zinc-950 font-bold border border-white/60">
                       Publish this Idea
                     </Button>
                   </Link>

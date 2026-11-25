@@ -479,7 +479,7 @@ export function LandingHero() {
               transform: `perspective(1400px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
               transformStyle: 'preserve-3d',
             }}
-            className="block relative w-full aspect-[1024/768] transition-all duration-300 group cursor-pointer active:scale-[0.99]"
+            className="block relative w-full aspect-[1110/840] transition-all duration-300 group cursor-pointer active:scale-[0.99]"
           >
             {/* Full-coverage transparent click overlay ensuring 100% of the laptop surface reliably responds to clicks and taps */}
             <div
@@ -487,8 +487,11 @@ export function LandingHero() {
               aria-label="Enter Battle Arena"
             />
 
-            {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP */}
-            <div className="absolute left-[11.91%] top-[17.06%] w-[76.07%] h-[53.25%] overflow-hidden bg-[#06080e] flex flex-col select-none rounded-t-[4px] shadow-inner text-left z-10 pointer-events-none">
+            {/* Full-display dark obsidian backdrop so top corners beside the webcam notch stay seamless */}
+            <div className="absolute left-[13.51%] top-[6.19%] w-[72.97%] h-[61.19%] bg-[#0b0e17] rounded-t-[6px] pointer-events-none z-10" />
+
+            {/* 1. PHYSICAL MACBOOK DISPLAY: LIVE 3-MINUTE BATTLE TIMELOOP (screen content untouched) */}
+            <div className="absolute left-[13.51%] top-[7.95%] w-[72.97%] h-[59.43%] overflow-hidden bg-[#06080e] flex flex-col select-none shadow-inner text-left z-10 pointer-events-none">
                   
                   {/* Top HUD: Brand & Live Match Clock */}
                   <div className="relative h-7 sm:h-9 bg-[#0b0e17] px-2.5 sm:px-3.5 flex items-center justify-between border-b border-neutral-800 text-[10px] sm:text-xs font-mono select-none z-10">
@@ -681,10 +684,10 @@ export function LandingHero() {
                   </div>
                 </div>
 
-                {/* 2. PHOTOREALISTIC MACBOOK HARDWARE FRAME (Awwwards Lorenzo Lottici Reference) */}
+                {/* 2. PHOTOREALISTIC 3D FRONT-FACING SPACE BLACK MACBOOK PRO HARDWARE FRAME */}
                 <img
-                  src="/brand/hero-macbook-lorenzo-v3.webp"
-                  alt="Apple MacBook Pro Hardware Frame"
+                  src="/brand/hero-macbook-front-3d-v6.webp"
+                  alt="Apple MacBook Pro 3D Space Black Hardware Frame"
                   className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20 drop-shadow-[0_40px_80px_rgba(0,0,0,0.98)]"
                 />
 

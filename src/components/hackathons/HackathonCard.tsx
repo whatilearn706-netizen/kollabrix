@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Hackathon } from '@/types/database';
 import { Button } from '@/components/ui/Button';
-import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { useSiteTheme, isColorDark } from '@/components/theme/SiteThemeProvider';
 import {
   Trophy,
   Calendar,
@@ -80,32 +80,28 @@ export function HackathonCard({
     sponsoredMeta.externalRegistrationUrl ||
     ((hackathon as any).is_external_registration && hackathon.website_url && !hackathon.website_url.includes('/h/') ? hackathon.website_url : null);
 
+  const isCardDark = isDark || isColorDark(theme.surfaceColor);
+
   return (
     <div
       style={{
-        backgroundColor: theme.surfaceColor,
-        borderColor: !isSponsored ? theme.borderColor : undefined,
+        backgroundColor: isCardDark ? '#090C12' : theme.surfaceColor,
+        borderColor: !isSponsored ? (isCardDark ? 'rgba(255,255,255,0.1)' : theme.borderColor) : 'rgba(255,255,255,0.22)',
         borderRadius: theme.borderRadius,
       }}
-      className={`site-card card-hover-lift border flex flex-col justify-between group relative overflow-hidden shadow-sm transition-all duration-300 ${
-        isSponsored
-          ? `${themeStyle.cardBorder} ${themeStyle.cardGlow} ring-1`
-          : ''
-      }`}
+      className={`site-card card-hover-lift border flex flex-col justify-between group relative overflow-hidden shadow-sm hover:border-white/25 transition-all duration-300`}
     >
-      {/* Top glowing accent bar */}
+      {/* Top brushed silver shimmer bar */}
       <div
-        className={`absolute inset-x-0 top-0 h-1.5 transition-opacity duration-300 pointer-events-none z-20 ${
-          isSponsored
-            ? 'opacity-100 bg-gradient-to-r from-amber-400 via-rose-500 to-indigo-500'
-            : 'bg-gradient-to-r from-amber-500 via-rose-500 to-violet-500 opacity-0 group-hover:opacity-100'
+        className={`absolute inset-x-0 top-0 h-[1.5px] transition-opacity duration-300 pointer-events-none z-20 bg-gradient-to-r from-zinc-600 via-white/90 to-zinc-600 ${
+          isSponsored ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         }`}
       />
 
       {/* Card Header & Banner Section */}
       <div>
         {/* Banner with Floating Badges */}
-        <div className="h-36 sm:h-40 overflow-hidden relative border-b border-slate-200/50 dark:border-white/10 bg-slate-950">
+        <div className="h-36 sm:h-40 overflow-hidden relative border-b border-white/10 bg-[#05070b]">
           <Link href={`/hackathons/${hackathon.id}`} className="block w-full h-full cursor-pointer">
             {cardBanner ? (
               <div className="relative w-full h-full overflow-hidden flex items-center justify-center bg-black">
@@ -122,17 +118,17 @@ export function HackathonCard({
                 />
               </div>
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-indigo-950 via-purple-950 to-slate-950 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/25 via-indigo-600/10 to-transparent" />
-                <div className="flex items-center gap-2.5 z-10 opacity-80 group-hover:scale-105 transition-transform duration-300">
-                  <div className="p-2 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 shadow-sm">
+              <div className="w-full h-full bg-gradient-to-br from-[#0e131d] via-[#090C12] to-black flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/10 via-zinc-700/5 to-transparent" />
+                <div className="flex items-center gap-2.5 z-10 opacity-85 group-hover:scale-105 transition-transform duration-300">
+                  <div className="p-2 rounded-xl bg-white/[0.08] border border-white/15 text-zinc-200 shadow-sm">
                     <Trophy className="w-5 h-5" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-mono font-bold tracking-widest text-amber-300/90 uppercase block">
+                    <span className="text-[11px] font-mono font-bold tracking-widest text-zinc-200 uppercase block">
                       {hackathon.mode} Sprint
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-zinc-400 font-mono">
                       {companyName}
                     </span>
                   </div>
@@ -147,13 +143,13 @@ export function HackathonCard({
           {/* Floating Top Pill for Sponsored Challenges */}
           {isSponsored ? (
             <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-10 gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/20 text-white shadow-lg text-[10px] font-black uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-                <Zap className="w-3 h-3 text-amber-400 fill-amber-400" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-lg text-[10px] font-black uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                <Zap className="w-3 h-3 text-zinc-200 fill-zinc-200" />
                 <span className="truncate max-w-[150px]">{companyName} Partner</span>
               </div>
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/30 text-amber-200 border border-amber-400/50 backdrop-blur-md shadow-xs">
-                ⭐ Priority #{sponsoredMeta.priorityRank}
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-white/15 text-zinc-100 border border-white/25 backdrop-blur-md shadow-xs">
+                Priority #{sponsoredMeta.priorityRank}
               </span>
             </div>
           ) : (
@@ -162,9 +158,7 @@ export function HackathonCard({
                 className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border backdrop-blur-md shadow-xs ${
                   hackathon.mode === 'Online'
                     ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
-                    : hackathon.mode === 'In-Person'
-                    ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
-                    : 'bg-violet-950/80 text-violet-300 border-violet-500/40'
+                    : 'bg-[#090C12]/85 text-zinc-200 border-white/20'
                 }`}
               >
                 {hackathon.mode}
@@ -199,7 +193,7 @@ export function HackathonCard({
                 onClick={() => onToggleSave(hackathon.id)}
                 className={`p-1.5 rounded-full backdrop-blur-md transition-all ${
                   isSaved
-                    ? 'bg-amber-500/90 text-white shadow-md'
+                    ? 'bg-white text-zinc-950 shadow-md'
                     : 'bg-black/60 text-white/80 hover:text-white hover:bg-black/80'
                 }`}
                 title={isSaved ? 'Remove from Saved' : 'Save Hackathon'}
@@ -220,9 +214,7 @@ export function HackathonCard({
                   className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
                     hackathon.mode === 'Online'
                       ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                      : hackathon.mode === 'In-Person'
-                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                      : 'bg-violet-500/15 text-violet-400 border-violet-500/30'
+                      : 'bg-white/[0.06] text-zinc-200 border-white/15'
                   }`}
                 >
                   {hackathon.mode}
@@ -230,7 +222,7 @@ export function HackathonCard({
               )}
 
               {isEnrolled && (
-                <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                   <CheckCircle2 className="w-3 h-3" />
                   <span>Enrolled Teammate</span>
                 </span>
@@ -241,20 +233,20 @@ export function HackathonCard({
             <div className="flex items-center gap-1 text-[10px] font-mono">
               <Clock className="w-3 h-3 opacity-60" />
               {isPast ? (
-                <span className="text-amber-400 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 flex items-center gap-1">
-                  <Trophy className="w-2.5 h-2.5 text-amber-400" />
+                <span className="text-zinc-200 font-bold bg-white/[0.08] px-2 py-0.5 rounded border border-white/20 flex items-center gap-1">
+                  <Trophy className="w-2.5 h-2.5 text-zinc-200" />
                   Concluded • Results Declared
                 </span>
               ) : isClosed ? (
-                <span className="text-red-400 font-bold bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20">
+                <span className="text-zinc-400 font-bold bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/10">
                   Registration Closed
                 </span>
               ) : isUrgent ? (
-                <span className="text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 animate-pulse">
+                <span className="text-zinc-100 font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/25">
                   {diffDays === 0 ? 'Closes today!' : `${diffDays} days left to apply`}
                 </span>
               ) : (
-                <span style={{ color: theme.mutedTextColor }}>
+                <span style={{ color: isCardDark ? '#a1a1aa' : theme.mutedTextColor }}>
                   {diffDays} days left to apply
                 </span>
               )}
@@ -265,8 +257,8 @@ export function HackathonCard({
           <div className="space-y-1">
             <Link href={`/hackathons/${hackathon.id}`}>
               <h3
-                style={{ color: theme.headingColor }}
-                className={`font-black text-base line-clamp-1 group-hover:${themeStyle.accentText} transition-colors tracking-tight`}
+                style={{ color: isCardDark ? '#ffffff' : theme.headingColor }}
+                className="font-black text-base line-clamp-1 group-hover:text-zinc-200 transition-colors tracking-tight"
                 title={hackathon.title}
               >
                 {hackathon.title}
@@ -274,7 +266,7 @@ export function HackathonCard({
             </Link>
 
             {isSponsored && tagline ? (
-              <p className="text-xs text-amber-200/80 font-medium line-clamp-2 leading-snug">
+              <p className="text-xs text-zinc-300 font-medium line-clamp-2 leading-snug">
                 {tagline}
               </p>
             ) : (
@@ -411,8 +403,7 @@ export function HackathonCard({
               <Button
                 variant="primary"
                 size="sm"
-                style={{ backgroundColor: theme.brandColor, borderRadius: theme.borderRadius }}
-                className="w-full justify-center text-white font-bold shadow-md cursor-pointer"
+                className="w-full justify-center bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60 font-bold shadow-md cursor-pointer"
                 rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               >
                 Team Workspace
@@ -423,7 +414,7 @@ export function HackathonCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full justify-center opacity-70 text-xs font-bold cursor-pointer"
+                className="w-full justify-center opacity-80 border-white/15 text-zinc-200 hover:bg-white/[0.06] text-xs font-bold cursor-pointer"
               >
                 View Event Details
               </Button>
@@ -432,12 +423,7 @@ export function HackathonCard({
             <Link href={`/hackathons/${hackathon.id}`} className="flex-1 block">
               <button
                 type="button"
-                style={!isSponsored ? { backgroundColor: theme.brandColor } : undefined}
-                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn cursor-pointer ${
-                  isSponsored
-                    ? `bg-gradient-to-r ${themeStyle.buttonGradient} shadow-lg ring-1 ring-white/20`
-                    : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 text-white hover:opacity-95'
-                }`}
+                className="w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn cursor-pointer bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60"
               >
                 <span>{sponsoredMeta.customCtaText || 'Register on Unstop'}</span>
                 <ExternalLink className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 transition-transform duration-200" />
@@ -447,12 +433,7 @@ export function HackathonCard({
             <Link href={`/hackathons/${hackathon.id}`} className="flex-1">
               <button
                 type="button"
-                style={!isSponsored ? { backgroundColor: theme.brandColor } : undefined}
-                className={`w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn cursor-pointer ${
-                  isSponsored
-                    ? `bg-gradient-to-r ${themeStyle.buttonGradient} shadow-lg ring-1 ring-white/20`
-                    : 'text-white hover:opacity-95'
-                }`}
+                className="w-full py-2 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-md group/btn cursor-pointer bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60"
               >
                 {hackathon.access_type === 'private' ? (
                   <>

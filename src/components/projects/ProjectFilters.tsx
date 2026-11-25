@@ -113,10 +113,10 @@ export function ProjectFilters({
       </div>
 
       {/* 2. Sleek Search & Filter Bar */}
-      <div className="relative rounded-2xl bg-[#0d111c] border border-slate-800/90 p-2 sm:p-2.5 flex items-center gap-3 shadow-lg">
-        {/* Violet Search Icon */}
+      <div className="relative rounded-2xl bg-[#090C12] border border-white/10 p-2 sm:p-2.5 flex items-center gap-3 shadow-lg">
+        {/* Titanium Search Icon */}
         <div className="pl-2 shrink-0">
-          <Search className="w-5 h-5 text-violet-400" />
+          <Search className="w-5 h-5 text-zinc-400" />
         </div>
 
         {/* Input Field */}
@@ -191,10 +191,10 @@ export function ProjectFilters({
                     page: 1,
                   })
                 }
-                className="w-full appearance-none rounded-xl bg-[#141926] border border-slate-700 text-sm font-semibold text-slate-100 py-2.5 px-3.5 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full appearance-none rounded-xl bg-[#090C12] border border-white/10 text-sm font-semibold text-zinc-100 py-2.5 px-3.5 focus:outline-none focus:border-white/30 transition-colors"
               >
                 {DIFFICULTIES.map((d) => (
-                  <option key={d} value={d} className="bg-[#141926] text-white">
+                  <option key={d} value={d} className="bg-[#090C12] text-white">
                     {d}
                   </option>
                 ))}
@@ -215,10 +215,10 @@ export function ProjectFilters({
                     page: 1,
                   })
                 }
-                className="w-full appearance-none rounded-xl bg-[#141926] border border-slate-700 text-sm font-semibold text-slate-100 py-2.5 px-3.5 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full appearance-none rounded-xl bg-[#090C12] border border-white/10 text-sm font-semibold text-zinc-100 py-2.5 px-3.5 focus:outline-none focus:border-white/30 transition-colors"
               >
                 {STATUSES.map((s) => (
-                  <option key={s} value={s} className="bg-[#141926] text-white">
+                  <option key={s} value={s} className="bg-[#090C12] text-white">
                     {s}
                   </option>
                 ))}
@@ -239,12 +239,12 @@ export function ProjectFilters({
                     page: 1,
                   })
                 }
-                className="w-full appearance-none rounded-xl bg-[#141926] border border-slate-700 text-sm font-semibold text-slate-100 py-2.5 px-3.5 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full appearance-none rounded-xl bg-[#090C12] border border-white/10 text-sm font-semibold text-zinc-100 py-2.5 px-3.5 focus:outline-none focus:border-white/30 transition-colors"
               >
-                <option value="newest" className="bg-[#141926] text-white">
+                <option value="newest" className="bg-[#090C12] text-white">
                   Newest First
                 </option>
-                <option value="alphabetical" className="bg-[#141926] text-white">
+                <option value="alphabetical" className="bg-[#090C12] text-white">
                   Alphabetical (A-Z)
                 </option>
               </select>
@@ -253,7 +253,7 @@ export function ProjectFilters({
 
           {/* Popular Skills */}
           {availableSkills && availableSkills.length > 0 && (
-            <div className="pt-3 border-t border-slate-800/80">
+            <div className="pt-3 border-t border-white/10">
               <div className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2 font-semibold">
                 Filter by Skill
               </div>
@@ -273,8 +273,8 @@ export function ProjectFilters({
                       }
                       className={`text-xs font-mono px-3 py-1 rounded-lg transition-all duration-150 cursor-pointer ${
                         isSelected
-                          ? 'bg-amber-500 text-black font-bold shadow-xs'
-                          : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
+                          ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 font-bold shadow-xs'
+                          : 'bg-white/[0.05] text-zinc-300 hover:bg-white/[0.1] hover:text-white border border-white/10'
                       }`}
                     >
                       {skill}

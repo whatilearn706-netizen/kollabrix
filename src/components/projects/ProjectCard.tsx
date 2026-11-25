@@ -39,14 +39,20 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
   return (
     <div
       style={{
-        backgroundColor: theme.surfaceColor,
-        borderColor: project.is_featured ? theme.brandColor : theme.borderColor,
+        backgroundColor: isCardDark ? '#090C12' : theme.surfaceColor,
+        borderColor: project.is_featured
+          ? isCardDark
+            ? 'rgba(255, 255, 255, 0.28)'
+            : theme.brandColor
+          : isCardDark
+            ? 'rgba(255, 255, 255, 0.1)'
+            : theme.borderColor,
         borderRadius: theme.borderRadius,
       }}
-      className={`site-card card-hover-lift group flex flex-col justify-between border p-6 sm:p-7 relative overflow-hidden h-full shadow-sm hover:shadow-md transition-all`}
+      className={`site-card card-hover-lift group flex flex-col justify-between border p-6 sm:p-7 relative overflow-hidden h-full shadow-sm hover:shadow-md hover:border-white/25 transition-all`}
     >
-      {/* Top glowing accent gradient bar on hover */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 via-pink-500 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      {/* Top brushed silver shimmer bar on hover */}
+      <div className="absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-zinc-600 via-white/90 to-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
       <div className="flex-1 flex flex-col space-y-4">
         {/* Top Badges Row */}
@@ -54,12 +60,11 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           <div className="flex items-center gap-1.5 flex-wrap">
             {project.is_featured && (
               <span
-                style={{
-                  backgroundColor: `${theme.brandColor}15`,
-                  borderColor: `${theme.brandColor}40`,
-                  color: theme.brandColor,
-                }}
-                className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                  isCardDark
+                    ? 'bg-white/10 border-white/25 text-zinc-100'
+                    : 'bg-zinc-900 text-white border-zinc-800'
+                }`}
               >
                 <Star className="w-3 h-3 fill-current" />
                 <span>Featured</span>
@@ -68,8 +73,8 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
             <span
               style={{
                 backgroundColor: effectiveDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9',
-                borderColor: theme.borderColor,
-                color: theme.bodyTextColor,
+                borderColor: effectiveDark ? 'rgba(255,255,255,0.1)' : theme.borderColor,
+                color: effectiveDark ? '#e4e4e7' : theme.bodyTextColor,
               }}
               className="inline-flex items-center text-[11px] font-bold px-2.5 py-0.5 rounded-lg border"
             >
@@ -78,16 +83,16 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
             <span
               style={{
                 backgroundColor: effectiveDark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
-                borderColor: theme.borderColor,
-                color: theme.mutedTextColor,
+                borderColor: effectiveDark ? 'rgba(255,255,255,0.08)' : theme.borderColor,
+                color: effectiveDark ? '#a1a1aa' : theme.mutedTextColor,
               }}
               className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-lg border"
             >
               {project.difficulty}
             </span>
             {isFacultyChallenge && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                <GraduationCap className="w-3 h-3 text-blue-500" />
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/[0.08] text-zinc-200 border border-white/20">
+                <GraduationCap className="w-3 h-3 text-zinc-200" />
                 <span>Faculty</span>
               </span>
             )}
@@ -96,15 +101,15 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           <span
             className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
               project.status === 'Recruiting'
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                 : project.status === 'In Progress'
-                ? 'bg-amber-500/10 text-amber-500 border-amber-500/30'
-                : 'bg-blue-500/10 text-blue-500 border-blue-500/30'
+                ? 'bg-white/[0.07] text-zinc-200 border-white/15'
+                : 'bg-white/[0.05] text-zinc-400 border-white/10'
             }`}
           >
             <span
               className={`w-1.5 h-1.5 rounded-full ${
-                project.status === 'Recruiting' ? 'bg-emerald-500 animate-pulse' : 'bg-current'
+                project.status === 'Recruiting' ? 'bg-emerald-400 animate-pulse' : 'bg-current'
               }`}
             />
             {project.status}
@@ -115,7 +120,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
         <Link href={`/projects/${project.id}`} className="block focus:outline-none">
           <h3
             style={{ color: cardHeadingColor }}
-            className={`text-base sm:text-lg font-black transition-colors duration-200 line-clamp-2 min-h-[3rem] leading-snug group-hover:text-violet-600 dark:group-hover:text-violet-400 ${isCardDark ? 'text-white site-heading-white' : ''}`}
+            className={`text-base sm:text-lg font-black transition-colors duration-200 line-clamp-2 min-h-[3rem] leading-snug group-hover:text-zinc-200 ${isCardDark ? 'text-white site-heading-white' : ''}`}
           >
             {project.title}
           </h3>
@@ -141,7 +146,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
                     borderColor: theme.borderColor,
                     color: theme.bodyTextColor,
                   }}
-                  className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all duration-200 group-hover:border-violet-500/30 group-hover:scale-[1.02]"
+                  className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-lg border transition-all duration-200 group-hover:border-white/25 group-hover:scale-[1.02]"
                 >
                   {tech}
                 </span>
@@ -257,10 +262,10 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
           <div
             className={`inline-flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-xl font-mono font-bold whitespace-nowrap tabular-nums ${
               isTeamFull
-                ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                ? 'bg-white/[0.05] text-zinc-400 border border-white/10'
                 : (project.desired_team_size || 4) - (project.current_team_size || 1) === 1
-                ? 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 font-bold'
-                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                ? 'bg-white/10 text-zinc-100 border border-white/25 font-bold'
+                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
             }`}
           >
             <Users className="w-3.5 h-3.5 text-current shrink-0" />
@@ -276,7 +281,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
 
           <Link
             href={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition-all shadow-xs group/link active:scale-[0.97] shrink-0"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60 transition-all shadow-xs group/link active:scale-[0.97] shrink-0"
             aria-label={`View details for ${project.title}`}
           >
             <span>{isTeamFull ? 'View' : 'Apply'}</span>

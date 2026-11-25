@@ -444,8 +444,8 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* Quick Navigation Dock — shifted directly right of user profile */}
-              <KollabrixQuickDock />
+              {/* Quick Navigation Dock — shown only on landing page so it never overlaps subpage CTAs */}
+              {pathname === '/' && <KollabrixQuickDock />}
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -456,7 +456,7 @@ export function Navbar() {
               >
                 Join Free
               </button>
-              <KollabrixQuickDock />
+              {pathname === '/' && <KollabrixQuickDock />}
             </div>
           )}
         </div>

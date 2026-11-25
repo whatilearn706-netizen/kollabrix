@@ -919,17 +919,17 @@ function MyProjectsContent() {
           onClick={() => setActiveTab('working')}
           className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2.5 whitespace-nowrap cursor-pointer ${
             activeTab === 'working'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm'
-              : 'text-slate-400 hover:text-white hover:bg-charcoal-850'
+              ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border border-white/60 shadow-sm'
+              : 'text-zinc-400 hover:text-white hover:bg-white/[0.06]'
           }`}
         >
-          <Zap className="w-4 h-4 text-amber-400" />
+          <Zap className={`w-4 h-4 ${activeTab === 'working' ? 'text-zinc-950' : 'text-zinc-300'}`} />
           <span>Working Now (Active)</span>
           <span
             className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
               activeTab === 'working'
-                ? 'bg-amber-500 text-white'
-                : 'bg-charcoal-800 text-slate-400'
+                ? 'bg-zinc-950/15 text-zinc-950'
+                : 'bg-white/[0.08] text-zinc-300'
             }`}
           >
             {activeWorkspaces.length}
@@ -1074,7 +1074,7 @@ function MyProjectsContent() {
 
           {filteredActiveWorkspaces.length === 0 ? (
             <div className="p-12 rounded-2xl bg-charcoal-900 border border-charcoal-800 text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mx-auto">
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-zinc-200 mx-auto">
                 <Zap className="w-7 h-7" />
               </div>
               <div className="space-y-1.5 max-w-md mx-auto">
@@ -1086,12 +1086,12 @@ function MyProjectsContent() {
 
               <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
                 <Link href="/hackathons">
-                  <Button variant="primary" size="sm" className="bg-amber-600 hover:bg-amber-500 font-bold" leftIcon={<Trophy className="w-4 h-4" />}>
+                  <Button variant="primary" size="sm" className="bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 font-bold border border-white/60" leftIcon={<Trophy className="w-4 h-4" />}>
                     Browse Hackathons
                   </Button>
                 </Link>
                 <Link href="/problems">
-                  <Button variant="outline" size="sm" className="border-purple-500/40 text-purple-300 hover:bg-purple-500/10 font-bold" leftIcon={<GraduationCap className="w-4 h-4" />}>
+                  <Button variant="outline" size="sm" className="border-white/20 text-zinc-200 hover:bg-white/[0.08] font-bold" leftIcon={<GraduationCap className="w-4 h-4" />}>
                     Faculty Challenges
                   </Button>
                 </Link>
