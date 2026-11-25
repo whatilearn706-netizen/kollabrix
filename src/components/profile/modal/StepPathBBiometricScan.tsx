@@ -956,7 +956,7 @@ export function StepPathBBiometricScan({
                 Quick Student Verification
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed mt-1">
-                To keep our campus hackathons and prize pools fair, we verify every participant’s student status before granting official competition entry.
+                One-time check confirming real student status for fair teams and prizes.
               </p>
             </div>
           </div>
@@ -969,7 +969,7 @@ export function StepPathBBiometricScan({
               </div>
               <h5 className="text-xs font-bold text-white">Verified Students Only</h5>
               <p className="text-[11px] text-slate-400 leading-snug">
-                Prizes and official ranks go strictly to enrolled university students—zero outside ringers.
+                Real enrolled students only — zero outsiders.
               </p>
             </div>
 
@@ -979,7 +979,7 @@ export function StepPathBBiometricScan({
               </div>
               <h5 className="text-xs font-bold text-white">Anti-Proxy Fair Play</h5>
               <p className="text-[11px] text-slate-400 leading-snug">
-                Guarantees nobody takes the contest under your name, protecting your hard-earned score.
+                Confirms it&apos;s really you, stopping proxy entries.
               </p>
             </div>
 
@@ -989,7 +989,7 @@ export function StepPathBBiometricScan({
               </div>
               <h5 className="text-xs font-bold text-white">Encrypted &amp; Private</h5>
               <p className="text-[11px] text-slate-400 leading-snug">
-                Your ID card and selfie are encrypted and never shown publicly on your profile.
+                ID &amp; selfie stay encrypted and hidden.
               </p>
             </div>
           </div>
