@@ -339,9 +339,9 @@ export function KollabrixQuickDock() {
         }`}
       >
         <LayoutGrid className="w-3.5 h-3.5 text-zinc-200" />
-        <span className="text-[11px] font-semibold text-zinc-200 hidden sm:inline">
-          Tools
-        </span>
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono font-semibold text-zinc-400 bg-white/[0.06] border border-white/10 px-1.5 py-0.5 rounded-md leading-none">
+          ⌘K
+        </kbd>
       </button>
 
       {/* Anchored Translucent Frosted-Glass Dropdown (directly below button) */}

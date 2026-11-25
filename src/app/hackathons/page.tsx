@@ -543,41 +543,6 @@ export default function HackathonsPage() {
         </div>
       </div>
 
-      {/* Contextual Competition Shortcuts */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 mr-1">
-          Compete &amp; Rank:
-        </span>
-        <Link
-          href="/deadlines"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#090C12] hover:bg-white/[0.08] border border-white/12 text-xs font-semibold text-zinc-200 hover:text-white transition-all"
-        >
-          <Calendar className="w-3.5 h-3.5 text-rose-400" />
-          <span>Deadlines Radar</span>
-        </Link>
-        <Link
-          href="/war"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#090C12] hover:bg-white/[0.08] border border-white/12 text-xs font-semibold text-zinc-200 hover:text-white transition-all"
-        >
-          <Zap className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Campus War</span>
-        </Link>
-        <Link
-          href="/leaderboard"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#090C12] hover:bg-white/[0.08] border border-white/12 text-xs font-semibold text-zinc-200 hover:text-white transition-all"
-        >
-          <Trophy className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Campus Leaderboard</span>
-        </Link>
-        <Link
-          href="/arena"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#090C12] hover:bg-white/[0.08] border border-white/12 text-xs font-semibold text-zinc-200 hover:text-white transition-all"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-          <span>1v1 Battle Arena</span>
-        </Link>
-      </div>
-
       {/* Faculty Organizer Notice: When faculty hosts a hackathon, they manage it from Faculty Desk */}
       {myHostedHackathons.length > 0 && (
         <div className="p-4 sm:p-5 rounded-3xl bg-[#090C12] border border-white/15 flex items-center justify-between gap-4 flex-wrap shadow-lg">
