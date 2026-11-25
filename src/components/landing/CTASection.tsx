@@ -12,12 +12,12 @@ export function LandingCTA() {
   const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
-    <section ref={ref} className="relative py-24 md:py-32 overflow-hidden">
-      {/* Dark background */}
-      <div className="absolute inset-0 bg-[#090B10]" />
+    <section ref={ref} className="relative pt-24 pb-16 md:pt-32 md:pb-20 overflow-hidden bg-black">
+      {/* Seamless Pure Obsidian Background */}
+      <div className="absolute inset-0 bg-black" />
 
       {/* Top gradient fade from dark section */}
-      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#090B10] to-transparent pointer-events-none z-10" />
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black to-transparent pointer-events-none z-10" />
 
       {/* Central glow orb */}
       <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
