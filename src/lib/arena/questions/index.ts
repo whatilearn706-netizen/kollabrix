@@ -12,6 +12,7 @@ import { HTML_CSS_JS_MEDIUM_ARENA_QUESTIONS } from './htmlCssJsMediumQuestions';
 import { HTML_CSS_JS_HARD_ARENA_QUESTIONS } from './htmlCssJsHardQuestions';
 import { ALL_ALGORITHM_ARENA_QUESTIONS } from './algorithms';
 import { ALL_BUG_HUNT_WEB_QUESTIONS } from './bughunt/web';
+import { LOGIC_BUG_HUNT_QUESTIONS } from './bughunt/logicBugs';
 
 export * from './htmlMediumQuestions';
 export * from './htmlHardQuestions';
@@ -53,4 +54,5 @@ export const ALL_EXPANDED_ARENA_QUESTIONS: DuelQuestion[] = [
   ...HTML_CSS_JS_HARD_ARENA_QUESTIONS,
   ...ALL_ALGORITHM_ARENA_QUESTIONS,
   ...ALL_BUG_HUNT_WEB_QUESTIONS,
+  ...LOGIC_BUG_HUNT_QUESTIONS,
 ];

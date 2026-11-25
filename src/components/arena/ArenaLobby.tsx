@@ -18,10 +18,10 @@ import {
   Zap,
 } from 'lucide-react';
 import {
-  AlgoLanguage,
   CombatModeId,
   MatchFormat,
   PROVING_GROUNDS_AVATARS,
+  StackLanguage,
   sanitizeCallsign,
 } from './arenaTypes';
 import { useArenaEngine } from './useArenaEngine';
@@ -48,7 +48,7 @@ const MODE_CARDS: Array<{
   {
     id: 'bug_hunt',
     title: '60s Bug Hunt',
-    subtitle: 'Fix 3 broken snippets before your rival',
+    subtitle: 'Fixed 60s sprint · Code or Web UI bugs',
     icon: Bug,
   },
   {
@@ -60,7 +60,7 @@ const MODE_CARDS: Array<{
   {
     id: 'custom',
     title: 'Custom',
-    subtitle: 'Create private KBX room · 1v1 or 2v2 squad',
+    subtitle: 'Private KBX room · 1v1/2v2 · Code or Web',
     icon: Swords,
   },
 ];
@@ -73,6 +73,9 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
   const [editingIdentity, setEditingIdentity] = useState(false);
 
   const isCustomMode = engine.combatMode === 'custom';
+  const isBugHunt = engine.combatMode === 'bug_hunt';
+  const stackChoices: StackLanguage[] =
+    isBugHunt || isCustomMode ? ['python', 'cpp', 'java', 'web'] : ['python', 'cpp', 'java'];
 
   return (
     <div className="relative z-10 min-h-screen w-full flex flex-col justify-between p-4 sm:p-6 lg:p-8">
@@ -277,12 +280,16 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                   })}
                 </div>
 
-                {/* Inline Configuration Pills: Language/Stack, Difficulty, Duration (3m/5m/10m), Format/Squad */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
-                  {/* Language or Web Stack */}
+                {/* Inline Configuration Pills: Language/Web, Difficulty, Duration (hidden on 60s Bug Hunt), Format/Squad */}
+                <div
+                  className={`grid grid-cols-1 gap-2.5 pt-1 ${
+                    isBugHunt ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4'
+                  }`}
+                >
+                  {/* Language / Web Stack */}
                   <div>
                     <span className="block text-[11px] font-mono text-slate-400 mb-1.5">
-                      {engine.combatMode === 'web_clash' ? 'Web Stack' : 'Language'}
+                      {engine.combatMode === 'web_clash' ? 'Web Stack' : isBugHunt || isCustomMode ? 'Language / Web' : 'Language'}
                     </span>
                     {engine.combatMode === 'web_clash' ? (
                       <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
@@ -307,16 +314,16 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                       </div>
                     ) : (
                       <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
-                        {(['python', 'cpp', 'java'] as AlgoLanguage[]).map((lang) => (
+                        {stackChoices.map((lang) => (
                           <button
                             key={lang}
                             type="button"
-                            onClick={() => engine.setAlgoLanguage(lang)}
-                            className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
+                            onClick={() => engine.selectStackLanguage(lang)}
+                            className={`flex-1 py-1 px-1 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
                               engine.algoLanguage === lang ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
                             }`}
                           >
-                            {lang === 'cpp' ? 'C++' : lang === 'python' ? 'Py' : 'Java'}
+                            {lang === 'cpp' ? 'C++' : lang === 'python' ? 'Py' : lang === 'java' ? 'Java' : 'Web'}
                           </button>
                         ))}
                       </div>
@@ -325,7 +332,12 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
 
                   {/* Difficulty */}
                   <div>
-                    <span className="block text-[11px] font-mono text-slate-400 mb-1.5">Difficulty</span>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-mono text-slate-400">Difficulty</span>
+                      {isBugHunt && (
+                        <span className="text-[10px] font-mono font-bold text-red-400">⏱ 60s</span>
+                      )}
+                    </div>
                     <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
                       {(['easy', 'medium', 'hard'] as const).map((d) => (
                         <button
@@ -342,30 +354,32 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                     </div>
                   </div>
 
-                  {/* Duration (3m / 5m / 10m) */}
-                  <div>
-                    <span className="block text-[11px] font-mono text-slate-400 mb-1.5">Duration</span>
-                    <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
-                      {[
-                        { secs: 180, label: '3m' },
-                        { secs: 300, label: '5m' },
-                        { secs: 600, label: '10m' },
-                      ].map((dur) => (
-                        <button
-                          key={dur.secs}
-                          type="button"
-                          onClick={() => engine.setTimeLimit(dur.secs)}
-                          className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
-                            engine.timeLimit === dur.secs ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          {dur.label}
-                        </button>
-                      ))}
+                  {/* Duration (3m / 5m / 10m) — hidden in 60s Bug Hunt */}
+                  {!isBugHunt && (
+                    <div>
+                      <span className="block text-[11px] font-mono text-slate-400 mb-1.5">Duration</span>
+                      <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
+                        {[
+                          { secs: 180, label: '3m' },
+                          { secs: 300, label: '5m' },
+                          { secs: 600, label: '10m' },
+                        ].map((dur) => (
+                          <button
+                            key={dur.secs}
+                            type="button"
+                            onClick={() => engine.setTimeLimit(dur.secs)}
+                            className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
+                              engine.timeLimit === dur.secs ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {dur.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Match Format (Single vs BO3) or Squad Size (1v1 / 2v2) */}
+                  {/* Match Format (Single vs Best of 3) or Squad Size (1v1 / 2v2) */}
                   <div>
                     <span className="block text-[11px] font-mono text-slate-400 mb-1.5">
                       {isCustomMode ? 'Squad Size' : 'Match Format'}
@@ -406,6 +420,33 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                     )}
                   </div>
                 </div>
+
+                {/* Sub-options when Custom -> Web is selected */}
+                {isCustomMode && engine.algoLanguage === 'web' && (
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <span className="text-[11px] font-mono text-slate-400">Web Stack:</span>
+                    <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10">
+                      {(['html', 'css', 'javascript'] as const).map((t) => {
+                        const on = t === 'html' || engine.webTags.includes(t);
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => {
+                              if (t === 'html') return;
+                              engine.setWebTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+                            }}
+                            className={`py-0.5 px-2.5 rounded-lg font-mono text-[10px] font-bold uppercase cursor-pointer ${
+                              on ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {t === 'javascript' ? 'JS' : t}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}

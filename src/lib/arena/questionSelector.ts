@@ -48,37 +48,42 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
     const hasPythonTag = qTags.includes('python');
 
     if (normRequested === 'cpp') {
-      if (!hasCppTag && !q.starterCpp) return -10000;
-      if (hasCppTag) score += 500;
+      if (!hasCppTag && !q.starterCpp && !(q.bugDomain === 'logic' && q.codeWithBug)) return -10000;
+      if (hasCppTag || q.starterCpp) score += 500;
     } else if (normRequested === 'java') {
-      if (!hasJavaTag && !q.starterJava) return -10000;
-      if (hasJavaTag) score += 500;
+      if (!hasJavaTag && !q.starterJava && !(q.bugDomain === 'logic' && q.codeWithBug)) return -10000;
+      if (hasJavaTag || q.starterJava) score += 500;
     } else if (normRequested === 'python') {
-      if (!hasPythonTag && !q.starterPython) return -10000;
-      if (hasPythonTag) score += 500;
+      if (!hasPythonTag && !q.starterPython && !(q.bugDomain === 'logic' && q.codeWithBug)) return -10000;
+      if (hasPythonTag || q.starterPython) score += 500;
     }
   }
 
-  // 4. Web Dev Topic Filtering (HTML, CSS, JavaScript)
+  // 4. Web Dev & Web Bug Hunt Topic Filtering (HTML, CSS, JavaScript)
   if (criteria.arena === 'web_dev' || (criteria.arena === 'bug_hunt' && criteria.bugDomain === 'web')) {
-    const wantsJs = targetTags.includes('javascript') || targetTags.includes('js');
-    const wantsCss = targetTags.includes('css');
+    const isWildcardWebBug =
+      criteria.arena === 'bug_hunt' &&
+      (targetTags.length === 0 || (targetTags.length === 1 && targetTags[0] === 'web'));
 
-    const hasJsTag = qTags.includes('javascript') || qTags.includes('js');
-    const hasCssTag = qTags.includes('css');
+    if (isWildcardWebBug) {
+      // Any Web Bug Hunt challenge matches cleanly regardless of HTML/CSS/JS subset
+      score += 400;
+    } else {
+      const wantsJs = targetTags.includes('javascript') || targetTags.includes('js');
+      const wantsCss = targetTags.includes('css');
 
-    // If JS not wanted, disqualify JS questions
-    if (!wantsJs && hasJsTag) return -10000;
-    // If JS wanted, disqualify non-JS questions
-    if (wantsJs && !hasJsTag) return -10000;
-    // If CSS not wanted (HTML only or HTML+JS), disqualify CSS questions
-    if (!wantsCss && hasCssTag) return -10000;
-    // If CSS wanted, disqualify non-CSS questions
-    if (wantsCss && !hasCssTag) return -10000;
+      const hasJsTag = qTags.includes('javascript') || qTags.includes('js') || Boolean(q.targetComponentJs);
+      const hasCssTag = qTags.includes('css') || Boolean(q.targetComponentCss);
 
-    if (wantsJs && hasJsTag) score += 500;
-    if (wantsCss && hasCssTag) score += 300;
-    if (!wantsCss && !wantsJs) score += 400; // HTML-only bonus
+      if (!wantsJs && hasJsTag && criteria.arena === 'web_dev') return -10000;
+      if (wantsJs && !hasJsTag && criteria.arena === 'web_dev') return -10000;
+      if (!wantsCss && hasCssTag && criteria.arena === 'web_dev') return -10000;
+      if (wantsCss && !hasCssTag && criteria.arena === 'web_dev') return -10000;
+
+      if (wantsJs && hasJsTag) score += 500;
+      if (wantsCss && hasCssTag) score += 300;
+      if (!wantsCss && !wantsJs) score += 400;
+    }
   }
 
   // 5. Difficulty matching (Hard requirement preference)
@@ -92,8 +97,8 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
     }
   }
 
-  // 6. Time Limit matching score (180s, 300s, 600s)
-  if (criteria.timeLimit && q.timeLimitSeconds) {
+  // 6. Time Limit matching score (skip penalty on 60s Bug Hunt so Admin 180s/300s questions always match)
+  if (criteria.arena !== 'bug_hunt' && criteria.timeLimit && q.timeLimitSeconds) {
     const targetTime = Number(criteria.timeLimit);
     const qTime = Number(q.timeLimitSeconds);
     if (qTime === targetTime) {
@@ -105,12 +110,11 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
     }
   }
 
-  // 7. Admin custom questions prioritization
-  // Only apply custom boost if score is already positive (matches the user's chosen options!)
+  // 7. Admin Control Center custom questions prioritization (strong boost when matching options!)
   if (score > 0) {
     const isDefault = DEFAULT_ARENA_QUESTIONS.some((d) => d.id === q.id);
     if (!isDefault) {
-      score += 50;
+      score += 450;
     }
   }
 
@@ -155,7 +159,12 @@ export function selectBestQuestion(
     const requestedLang = targetTags.find((t) => ['cpp', 'c++', 'java', 'python'].includes(t));
     const fallbackList = list.filter((q) => {
       if (criteria.arena && q.arena !== criteria.arena) return false;
-      if (criteria.arena === 'algorithms' && requestedLang) {
+      if (criteria.arena === 'bug_hunt' && criteria.bugDomain) {
+        const qIsWeb = q.bugDomain === 'web' || Boolean(q.targetComponentHtml);
+        if (criteria.bugDomain === 'web' && !qIsWeb) return false;
+        if (criteria.bugDomain === 'logic' && qIsWeb) return false;
+      }
+      if ((criteria.arena === 'algorithms' || (criteria.arena === 'bug_hunt' && criteria.bugDomain === 'logic')) && requestedLang) {
         const qTags = (q.tags || []).map((t) => t.trim().toLowerCase());
         const norm = requestedLang === 'c++' ? 'cpp' : requestedLang;
         return norm === 'cpp' ? (qTags.includes('cpp') || qTags.includes('c++')) : qTags.includes(norm);

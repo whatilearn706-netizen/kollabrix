@@ -5,6 +5,7 @@ export type CombatModeId = 'blitz' | 'bug_hunt' | 'web_clash' | 'custom';
 export type MatchFormat = 'single' | 'bo3';
 export type EditorTab = 'html' | 'css' | 'js' | 'python' | 'java' | 'cpp';
 export type AlgoLanguage = 'python' | 'cpp' | 'java';
+export type StackLanguage = AlgoLanguage | 'web';
 
 export interface BotProfile {
   name: string;
@@ -148,23 +149,42 @@ export function enrichQuestion(q: DuelQuestion | null | undefined): DuelQuestion
   };
 }
 
-export function mapModeToConfig(mode: CombatModeId, lang: AlgoLanguage, webTags: string[]) {
-  if (mode === 'web_clash') {
+/**
+ * Returns true if the question runs in Web UI mode (HTML/CSS/JS tabs + Blueprint & Live Preview).
+ */
+export function isWebArenaQuestion(q: DuelQuestion, mode?: CombatModeId): boolean {
+  if (mode === 'web_clash') return true;
+  if (q.arena === 'web_dev') return true;
+  if (q.arena === 'bug_hunt') {
+    return q.bugDomain === 'web' || Boolean(q.targetComponentHtml) || Boolean(q.starterHtml);
+  }
+  return false;
+}
+
+export function mapModeToConfig(mode: CombatModeId, stack: StackLanguage, webTags: string[]) {
+  if (mode === 'web_clash' || (mode === 'custom' && stack === 'web')) {
     const tags = webTags.includes('html') ? webTags : ['html', ...webTags];
     return { arena: 'web_dev' as ArenaCategory, bugDomain: undefined, tags };
   }
   if (mode === 'bug_hunt') {
-    return { arena: 'bug_hunt' as ArenaCategory, bugDomain: 'logic' as const, tags: [lang] };
+    if (stack === 'web') {
+      return { arena: 'bug_hunt' as ArenaCategory, bugDomain: 'web' as const, tags: ['web'] };
+    }
+    return { arena: 'bug_hunt' as ArenaCategory, bugDomain: 'logic' as const, tags: [stack] };
   }
-  return { arena: 'algorithms' as ArenaCategory, bugDomain: undefined, tags: [lang] };
+  return { arena: 'algorithms' as ArenaCategory, bugDomain: undefined, tags: [stack === 'web' ? 'python' : stack] };
 }
 
 /**
- * Computes smart default duel duration in seconds (3m / 5m / 10m) from mode & difficulty.
+ * Computes smart default duel duration in seconds (60s for Bug Hunt, 3m/5m/10m otherwise).
  */
-export function getSmartDurationSeconds(mode: CombatModeId, diff: 'easy' | 'medium' | 'hard'): number {
-  if (mode === 'bug_hunt') return 180;
-  if (mode === 'web_clash') return diff === 'easy' ? 300 : 600;
+export function getSmartDurationSeconds(
+  mode: CombatModeId,
+  diff: 'easy' | 'medium' | 'hard',
+  stack: StackLanguage = 'python'
+): number {
+  if (mode === 'bug_hunt') return 60;
+  if (mode === 'web_clash' || (mode === 'custom' && stack === 'web')) return diff === 'easy' ? 300 : 600;
   if (diff === 'easy') return 180;
   if (diff === 'hard') return 600;
   return 300;

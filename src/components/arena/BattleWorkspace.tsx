@@ -19,7 +19,7 @@ import {
   VolumeX,
   Zap,
 } from 'lucide-react';
-import { EditorTab, formatClock } from './arenaTypes';
+import { EditorTab, formatClock, isWebArenaQuestion } from './arenaTypes';
 import { buildWebPreviewDoc, FOG_SYNTAX_LINES } from './arenaHelpers';
 import { useArenaEngine } from './useArenaEngine';
 import { useResizableSplit } from './useResizableSplit';
@@ -35,7 +35,7 @@ interface BattleWorkspaceProps {
  */
 export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   const q = engine.activeQuestion;
-  const isWeb = engine.combatMode === 'web_clash' || q.arena === 'web_dev';
+  const isWeb = isWebArenaQuestion(q, engine.combatMode);
   const [specCollapsed, setSpecCollapsed] = useState(false);
 
   const split = useResizableSplit(isWeb ? 33 : 27, isWeb ? 21 : 25);

@@ -29,11 +29,13 @@ import {
   OpponentSolutionBuffer,
   PROVING_GROUNDS_AVATARS,
   RANDOM_CALLSIGNS,
+  StackLanguage,
   TestCaseVerdict,
   computeExpectedQuestionTests,
   enrichQuestion,
   getSmartDurationSeconds,
   getTierFromElo,
+  isWebArenaQuestion,
   mapModeToConfig,
   sanitizeCallsign,
 } from './arenaTypes';
@@ -80,7 +82,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
   // Lobby combat config
   const [combatMode, setCombatMode] = useState<CombatModeId>('blitz');
-  const [algoLanguage, setAlgoLanguage] = useState<AlgoLanguage>('python');
+  const [algoLanguage, setAlgoLanguage] = useState<StackLanguage>('python');
   const [webTags, setWebTags] = useState<string[]>(['html', 'css', 'javascript']);
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [matchFormat, setMatchFormat] = useState<MatchFormat>('single');
@@ -89,18 +91,30 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
   const selectCombatMode = (nextMode: CombatModeId) => {
     setCombatMode(nextMode);
-    if (nextMode !== 'custom') {
-      const smartSecs = getSmartDurationSeconds(nextMode, difficulty);
-      setTimeLimit(smartSecs);
-      setTimeLeft(smartSecs);
+    let nextStack = algoLanguage;
+    if (nextMode === 'blitz' && nextStack === 'web') {
+      nextStack = 'python';
+      setAlgoLanguage('python');
     }
+    const smartSecs = getSmartDurationSeconds(nextMode, difficulty, nextStack);
+    setTimeLimit(smartSecs);
+    setTimeLeft(smartSecs);
   };
 
   const selectDifficulty = (nextDiff: 'easy' | 'medium' | 'hard') => {
     setDifficulty(nextDiff);
-    const smartSecs = getSmartDurationSeconds(combatMode, nextDiff);
+    const smartSecs = getSmartDurationSeconds(combatMode, nextDiff, algoLanguage);
     setTimeLimit(smartSecs);
     setTimeLeft(smartSecs);
+  };
+
+  const selectStackLanguage = (nextStack: StackLanguage) => {
+    setAlgoLanguage(nextStack);
+    if (combatMode === 'custom') {
+      const smartSecs = getSmartDurationSeconds(combatMode, difficulty, nextStack);
+      setTimeLimit(smartSecs);
+      setTimeLeft(smartSecs);
+    }
   };
 
   // Room & Matchmaking
@@ -236,15 +250,16 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
   // Populate editor buffers for a chosen DuelQuestion
   const loadQuestionIntoWorkspace = useCallback(
-    (q: DuelQuestion, durationSecs: number, lang: AlgoLanguage, mode: CombatModeId) => {
+    (q: DuelQuestion, durationSecs: number, lang: StackLanguage, mode: CombatModeId) => {
       const enriched = enrichQuestion({ ...q, timeLimitSeconds: durationSecs });
+      const webMode = isWebArenaQuestion(enriched, mode);
       setActiveQuestion(enriched);
-      setHtmlCode(enriched.starterHtml || '');
+      setHtmlCode(enriched.starterHtml || (webMode ? enriched.codeWithBug || '' : ''));
       setCssCode(enriched.starterCss || '');
       setJsCode(enriched.starterJs || '');
-      setPythonCode(enriched.starterPython || '# Write your Python solution\n');
-      setJavaCode(enriched.starterJava || '// Write your Java solution\n');
-      setCppCode(enriched.starterCpp || '// Write your C++ solution\n');
+      setPythonCode(enriched.starterPython || (!webMode && enriched.codeWithBug ? enriched.codeWithBug : '# Write your Python solution\n'));
+      setJavaCode(enriched.starterJava || (!webMode && enriched.codeWithBug ? enriched.codeWithBug : '// Write your Java solution\n'));
+      setCppCode(enriched.starterCpp || (!webMode && enriched.codeWithBug ? enriched.codeWithBug : '// Write your C++ solution\n'));
       setTotalTests(computeExpectedQuestionTests(enriched));
       setUserTestsPassed(0);
       setRivalTestsPassed(0);
@@ -260,15 +275,15 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       setMyCheatStrikes(0);
       setShowCheatModal(false);
 
-      if (mode === 'web_clash' || enriched.arena === 'web_dev') setActiveTab('html');
-      else setActiveTab(lang);
+      if (webMode) setActiveTab('html');
+      else setActiveTab((lang === 'web' ? 'python' : lang) as AlgoLanguage);
     },
     []
   );
 
-  // Pick next question based on current Lobby configuration
+  // Pick next question based on current Lobby configuration (prioritizes Admin Control Center questions)
   const pickQuestionForConfig = useCallback(
-    async (mode: CombatModeId, lang: AlgoLanguage, diff: 'easy' | 'medium' | 'hard', secs: number) => {
+    async (mode: CombatModeId, lang: StackLanguage, diff: 'easy' | 'medium' | 'hard', secs: number) => {
       if (initialQuestion) return enrichQuestion(initialQuestion);
       const { arena, bugDomain, tags } = mapModeToConfig(mode, lang, webTags);
       const seenIds = getStoredSeenQuestionIds();
@@ -278,18 +293,33 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
           arena,
           difficulty: diff,
           tags: tags.join(','),
-          timeLimit: String(secs),
+          ...(mode !== 'bug_hunt' ? { timeLimit: String(secs) } : {}),
           seenIds: seenIds.join(','),
           ...(bugDomain ? { bugDomain } : {}),
         });
         const res = await fetch(`/api/arena/questions?${qs.toString()}`, { cache: 'no-store' });
         const d = await res.json();
         if (d?.questions?.length) {
-          chosen = selectBestQuestion(d.questions, { arena, bugDomain, selectedTags: tags, difficulty: diff, timeLimit: secs, seenQuestionIds: seenIds });
+          questionPoolRef.current = d.questions;
+          chosen = selectBestQuestion(d.questions, {
+            arena,
+            bugDomain,
+            selectedTags: tags,
+            difficulty: diff,
+            timeLimit: mode === 'bug_hunt' ? undefined : secs,
+            seenQuestionIds: seenIds,
+          });
         }
       } catch {}
       if (!chosen) {
-        chosen = selectBestQuestion(questionPoolRef.current, { arena, bugDomain, selectedTags: tags, difficulty: diff, timeLimit: secs, seenQuestionIds: seenIds });
+        chosen = selectBestQuestion(questionPoolRef.current, {
+          arena,
+          bugDomain,
+          selectedTags: tags,
+          difficulty: diff,
+          timeLimit: mode === 'bug_hunt' ? undefined : secs,
+          seenQuestionIds: seenIds,
+        });
       }
       if (chosen?.id) persistSeenQuestionId(chosen.id);
       return enrichQuestion(chosen);
@@ -386,7 +416,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     if (audioEnabled) playBattleSlamSound();
 
     const code = `KBX-${Math.floor(1000 + Math.random() * 9000)}`;
-    const duration = timeLimit || getSmartDurationSeconds(combatMode, difficulty);
+    const duration = combatMode === 'bug_hunt' ? 60 : (timeLimit || getSmartDurationSeconds(combatMode, difficulty, algoLanguage));
     setRoomCode(code);
     setIsHost(true);
     setTeamSize('1v1');
@@ -703,7 +733,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setTotalRuns((r) => r + 1);
     setStatusNotice(null);
 
-    const isWeb = combatMode === 'web_clash' || activeQuestion.arena === 'web_dev';
+    const isWeb = isWebArenaQuestion(activeQuestion, combatMode);
     if (isWeb) {
       const evalRes = evaluateWebCoordinateGraph(
         activeQuestion.id,
@@ -912,6 +942,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     difficulty,
     setDifficulty,
     selectDifficulty,
+    selectStackLanguage,
     matchFormat,
     setMatchFormat,
     teamSize,
