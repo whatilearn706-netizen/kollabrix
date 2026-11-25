@@ -25,6 +25,7 @@ import {
   Bot,
   Sparkles,
   BookOpen,
+  LayoutDashboard,
   Shield,
   Lightbulb,
   Clock,
@@ -236,21 +237,33 @@ export function Navbar() {
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-2.5">
-          {/* Clean Resources Link (Opens in new tab) */}
+          {/* Smoked-Glass Specular Pill: My Dashboard (Pin Reference Style) */}
           <Link
-            href="/resources"
-            target="_blank"
-            rel="noopener noreferrer"
+            href={isFaculty ? '/teacher/dashboard' : '/my-projects'}
             className={clsx(
-              "hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+              "hidden lg:inline-flex relative items-center justify-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide overflow-hidden transition-all duration-200 active:scale-[0.97] group",
               isNavbarDark
-                ? "text-slate-300 hover:text-white hover:bg-white/5"
-                : "text-stone-600 dark:text-stone-300 hover:text-slate-900 dark:hover:text-white"
+                ? "bg-white/[0.04] hover:bg-white/[0.09] text-slate-100 border border-white/25 backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),inset_0_-6px_12px_rgba(180,220,230,0.08)]"
+                : "bg-slate-900/5 hover:bg-slate-900/10 text-slate-800 border border-slate-300 backdrop-blur-md"
             )}
-            title="Collegiate Learning Resources & Compilers"
+            title="Open My Dashboard"
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Resources</span>
+            {/* Top-left specular white hotspot glint */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-px left-[18%] w-10 h-[2px] bg-gradient-to-r from-transparent via-white to-transparent opacity-90 group-hover:left-[26%] transition-all duration-300"
+            />
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-2 left-[16%] w-12 h-3 rounded-full bg-white/45 blur-[5px] opacity-75 group-hover:opacity-100 transition-opacity"
+            />
+            {/* Bottom icy-silver subtle rim glint */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-px left-[26%] w-14 h-px bg-gradient-to-r from-transparent via-cyan-100/75 to-transparent opacity-70"
+            />
+            <LayoutDashboard className="w-3.5 h-3.5 relative z-10 text-slate-200 group-hover:text-white transition-colors" />
+            <span className="relative z-10">My Dashboard</span>
           </Link>
 
           {user ? (
@@ -501,16 +514,18 @@ export function Navbar() {
               <span>Find Teammates</span>
             </Link>
 
-            <a
-              href="/resources"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href={isFaculty ? '/teacher/dashboard' : '/my-projects'}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25 transition-colors shadow-2xs active:scale-[0.98]"
+              className="relative flex items-center gap-3 px-4 py-2.5 rounded-full text-sm font-semibold bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/25 backdrop-blur-md overflow-hidden transition-all active:scale-[0.98]"
             >
-              <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <span>Learning Resources Hub ↗</span>
-            </a>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute top-0 left-[18%] w-12 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80"
+              />
+              <LayoutDashboard className="w-4 h-4 text-slate-200" />
+              <span>My Dashboard</span>
+            </Link>
 
             <Link
               href="/hackathons"

@@ -3469,86 +3469,53 @@ export function FullArenaExperience({
   }
 
   return (
-    <div className="fixed inset-0 z-[9990] bg-[#02040a] text-slate-100 flex flex-col overflow-hidden select-none">
-      {/* Background: Deep Space Cosmic Constellation Wallpaper */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none bg-[#030611]">
-        <picture>
-          <source srcSet="/images/arena-cosmic-fog-bg.webp" type="image/webp" />
-          <img
-            src="/images/arena-cosmic-fog-bg.jpg"
-            alt="The Proving Grounds Cosmic Constellation Arena Background"
-            style={{ imageRendering: '-webkit-optimize-contrast' }}
-            className="w-full h-full object-cover object-center filter contrast-[1.06] brightness-[0.92]"
-          />
-        </picture>
-        {/* Vignette gradients to enhance command card contrast and focus */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/15 to-black/75 pointer-events-none" />
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+    <div className="fixed inset-0 z-[9990] bg-[#05070B] text-slate-100 flex flex-col overflow-hidden select-none">
+      {/* Background: Deep Matte #05070B Obsidian + Cool Silver Grid & Hero Studio Glow */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none bg-[#05070B]">
+        {/* Subtle Precision Engineering Grid */}
+        <div
+          className="absolute inset-0 opacity-[0.035]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)',
+            backgroundSize: '36px 36px',
+          }}
+        />
+        {/* Cool Platinum & Titanium Studio Lighting (Hero Vibe) */}
+        <div className="absolute top-[6%] left-1/2 -translate-x-1/2 w-[780px] h-[360px] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.07),rgba(148,163,184,0.03),transparent_70%)] blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 w-[880px] h-[420px] bg-[radial-gradient(ellipse_at_center,rgba(148,163,184,0.05),transparent_70%)] blur-[130px] pointer-events-none" />
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/30 to-black/80 pointer-events-none" />
       </div>
-
-      {/* Floating Fiery Embers & Sparks Layer (Authentic Witcher Atmosphere) */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        {[
-          { left: '8%', size: 4, dur: '7.5s', delay: '0s' },
-          { left: '16%', size: 3, dur: '9.2s', delay: '1.8s' },
-          { left: '24%', size: 5, dur: '6.8s', delay: '0.6s' },
-          { left: '33%', size: 3, dur: '10.5s', delay: '2.5s' },
-          { left: '42%', size: 4, dur: '8.1s', delay: '1.1s' },
-          { left: '53%', size: 6, dur: '7.2s', delay: '3.2s' },
-          { left: '61%', size: 3, dur: '9.8s', delay: '0.4s' },
-          { left: '72%', size: 5, dur: '6.5s', delay: '2.0s' },
-          { left: '81%', size: 4, dur: '8.9s', delay: '1.4s' },
-          { left: '89%', size: 3, dur: '11.0s', delay: '0.8s' },
-          { left: '95%', size: 5, dur: '7.0s', delay: '2.8s' },
-        ].map((ember, i) => (
-          <span
-            key={i}
-            className="arena-ember-spark"
-            style={{
-              left: ember.left,
-              width: `${ember.size}px`,
-              height: `${ember.size}px`,
-              animationDuration: ember.dur,
-              animationDelay: ember.delay,
-              bottom: '-20px',
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Subtle Ambient Warm Ember Light Overlay */}
-      <div className="absolute top-0 right-1/4 w-[750px] h-[750px] bg-[radial-gradient(ellipse_60%_50%_at_60%_35%,rgba(245,158,11,0.08),transparent_70%)] pointer-events-none z-0" />
 
       {/* Top Cyber Navigation Bar (Only in live combat Step 5 for timer and split-screen IDE HUD) */}
       {step === 5 ? (
-        <header className="relative z-20 h-14 border-b border-white/[0.08] bg-black/85 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0">
+        <header className="relative z-20 h-14 border-b border-white/[0.08] bg-black/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 relative shrink-0 flex items-center justify-center">
               <img
                 src="/brand/kollabrix-logo.svg?v=20261031_v3squircle"
-                alt="Kollabrix Official Dual Ascent Aerospace Emblem"
-                className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(245,158,11,0.5)]"
+                alt="Kollabrix Official Silver-Obsidian Emblem"
+                className="w-full h-full object-contain filter drop-shadow-[0_2px_12px_rgba(226,232,240,0.4)]"
               />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-mono font-black text-white text-sm tracking-wider uppercase flex items-center gap-1.5">
-                  <span className="text-amber-400">KOLLΛBRIX</span>
-                  <span className="text-slate-500 font-normal">/</span>
-                  <span className="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-400 bg-clip-text text-transparent">THE PROVING GROUNDS</span>
+                  <span className="text-white">KOLLΛBRIX</span>
+                  <span className="text-slate-600 font-normal">/</span>
+                  <span className="text-slate-300">THE PROVING GROUNDS</span>
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-rose-500/20 border border-rose-500/40 text-rose-300">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/[0.06] border border-white/15 text-slate-300">
                   {teamSize === '1v1' ? '1v1 DUEL' : '2v2 RELAY'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Center Timer when in Battle */}
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-900/90 border border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
-            <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span className="font-mono text-base font-black text-amber-300 tracking-wider">
+          {/* Center Timer when in Battle (Surgical Red Accent matching Hero HUD) */}
+          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/60 border border-red-500/40 shadow-[0_0_16px_rgba(239,68,68,0.25)]">
+            <Clock className="w-4 h-4 text-red-400 animate-pulse" />
+            <span className="font-mono text-base font-black text-red-400 tracking-wider">
               {formatTimer(timeLeft)}
             </span>
           </div>
@@ -3558,14 +3525,14 @@ export function FullArenaExperience({
             <button
               type="button"
               onClick={toggleArenaFullscreen}
-              className={`p-2 px-3.5 rounded-xl border text-xs font-mono font-black flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2 px-3.5 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
                 isFullscreen
-                  ? 'bg-amber-500/25 border-amber-400 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-                  : 'bg-black/60 hover:bg-slate-900 border-slate-600 text-white hover:border-amber-400/60'
+                  ? 'bg-white/[0.12] border-white/35 text-white shadow-sm'
+                  : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/15 text-slate-200 hover:border-white/30'
               }`}
               title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
             >
-              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-amber-400" /> : <Maximize2 className="w-3.5 h-3.5 text-slate-300" />}
+              {isFullscreen ? <Minimize2 className="w-3.5 h-3.5 text-white" /> : <Maximize2 className="w-3.5 h-3.5 text-slate-300" />}
               <span className="hidden sm:inline">Fullscreen</span>
             </button>
 
@@ -3574,25 +3541,25 @@ export function FullArenaExperience({
               onClick={handleBackNavigation}
               onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
               onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
-              className="p-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-600 hover:border-amber-400 text-white transition-colors flex items-center gap-1.5 text-xs font-mono font-black cursor-pointer shadow-sm"
+              className="p-2 px-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/15 hover:border-white/30 text-white transition-colors flex items-center gap-1.5 text-xs font-mono font-bold cursor-pointer shadow-sm"
               title="Leave Battle"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-300 group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Back</span>
             </button>
           </div>
         </header>
       ) : (
-        /* Floating Back Button in the top-left background (Image 2 Blue Circle) */
+        /* Floating Back Button in top-left */
         <button
           type="button"
           onClick={handleBackNavigation}
           onMouseEnter={() => { try { router.prefetch('/'); } catch {} }}
           onTouchStart={() => { try { router.prefetch('/'); } catch {} }}
-          className="fixed top-4 left-4 sm:top-6 sm:left-8 z-50 px-4 py-2 rounded-full bg-black/60 hover:bg-black/85 border border-white/25 hover:border-amber-400 text-white font-black transition-all duration-150 backdrop-blur-md shadow-[0_4px_24px_rgba(0,0,0,0.7)] flex items-center gap-2 text-xs font-mono cursor-pointer active:scale-95 group select-none tracking-wide"
+          className="fixed top-4 left-4 sm:top-6 sm:left-8 z-50 px-4 py-2 rounded-full bg-[#0A0E17]/90 hover:bg-white/[0.1] border border-white/15 hover:border-white/35 text-slate-200 hover:text-white font-bold transition-all duration-150 backdrop-blur-md shadow-lg flex items-center gap-2 text-xs font-mono cursor-pointer active:scale-95 group select-none tracking-wide"
           title="Back"
         >
-          <ArrowLeft className="w-4 h-4 text-amber-400 group-hover:-translate-x-0.5 transition-transform" />
+          <ArrowLeft className="w-4 h-4 text-slate-300 group-hover:-translate-x-0.5 transition-transform" />
           <span>Back</span>
         </button>
       )}
@@ -3647,34 +3614,33 @@ export function FullArenaExperience({
           : 'justify-start items-center p-2 sm:p-4'
       }`}>
 
-        {/* ================= STEPS 0-4: FLOATING RECTANGULAR COMMAND CENTER (IMAGE 1 & 2 WITCHER POSTER STYLE) ================= */}
+        {/* ================= STEPS 0-4: FLOATING OBSIDIAN & TITANIUM COMMAND CENTER ================= */}
         {step <= 4 && (
           <div className={`w-full max-w-[1320px] xl:max-w-[1440px] mx-auto my-auto transition-all duration-700 ease-out ${
             isBoxDissolving
               ? 'scale-110 opacity-0 blur-2xl pointer-events-none'
               : 'scale-100 opacity-100 animate-fadeIn'
           }`}>
-            <div className="relative w-full rounded-3xl bg-[#080d1e]/40 sm:bg-[#080d1e]/35 border border-amber-400/40 border-t-white/35 shadow-[0_0_50px_rgba(245,158,11,0.2),0_25px_60px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.35),inset_0_0_25px_rgba(245,158,11,0.06)] backdrop-blur-2xl p-6 sm:p-8 lg:p-10 overflow-hidden">
-              {/* Glossy top-left reflective sheen */}
-              <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-white/[0.09] via-amber-400/[0.04] to-transparent rounded-full blur-2xl pointer-events-none" />
-              {/* Subtle ambient warm ember highlights inside the command glass */}
-              <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.12),transparent_70%)] pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-[radial-gradient(circle_at_bottom_left,rgba(217,119,6,0.08),transparent_70%)] pointer-events-none" />
+            <div className="relative w-full rounded-3xl bg-[#0A0E17]/90 border border-white/10 border-t-white/25 shadow-[0_25px_70px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-2xl p-6 sm:p-8 lg:p-10 overflow-hidden">
+              {/* Cool Platinum Top-Edge Light Refraction */}
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+              <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-white/[0.05] via-slate-300/[0.02] to-transparent rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-80 h-80 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.04),transparent_70%)] pointer-events-none" />
 
-              {/* ================= STEP 0 / 2: SPLIT COMMAND DECK (IMAGE 5 LEFT + IMAGE 6 RIGHT WITH FROST BLUR) ================= */}
+              {/* ================= STEP 0 / 2: SPLIT COMMAND DECK ================= */}
               {(step === 0 || step === 2) && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
                   {/* LEFT COLUMN: Proving Ground, Avatar Selection & Profile Name Setup */}
-                  <div className="lg:col-span-5 flex flex-col justify-between space-y-4 p-4 sm:p-5 rounded-2xl bg-[#050713]/40 border border-white/[0.08] backdrop-blur-md shadow-inner">
+                  <div className="lg:col-span-5 flex flex-col justify-between space-y-4 p-4 sm:p-5 rounded-2xl bg-[#060910]/85 border border-white/[0.08] border-t-white/15 backdrop-blur-md shadow-inner">
                     <div className="space-y-4">
                       {/* Badge + Headline */}
                       <div className="space-y-1 text-left">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-black/60 border border-amber-400/50 text-amber-300 font-mono text-[10px] font-black uppercase tracking-widest backdrop-blur-sm shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/15 text-slate-200 font-mono text-[10px] font-bold uppercase tracking-widest backdrop-blur-sm shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                           <span>THE PROVING GROUNDS • LIVE ARENA</span>
                         </div>
 
-                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans drop-shadow-[0_2px_14px_rgba(255,255,255,0.2)]">
+                        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans">
                           Proving Ground
                         </h1>
                       </div>
@@ -3682,8 +3648,8 @@ export function FullArenaExperience({
                       {/* Avatar Choose Section */}
                       <div className="space-y-2 text-left">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-mono text-white font-bold flex items-center gap-1.5 tracking-wide">
-                            <span className="text-amber-400">⚡</span>
+                          <span className="text-xs font-mono text-slate-200 font-bold flex items-center gap-1.5 tracking-wide">
+                            <Sparkles className="w-3.5 h-3.5 text-slate-300" />
                             <span>Choose Avatar:</span>
                           </span>
                           {customAvatarUrl && (
@@ -3693,7 +3659,7 @@ export function FullArenaExperience({
                                 setCustomAvatarUrl('');
                                 setAvatarUrlInput('');
                               }}
-                              className="text-[10px] font-mono text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
+                              className="text-[10px] font-mono text-slate-300 hover:text-white font-bold underline cursor-pointer"
                             >
                               Reset to Presets
                             </button>
@@ -3701,10 +3667,10 @@ export function FullArenaExperience({
                         </div>
 
                         {/* Avatar Display + Presets */}
-                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/40 border border-amber-400/30 backdrop-blur-md shadow-inner">
+                        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-black/50 border border-white/10 backdrop-blur-md shadow-inner">
                           {/* Active Preview */}
                           <div className="relative shrink-0">
-                            <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-[0_0_18px_rgba(245,158,11,0.55)] bg-slate-900 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-white/35 shadow-[0_0_18px_rgba(255,255,255,0.18)] bg-slate-900 flex items-center justify-center">
                               <img
                                 src={activeAvatarImage}
                                 alt="Active Combatant Avatar"
@@ -3714,14 +3680,14 @@ export function FullArenaExperience({
                                 }}
                               />
                             </div>
-                            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[10px] font-black shadow-sm">
+                            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white text-slate-950 flex items-center justify-center text-[10px] font-black shadow-sm">
                               ✓
                             </span>
                           </div>
 
                           {/* Presets Grid */}
                           <div className="flex-1 min-w-0">
-                            <div className="text-[11px] font-mono text-slate-200 font-bold mb-1.5 flex items-center justify-between">
+                            <div className="text-[11px] font-mono text-slate-300 font-bold mb-1.5 flex items-center justify-between">
                               <span>Select an avatar:</span>
                             </div>
                             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -3741,8 +3707,8 @@ export function FullArenaExperience({
                                     title={av.name}
                                     className={`relative shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden border transition-all cursor-pointer ${
                                       isSelected
-                                        ? 'border-amber-400 ring-2 ring-amber-400/80 scale-105 shadow-[0_0_15px_rgba(245,158,11,0.6)]'
-                                        : 'border-slate-700/80 hover:border-amber-400/60 opacity-75 hover:opacity-100 hover:scale-100'
+                                        ? 'border-white ring-2 ring-white/60 scale-105 shadow-[0_0_14px_rgba(255,255,255,0.3)]'
+                                        : 'border-white/15 hover:border-white/40 opacity-75 hover:opacity-100 hover:scale-100'
                                     }`}
                                   >
                                     <img
@@ -3758,8 +3724,8 @@ export function FullArenaExperience({
                               <label
                                 className={`relative shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-dashed flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
                                   customAvatarUrl
-                                    ? 'border-amber-400 bg-amber-500/20 text-amber-200 ring-2 ring-amber-400/70'
-                                    : 'border-amber-400/50 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400 text-amber-300'
+                                    ? 'border-white bg-white/15 text-white ring-2 ring-white/50'
+                                    : 'border-white/30 bg-white/[0.04] hover:bg-white/[0.1] hover:border-white/50 text-slate-200'
                                 }`}
                                 title="Upload custom avatar image"
                               >
@@ -3795,16 +3761,17 @@ export function FullArenaExperience({
                       {/* Profile Name Section */}
                       <div className="space-y-1.5 text-left">
                         <div className="flex items-center justify-between">
-                          <label className="text-xs font-mono text-white font-bold flex items-center gap-1.5 tracking-wide">
-                            <span className="text-amber-400">⚔️</span>
+                          <label className="text-xs font-mono text-slate-200 font-bold flex items-center gap-1.5 tracking-wide">
+                            <Terminal className="w-3.5 h-3.5 text-slate-300" />
                             <span>Profile Name / Callsign:</span>
                           </label>
                           <button
                             type="button"
                             onClick={rollRandomCallSign}
-                            className="text-[10px] font-mono text-amber-300 hover:text-amber-200 font-bold underline cursor-pointer"
+                            className="text-[10px] font-mono text-slate-300 hover:text-white font-bold underline cursor-pointer inline-flex items-center gap-1"
                           >
-                            🎲 Randomize
+                            <Dices className="w-3 h-3" />
+                            <span>Randomize</span>
                           </button>
                         </div>
 
@@ -3818,17 +3785,17 @@ export function FullArenaExperience({
                               setPlayerName(clean);
                             }}
                             placeholder="Enter unique profile name..."
-                            className={`w-full px-3.5 py-2 rounded-xl bg-black/50 border font-mono text-xs font-black transition-all outline-none backdrop-blur-md ${
+                            className={`w-full px-3.5 py-2 rounded-xl bg-black/60 border font-mono text-xs font-bold transition-all outline-none backdrop-blur-md ${
                               usernameCheckStatus === 'taken'
-                                ? 'border-rose-500 text-rose-300 focus:ring-1 focus:ring-rose-500/50 bg-rose-950/30'
+                                ? 'border-rose-500/70 text-rose-300 focus:ring-1 focus:ring-rose-500/40 bg-rose-950/20'
                                 : usernameCheckStatus === 'available'
-                                ? 'border-emerald-500 text-emerald-300 focus:ring-1 focus:ring-emerald-500/50'
-                                : 'border-amber-400/40 text-amber-200 focus:border-amber-400 focus:ring-1 focus:ring-amber-400/60'
+                                ? 'border-emerald-500/60 text-emerald-300 focus:ring-1 focus:ring-emerald-500/40'
+                                : 'border-white/15 text-white focus:border-white/40 focus:ring-1 focus:ring-white/25'
                             }`}
                           />
                           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                             {usernameCheckStatus === 'checking' && (
-                              <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                              <Loader2 className="w-3.5 h-3.5 text-slate-300 animate-spin" />
                             )}
                             {usernameCheckStatus === 'taken' && (
                               <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
@@ -3842,25 +3809,25 @@ export function FullArenaExperience({
                         {/* Validation status feedback */}
                         <div className="min-h-[16px] text-[10px] font-mono flex items-center gap-1">
                           {usernameCheckStatus === 'checking' && (
-                            <span className="text-amber-300 font-bold flex items-center gap-1">
+                            <span className="text-slate-300 font-bold flex items-center gap-1">
                               <Loader2 className="w-3 h-3 animate-spin shrink-0" />
                               Checking availability...
                             </span>
                           )}
                           {usernameCheckStatus === 'taken' && (
-                            <span className="text-rose-300 font-black flex items-center gap-1 animate-pulse">
+                            <span className="text-rose-300 font-bold flex items-center gap-1">
                               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                               {usernameCheckMsg || 'This username is already taken by another user'}
                             </span>
                           )}
                           {usernameCheckStatus === 'available' && (
-                            <span className="text-emerald-300 font-black flex items-center gap-1">
+                            <span className="text-emerald-300 font-bold flex items-center gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                               {usernameCheckMsg || 'Callsign available for combat'}
                             </span>
                           )}
                           {usernameCheckStatus === 'idle' && (
-                            <span className="text-slate-300 font-bold">
+                            <span className="text-slate-400 font-medium">
                               {usernameCheckMsg || 'Min 3 characters. Alphanumeric & underscores.'}
                             </span>
                           )}
@@ -3887,18 +3854,18 @@ export function FullArenaExperience({
                         }}
                         className={`w-full py-3 px-4 rounded-xl font-black font-mono text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer transition-all ${
                           usernameCheckStatus === 'taken'
-                            ? 'bg-rose-950/60 border border-rose-500/50 text-rose-300 opacity-80 cursor-not-allowed'
+                            ? 'bg-rose-950/50 border border-rose-500/40 text-rose-300 opacity-85 cursor-not-allowed'
                             : isCreateUnlocked
-                            ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-300 scale-[1.01]'
-                            : 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 text-slate-950 hover:brightness-110 active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.35)]'
+                            ? 'bg-gradient-to-r from-slate-100 via-white to-slate-200 text-slate-950 shadow-[0_0_24px_rgba(255,255,255,0.22)] ring-2 ring-white/40 border border-white/50 scale-[1.01]'
+                            : 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 hover:from-white hover:to-slate-100 active:scale-95 shadow-md border border-white/40'
                         }`}
                       >
-                        <Trophy className="w-4 h-4 fill-current" />
+                        <Trophy className="w-4 h-4" />
                         <span>
                           {usernameCheckStatus === 'taken'
-                            ? 'NAME TAKEN — CHOOSE ANOTHER ⚠️'
+                            ? 'NAME TAKEN — CHOOSE ANOTHER'
                             : isCreateUnlocked
-                            ? 'CONFIGURING TOURNAMENT ⚙️'
+                            ? 'CONFIGURING TOURNAMENT'
                             : 'CREATE TOURNAMENT →'}
                         </span>
                       </button>
@@ -3909,16 +3876,16 @@ export function FullArenaExperience({
                           playTacticalSelectSound();
                           setShowJoinModal(true);
                         }}
-                        className="w-full py-2.5 px-4 rounded-xl bg-black/60 hover:bg-black/80 border border-amber-400/40 hover:border-amber-400 text-amber-200 hover:text-white font-mono text-xs font-black tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
+                        className="w-full py-2.5 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/15 hover:border-white/30 text-slate-200 hover:text-white font-mono text-xs font-bold tracking-wider backdrop-blur-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer transition-all shadow-sm"
                       >
-                        <Users className="w-4 h-4 text-amber-400" />
+                        <Users className="w-4 h-4 text-slate-300" />
                         <span>Join with Code</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: Image 6 - Arena & Topics Selection with Frost/Blur Overlay */}
-                  <div className="lg:col-span-7 relative flex flex-col justify-between space-y-4 p-4 sm:p-5 rounded-2xl bg-[#050713]/40 border border-white/[0.08] backdrop-blur-md shadow-inner">
+                  {/* RIGHT COLUMN: Arena & Topics Selection */}
+                  <div className="lg:col-span-7 relative flex flex-col justify-between space-y-4 p-4 sm:p-5 rounded-2xl bg-[#060910]/85 border border-white/[0.08] border-t-white/15 backdrop-blur-md shadow-inner">
                     {/* Locked Frosted Overlay if not unlocked */}
                     {!isCreateUnlocked && (
                       <div
@@ -3934,25 +3901,25 @@ export function FullArenaExperience({
                             setRoomCode(`KBX-${Math.floor(1000 + Math.random() * 9000)}`);
                           }
                         }}
-                        className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md bg-black/50 rounded-2xl border border-amber-500/25 cursor-pointer group shadow-[0_0_35px_rgba(0,0,0,0.6)]"
+                        className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md bg-black/55 rounded-2xl border border-white/10 cursor-pointer group shadow-[0_0_35px_rgba(0,0,0,0.6)]"
                       >
-                        <div className="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center mb-3 shadow-[0_0_25px_rgba(245,158,11,0.3)] group-hover:scale-110 transition-transform">
-                          <Lock className="w-7 h-7 text-amber-400" />
+                        <div className="w-14 h-14 rounded-2xl bg-white/[0.06] border border-white/20 flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform">
+                          <Lock className="w-6 h-6 text-slate-200" />
                         </div>
                         <p className="text-xs text-slate-300 max-w-sm mt-1 leading-relaxed font-sans">
-                          Click <span className="text-amber-400 font-bold font-mono underline">CREATE TOURNAMENT</span> on the left to configure arena, languages &amp; battle parameters.
+                          Click <span className="text-white font-bold font-mono underline">CREATE TOURNAMENT</span> on the left to configure arena, languages &amp; battle parameters.
                         </p>
                       </div>
                     )}
 
-                    {/* Interactive Arena Content (Blurred until Create Tournament clicked) */}
+                    {/* Interactive Arena Content */}
                     <div className={`space-y-4 transition-all duration-500 ${
                       !isCreateUnlocked ? 'filter blur-[7px] opacity-35 pointer-events-none select-none' : 'filter-none opacity-100'
                     }`}>
                       {/* Step Header */}
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500/20 border border-amber-400/50 text-amber-200 inline-block shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-white/[0.07] border border-white/15 text-slate-200 inline-block">
                             Step 2 of 3 &bull; Select Arena &amp; Topics
                           </span>
                           {isCreateUnlocked && (
@@ -3962,10 +3929,10 @@ export function FullArenaExperience({
                             </span>
                           )}
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-sans drop-shadow-[0_2px_12px_rgba(255,255,255,0.18)]">
+                        <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight font-sans">
                           Pick Arena &amp; Languages
                         </h2>
-                        <p className="text-xs font-semibold text-slate-200 font-sans">
+                        <p className="text-xs font-medium text-slate-400 font-sans">
                           Choose duel discipline, tech stack, and match time limit.
                         </p>
                       </div>
@@ -3998,26 +3965,26 @@ export function FullArenaExperience({
                             onClick={() => handleSelectArena(item.id as ArenaCategory)}
                             className={`p-3 rounded-2xl border text-left transition-all ${
                               arena === item.id
-                                ? 'bg-amber-950/40 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)] backdrop-blur-md'
-                                : 'bg-black/40 border-slate-800/80 hover:border-amber-400/40 backdrop-blur-md'
+                                ? 'bg-white/[0.1] border-white/40 shadow-md backdrop-blur-md'
+                                : 'bg-black/40 border-white/[0.08] hover:border-white/25 backdrop-blur-md'
                             }`}
                           >
-                            <item.icon className="w-4 h-4 text-amber-400 mb-1.5" />
-                            <h4 className="font-mono font-black text-white text-xs tracking-wide">{item.name}</h4>
-                            <p className="text-[11px] text-slate-200 font-semibold mt-0.5 line-clamp-2 leading-snug">{item.desc}</p>
+                            <item.icon className={`w-4 h-4 mb-1.5 ${arena === item.id ? 'text-white' : 'text-slate-400'}`} />
+                            <h4 className="font-mono font-bold text-white text-xs tracking-wide">{item.name}</h4>
+                            <p className="text-[11px] text-slate-400 font-medium mt-0.5 line-clamp-2 leading-snug">{item.desc}</p>
                           </button>
                         ))}
                       </div>
 
                       {/* 1. WEB DEV TOPICS */}
                       {arena === 'web_dev' && (
-                        <div className="p-3.5 rounded-2xl bg-black/40 border border-amber-500/20 backdrop-blur-md space-y-2.5">
+                        <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 backdrop-blur-md space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-mono font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                              <Globe className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-xs font-mono font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                              <Globe className="w-3.5 h-3.5 text-slate-300" />
                               <span>Web Dev Topics:</span>
                             </span>
-                            <span className="text-[10px] font-mono text-amber-300 font-black">
+                            <span className="text-[10px] font-mono text-slate-300 font-bold">
                               {selectedTags.includes('html') ? selectedTags.length : selectedTags.length + 1} selected
                             </span>
                           </div>
@@ -4038,24 +4005,24 @@ export function FullArenaExperience({
                                   }}
                                   className={`p-2.5 rounded-xl border transition-all flex items-start gap-2 select-none ${
                                     topic.isMandatory
-                                      ? 'bg-amber-950/60 border-amber-400 text-white shadow-sm cursor-default'
+                                      ? 'bg-white/[0.1] border-white/35 text-white shadow-sm cursor-default'
                                       : isChecked
-                                      ? 'bg-amber-950/50 border-amber-400 text-white shadow-sm cursor-pointer'
-                                      : 'bg-black/50 border-slate-700/80 text-slate-200 hover:border-amber-400/40 cursor-pointer'
+                                      ? 'bg-white/[0.08] border-white/30 text-white shadow-sm cursor-pointer'
+                                      : 'bg-black/50 border-white/10 text-slate-300 hover:border-white/25 cursor-pointer'
                                   }`}
                                 >
                                   <div
                                     className={`w-3.5 h-3.5 rounded mt-0.5 flex items-center justify-center shrink-0 border ${
                                       isChecked
-                                        ? 'bg-amber-500 border-amber-400 text-slate-950'
+                                        ? 'bg-white border-white text-slate-950'
                                         : 'border-slate-600'
                                     }`}
                                   >
                                     {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                                   </div>
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-black font-mono text-white tracking-wide">{topic.label}</p>
-                                    <p className="text-[11px] font-semibold text-slate-200">{topic.desc}</p>
+                                    <p className="text-xs font-bold font-mono text-white tracking-wide">{topic.label}</p>
+                                    <p className="text-[11px] font-medium text-slate-400">{topic.desc}</p>
                                   </div>
                                 </div>
                               );
@@ -4200,7 +4167,7 @@ export function FullArenaExperience({
                       {/* Difficulty & Time Limit */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <div>
-                          <label className="block text-xs font-mono font-black text-slate-200 uppercase tracking-wide mb-1.5">
+                          <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wide mb-1.5">
                             Difficulty Level:
                           </label>
                           <div className="grid grid-cols-3 gap-1.5">
@@ -4211,8 +4178,8 @@ export function FullArenaExperience({
                                 onClick={() => setDifficulty(diff)}
                                 className={`py-1.5 rounded-xl text-xs font-mono font-black capitalize transition-all ${
                                   difficulty === diff
-                                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                                    : 'bg-black/50 text-slate-200 font-bold border border-slate-700/80 hover:text-white hover:border-amber-400/40'
+                                    ? 'bg-gradient-to-r from-slate-100 to-slate-300 text-slate-950 shadow-sm border border-white/40'
+                                    : 'bg-black/50 text-slate-300 font-bold border border-white/10 hover:text-white hover:border-white/30'
                                 }`}
                               >
                                 {diff}
@@ -4222,7 +4189,7 @@ export function FullArenaExperience({
                         </div>
 
                         <div>
-                          <label className="block text-xs font-mono font-black text-slate-200 uppercase tracking-wide mb-1.5">
+                          <label className="block text-xs font-mono font-bold text-slate-300 uppercase tracking-wide mb-1.5">
                             Match Duration:
                           </label>
                           <div className="grid grid-cols-3 gap-1.5">
@@ -4237,8 +4204,8 @@ export function FullArenaExperience({
                                 onClick={() => setTimeLimit(t.secs)}
                                 className={`py-1.5 rounded-xl text-xs font-mono font-black transition-all ${
                                   timeLimit === t.secs
-                                    ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                                    : 'bg-black/50 text-slate-200 font-bold border border-slate-700/80 hover:text-white hover:border-amber-400/40'
+                                    ? 'bg-gradient-to-r from-slate-100 to-slate-300 text-slate-950 font-black shadow-sm border border-white/40'
+                                    : 'bg-black/50 text-slate-300 font-bold border border-white/10 hover:text-white hover:border-white/30'
                                 }`}
                               >
                                 {t.label}
@@ -4254,7 +4221,7 @@ export function FullArenaExperience({
                           type="button"
                           onClick={handleHostCreateRoom}
                           disabled={!isCreateUnlocked}
-                          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_30px_rgba(245,158,11,0.4)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 font-black font-mono text-xs sm:text-sm uppercase tracking-wider hover:from-white hover:to-slate-100 active:scale-[0.99] transition-all shadow-md border border-white/40 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span>Next: Room &amp; Invite Link</span>
                           <ArrowRight className="w-4 h-4 text-slate-950" />
@@ -4265,28 +4232,28 @@ export function FullArenaExperience({
                 </div>
               )}
 
-        {/* ================= STEP 3: ROOM CODE, INVITE LINK & ROSTER LOBBY (IMAGE 7) ================= */}
+        {/* ================= STEP 3: ROOM CODE, INVITE LINK & ROSTER LOBBY ================= */}
         {step === 3 && (
           <div className="w-full max-w-3xl mx-auto space-y-6 relative z-10 animate-fadeIn">
             <div className="text-center space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-black uppercase tracking-wider bg-amber-500/20 border border-amber-400/50 text-amber-200 inline-block shadow-[0_0_15px_rgba(245,158,11,0.25)]">
+              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-white/[0.07] border border-white/15 text-slate-200 inline-block">
                 Step 3 of 3 &bull; Private Room Ready
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans drop-shadow-[0_2px_12px_rgba(255,255,255,0.18)]">
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans">
                 Invite Squad &amp; Launch Match
               </h2>
-              <p className="text-xs sm:text-sm text-slate-200 font-semibold">
+              <p className="text-xs sm:text-sm text-slate-400 font-medium">
                 Share the room code or link to assemble your match.
               </p>
             </div>
 
-            {/* Big Room Code Badge (Warm Amber Glow Matching Step 2) */}
-            <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_25px_rgba(245,158,11,0.08)]">
+            {/* Room Code Badge */}
+            <div className="p-4 rounded-2xl bg-black/60 border border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md">
               <div>
-                <span className="text-xs font-mono uppercase text-slate-200 font-black tracking-wider">
+                <span className="text-xs font-mono uppercase text-slate-400 font-bold tracking-wider">
                   Private Duel Room Code:
                 </span>
-                <div className="text-2xl sm:text-3xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-300 tracking-wider drop-shadow-[0_0_18px_rgba(245,158,11,0.6)]">
+                <div className="text-2xl sm:text-3xl font-black font-mono text-white tracking-wider">
                   {roomCode}
                 </div>
               </div>
@@ -4295,16 +4262,16 @@ export function FullArenaExperience({
                 <button
                   type="button"
                   onClick={handleCopyCode}
-                  className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-black/60 hover:bg-slate-900 border border-slate-700 hover:border-amber-400 text-white text-xs font-mono font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.1] border border-white/15 hover:border-white/30 text-white text-xs font-mono font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                  {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-300" />}
                   <span>{copiedCode ? 'Copied' : 'Copy Code'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 text-xs font-mono font-black transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.35)] cursor-pointer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 text-xs font-mono font-black transition-all flex items-center justify-center gap-1.5 shadow-sm border border-white/40 cursor-pointer"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
                   <span>{copiedLink ? 'Link Copied!' : 'Copy Invite Link'}</span>
@@ -4312,26 +4279,26 @@ export function FullArenaExperience({
               </div>
             </div>
 
-            {/* AUTO-MATCH WITH QUEUED CAMPUS BUILDERS CHECKBOX TOGGLE (Default: Checked) */}
-            <label className="flex items-center justify-between p-3.5 rounded-2xl bg-black/60 border border-amber-500/25 hover:border-amber-500/50 cursor-pointer select-none transition-all">
+            {/* AUTO-MATCH WITH QUEUED CAMPUS BUILDERS CHECKBOX TOGGLE */}
+            <label className="flex items-center justify-between p-3.5 rounded-2xl bg-black/60 border border-white/10 hover:border-white/25 cursor-pointer select-none transition-all">
               <div className="flex items-center gap-3">
                 <div
                   className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors text-sm ${
                     isAutoMatchEnabled
-                      ? 'bg-amber-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-                      : 'bg-slate-900 border border-slate-800 text-slate-400'
+                      ? 'bg-white text-slate-950 font-bold shadow-sm'
+                      : 'bg-slate-900 border border-white/10 text-slate-400'
                   }`}
                 >
-                  <Users className="w-4 h-4 text-slate-950" />
+                  <Users className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="font-mono font-black text-white text-xs flex items-center gap-1.5">
+                  <p className="font-mono font-bold text-white text-xs flex items-center gap-1.5">
                     <span>Auto-Match with Queued Campus Builders</span>
                     <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
                       CAMPUS QUEUE
                     </span>
                   </p>
-                  <p className="text-xs font-semibold text-slate-200">
+                  <p className="text-xs font-medium text-slate-400">
                     Instantly pairs with active builders from IITs, BITS, DTU, and NITs if dueling solo.
                   </p>
                 </div>
@@ -4353,7 +4320,7 @@ export function FullArenaExperience({
                     setMatchSearchSeconds(0);
                   }
                 }}
-                className="w-5 h-5 rounded-md border-amber-500/40 bg-black text-amber-500 focus:ring-amber-500 cursor-pointer accent-amber-500"
+                className="w-5 h-5 rounded-md border-white/30 bg-black text-white focus:ring-white cursor-pointer accent-slate-200"
               />
             </label>
 
@@ -4386,11 +4353,11 @@ export function FullArenaExperience({
 
             {/* Roster Slots based on 1v1 vs 2v2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Team Alpha (Warm Amber - Matching Step 2) */}
-              <div className="p-4 rounded-2xl bg-black/60 border border-amber-500/30 space-y-3 shadow-[0_0_20px_rgba(245,158,11,0.06)]">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <span className="font-mono text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+              {/* Team Alpha (Obsidian & Silver) */}
+              <div className="p-4 rounded-2xl bg-black/60 border border-white/15 space-y-3 shadow-md">
+                <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                  <span className="font-mono text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
                     {mySquad === 'alpha' ? 'Team Alpha (Your Squad)' : 'Team Alpha (Host Squad)'}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
@@ -4408,13 +4375,13 @@ export function FullArenaExperience({
                       (isHost && (!roomData?.alphaPlayers?.[0]?.id || roomData?.alphaPlayers?.[0]?.id === myPlayerId))
                     );
                     return (
-                      <div className="p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
+                      <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/15 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black flex items-center justify-center text-[11px] shadow-sm">
+                          <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-slate-100 to-slate-300 text-slate-950 font-black flex items-center justify-center text-[11px] shadow-sm">
                             P1
                           </div>
                           <span className="text-white font-bold">{hostName}</span>
-                          <span className="text-[10px] text-amber-300 font-semibold">
+                          <span className="text-[10px] text-slate-300 font-semibold">
                             {isP1Me ? '(You - Host)' : '(Host)'}
                           </span>
                         </div>
@@ -4432,13 +4399,13 @@ export function FullArenaExperience({
                         const p2 = roomData.alphaPlayers[1];
                         const isP2Me = Boolean(p2.id === myPlayerId);
                         return (
-                          <div className="p-2.5 rounded-xl bg-slate-950/80 border border-amber-500/30 flex items-center justify-between text-xs font-mono">
+                          <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/15 flex items-center justify-between text-xs font-mono">
                             <div className="flex items-center gap-2">
-                              <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black flex items-center justify-center text-[11px] shadow-sm">
+                              <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-slate-100 to-slate-300 text-slate-950 font-black flex items-center justify-center text-[11px] shadow-sm">
                                 P2
                               </div>
                               <span className="text-white font-bold">{p2.name}</span>
-                              <span className="text-[10px] text-amber-300 font-semibold">
+                              <span className="text-[10px] text-slate-300 font-semibold">
                                 {isP2Me ? '(You - Navigator)' : '(Navigator)'}
                               </span>
                             </div>
@@ -4449,14 +4416,14 @@ export function FullArenaExperience({
                         );
                       })()
                     ) : (
-                      <div className="p-2.5 rounded-xl bg-slate-900/50 border border-dashed border-amber-500/20 flex items-center justify-between text-xs font-mono text-slate-400">
+                      <div className="p-2.5 rounded-xl bg-white/[0.02] border border-dashed border-white/15 flex items-center justify-between text-xs font-mono text-slate-400">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[11px]">
                             P2
                           </div>
                           <span className="italic">Waiting for teammate...</span>
                         </div>
-                        <span className="text-[10px] text-amber-400 animate-pulse">INVITED</span>
+                        <span className="text-[10px] text-slate-300 animate-pulse">INVITED</span>
                       </div>
                     )
                   )}
@@ -4558,34 +4525,34 @@ export function FullArenaExperience({
                   </div>
                 ) : isAutoMatchEnabled ? (
                   /* Live Matchmaking Scanner (0-4s) */
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/40 flex flex-col gap-2.5 text-xs font-mono animate-fadeIn">
+                  <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/15 flex flex-col gap-2.5 text-xs font-mono animate-fadeIn">
                     <div className="flex items-center justify-between">
-                      <span className="text-amber-200 font-black flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                      <span className="text-slate-200 font-bold flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
                         <span>Searching for live campus builders in [{targetTopicLabel}]...</span>
                       </span>
-                      <span className="text-[11px] font-mono text-amber-200 bg-black/60 px-2 py-0.5 rounded border border-amber-500/40 font-black">
+                      <span className="text-[11px] font-mono text-white bg-black/60 px-2 py-0.5 rounded border border-white/20 font-bold">
                         {Math.max(1, targetSearchDuration - matchSearchSeconds)}s
                       </span>
                     </div>
                     <div className="w-full bg-black/60 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-amber-400 to-orange-500 h-full transition-all duration-300 ease-out"
+                        className="bg-gradient-to-r from-slate-300 to-white h-full transition-all duration-300 ease-out"
                         style={{ width: `${Math.min(100, (matchSearchSeconds / targetSearchDuration) * 100)}%` }}
                       />
                     </div>
-                    <p className="text-[11px] font-bold text-slate-200 flex items-center justify-between">
+                    <p className="text-[11px] font-medium text-slate-400 flex items-center justify-between">
                       <span>Scanning active collegiate queue across campus networks...</span>
-                      <span className="text-amber-300 font-black">Room {roomCode}</span>
+                      <span className="text-slate-200 font-bold">Room {roomCode}</span>
                     </p>
                   </div>
                 ) : (
                   /* Waiting for Friend via Link/Code */
-                  <div className="p-4 rounded-2xl bg-black/60 border border-dashed border-rose-500/40 flex flex-col items-center justify-center py-6 text-center text-xs font-mono text-slate-200 space-y-2">
-                    <Users className="w-6 h-6 text-amber-400 mb-1" />
-                    <span className="text-white font-black text-sm">Waiting for classmate to join...</span>
-                    <p className="text-xs text-slate-300 font-medium max-w-xs">
-                      Share room code <strong className="text-amber-300 font-bold">{roomCode}</strong> or invite link. Or check &ldquo;Auto-Match&rdquo; above to pair with an active campus builder.
+                  <div className="p-4 rounded-2xl bg-black/60 border border-dashed border-white/20 flex flex-col items-center justify-center py-6 text-center text-xs font-mono text-slate-200 space-y-2">
+                    <Users className="w-6 h-6 text-slate-300 mb-1" />
+                    <span className="text-white font-bold text-sm">Waiting for classmate to join...</span>
+                    <p className="text-xs text-slate-400 font-medium max-w-xs">
+                      Share room code <strong className="text-white font-bold">{roomCode}</strong> or invite link. Or check &ldquo;Auto-Match&rdquo; above to pair with an active campus builder.
                     </p>
                   </div>
                 )}
@@ -4604,9 +4571,9 @@ export function FullArenaExperience({
                     handleConfirmExit();
                   }
                 }}
-                className="py-3 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white font-mono text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer"
+                className="py-3 px-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.1] border border-white/15 text-white font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4 text-amber-400" />
+                <ArrowLeft className="w-4 h-4 text-slate-300" />
                 <span>{isHost ? 'Back' : 'Leave Room'}</span>
               </button>
 
@@ -4614,7 +4581,7 @@ export function FullArenaExperience({
                 <button
                   type="button"
                   onClick={handleStartBattle}
-                  className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-base uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all shadow-[0_0_35px_rgba(245,158,11,0.5)] flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 text-slate-950 font-black font-mono text-base uppercase tracking-wider hover:from-white hover:to-slate-100 active:scale-[0.99] transition-all shadow-lg border border-white/40 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Play className="w-5 h-5 fill-current" />
                   <span>START MATCH NOW</span>
