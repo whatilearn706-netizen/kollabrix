@@ -6132,18 +6132,18 @@ ${jsCode || ''}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative z-10 pointer-events-auto select-auto w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-[#0b0e14] border border-amber-500/40 shadow-[0_0_60px_rgba(245,158,11,0.25)] space-y-5"
+            className="relative z-10 pointer-events-auto select-auto w-full max-w-lg p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.85),0_0_40px_rgba(255,255,255,0.06)] space-y-5"
           >
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.1]">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                <span className="p-2 rounded-xl bg-white/[0.06] border border-white/15 text-zinc-200">
                   <Users className="w-5 h-5" />
                 </span>
                 <div>
                   <h3 className="text-lg font-black text-white font-mono uppercase tracking-tight">
                     Join Existing Room
                   </h3>
-                  <p className="text-[11px] font-mono text-slate-400">
+                  <p className="text-[11px] font-mono text-zinc-400">
                     Enter your classmate&apos;s 4-digit code or paste invite link
                   </p>
                 </div>
@@ -6151,7 +6151,7 @@ ${jsCode || ''}
               <button
                 type="button"
                 onClick={() => setShowJoinModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer pointer-events-auto"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer pointer-events-auto"
                 title="Close"
               >
                 <X className="w-5 h-5" />
@@ -6160,7 +6160,7 @@ ${jsCode || ''}
 
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider mb-1 block">
+                <label className="text-[11px] font-mono font-bold text-zinc-300 uppercase tracking-wider mb-1 block">
                   Room Code or Invite Link:
                 </label>
                 <input
@@ -6180,7 +6180,7 @@ ${jsCode || ''}
                     }
                   }}
                   placeholder="e.g. KBX-4634, 4634, or invite link"
-                  className="w-full px-4 py-3 rounded-xl bg-black border border-white/[0.15] text-amber-300 font-mono text-sm focus:border-amber-400 focus:outline-none tracking-wider placeholder:text-slate-600 shadow-inner select-text pointer-events-auto cursor-text"
+                  className="w-full px-4 py-3 rounded-xl bg-black/80 border border-white/15 text-white font-mono text-sm focus:border-white/50 focus:outline-none tracking-wider placeholder:text-zinc-600 shadow-inner select-text pointer-events-auto cursor-text"
                 />
               </div>
 
@@ -6196,7 +6196,7 @@ ${jsCode || ''}
               <button
                 type="button"
                 onClick={() => setShowJoinModal(false)}
-                className="px-4 py-2.5 rounded-xl bg-black hover:bg-slate-900 border border-white/[0.12] text-slate-300 font-mono text-xs font-bold transition-all cursor-pointer pointer-events-auto"
+                className="px-4 py-2.5 rounded-xl bg-[#090C12] hover:bg-white/[0.06] border border-white/15 text-zinc-300 font-mono text-xs font-bold transition-all cursor-pointer pointer-events-auto"
               >
                 Cancel
               </button>
@@ -6207,7 +6207,7 @@ ${jsCode || ''}
                 onClick={() => {
                   handleJoinWithCodeOrLink();
                 }}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer pointer-events-auto"
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-b from-white via-zinc-100 to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/70 shadow-[0_0_20px_rgba(255,255,255,0.12)] font-black font-mono text-xs uppercase tracking-wider active:scale-95 flex items-center gap-2 disabled:opacity-50 cursor-pointer pointer-events-auto"
               >
                 {isJoiningRoom ? (
                   <>

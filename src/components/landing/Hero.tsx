@@ -396,7 +396,7 @@ export function LandingHero() {
         <motion.h1
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.1 }}
+          transition={{ duration: 0.5, delay: 0.9 }}
           className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.8rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2"
         >
           <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
@@ -411,7 +411,7 @@ export function LandingHero() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ duration: 0.45, delay: 1.25 }}
           className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4"
         >
           {/* Primary Button */}
@@ -443,7 +443,7 @@ export function LandingHero() {
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25 }}
+          transition={{ duration: 0.55, delay: 0.45 }}
           className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-4 sm:mt-6 transition-transform duration-300 ease-out mx-auto"
           style={{
             perspective: '1400px',

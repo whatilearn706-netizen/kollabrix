@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BrandLogo } from '@/components/ui/BrandLogo';
@@ -9,12 +9,59 @@ import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 
 export function Footer() {
   const pathname = usePathname();
+  const { theme, isDark } = useSiteTheme();
+  const footerRef = useRef<HTMLElement | null>(null);
+  const [laserRevealed, setLaserRevealed] = useState(false);
+  const [laserFading, setLaserFading] = useState(false);
+  const [laserFinished, setLaserFinished] = useState(false);
+
+  const isFooterDark = pathname === '/' || isDark;
+
+  useEffect(() => {
+    if (!isFooterDark) {
+      setLaserRevealed(true);
+      setLaserFinished(true);
+      return;
+    }
+
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setLaserRevealed(true);
+      setLaserFinished(true);
+      return;
+    }
+
+    const node = footerRef.current;
+    if (!node) return;
+
+    let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+    let doneTimer: ReturnType<typeof setTimeout> | null = null;
+    const triggerReveal = () => {
+      requestAnimationFrame(() => setLaserRevealed(true));
+      fadeTimer = setTimeout(() => setLaserFading(true), 2250);
+      doneTimer = setTimeout(() => setLaserFinished(true), 2650);
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          triggerReveal();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.14 }
+    );
+
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      if (fadeTimer) clearTimeout(fadeTimer);
+      if (doneTimer) clearTimeout(doneTimer);
+    };
+  }, [isFooterDark, pathname]);
+
   if (pathname?.startsWith('/resources') || pathname?.startsWith('/arena')) {
     return null;
   }
-
-  const { theme, isDark } = useSiteTheme();
-  const isFooterDark = pathname === '/' || isDark;
 
   const surfaceStyle = isFooterDark
     ? 'bg-[#090C12]/90 border border-white/15 border-t-white/25 text-zinc-300 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.16)]'
@@ -30,12 +77,25 @@ export function Footer() {
 
   return (
     <footer
+      ref={footerRef}
       style={{
         backgroundColor: isFooterDark ? '#000000' : '#f8fafc',
         color: isFooterDark ? '#94A3B8' : theme.bodyTextColor,
       }}
-      className="relative w-full overflow-hidden pt-14 sm:pt-16 pb-6 sm:pb-8 text-sm transition-all"
+      className="relative w-full overflow-hidden text-sm transition-all"
     >
+      {/* Titanium Silver Laser Scan Reveal Wrapper (clips horizon + content in sync L->R) */}
+      <div
+        style={
+          isFooterDark
+            ? {
+                clipPath: laserRevealed ? 'inset(0 0% 0 0)' : 'inset(0 100% 0 0)',
+                transition: 'clip-path 2400ms cubic-bezier(0.25, 0.1, 0.25, 1)',
+              }
+            : undefined
+        }
+        className="relative w-full pt-14 sm:pt-16 pb-6 sm:pb-8"
+      >
       {/* Curved Brushed-Titanium Horizon Separator & Soft Atmospheric Glow */}
       {isFooterDark ? (
         <div className="pointer-events-none absolute inset-x-0 top-0 h-44 overflow-hidden" aria-hidden="true">
@@ -299,6 +359,26 @@ export function Footer() {
           </div>
         </div>
       </div>
+      </div>
+
+      {/* Synchronized Titanium Silver Laser Beam Head (sweeps L->R along the exact wipe edge) */}
+      {isFooterDark && !laserFinished && (
+        <div
+          aria-hidden="true"
+          style={{
+            transform: laserRevealed ? 'translateX(0%)' : 'translateX(-100%)',
+            opacity: laserFading ? 0 : laserRevealed ? 1 : 0,
+            transition:
+              'transform 2400ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 320ms ease-out',
+          }}
+          className="pointer-events-none absolute inset-0 z-30"
+        >
+          <div className="absolute right-0 inset-y-0 w-36 bg-gradient-to-r from-transparent via-slate-300/[0.08] to-white/25" />
+          <div className="absolute right-0 inset-y-0 w-[1.5px] bg-gradient-to-b from-transparent via-white to-transparent shadow-[0_0_18px_2px_rgba(255,255,255,0.9),_0_0_40px_rgba(226,232,240,0.55)]" />
+          {/* Etch flare node traveling along top horizon line */}
+          <div className="absolute -right-1.5 top-4 sm:top-5 w-3 h-10 rounded-full bg-white/85 blur-[4px] shadow-[0_0_24px_rgba(255,255,255,0.95)]" />
+        </div>
+      )}
     </footer>
   );
 }

@@ -34,14 +34,14 @@ export function StudioLightRig({
 
     if (triggerPowerOn || !hasSeenIntro) {
       setLightState('off');
-      const timer1 = setTimeout(() => setLightState('flicker'), 250);
+      const timer1 = setTimeout(() => setLightState('flicker'), 60);
       const timer2 = setTimeout(() => {
         setLightState('on');
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('kbx_hero_light_on', 'true');
         }
         onPowerOnComplete?.();
-      }, 700);
+      }, 360);
 
       return () => {
         clearTimeout(timer1);
