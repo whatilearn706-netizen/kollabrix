@@ -1183,25 +1183,27 @@ export default function HackathonDetailPage() {
                   ))}
               </div>
 
-              {/* Titanium Gradient Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.12] bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-                {hackathon.title}
-              </h1>
+              {/* Headline & Prominent Partner/Organizer Emblem Row */}
+              <div className="flex items-start justify-between gap-5">
+                <div className="min-w-0 flex-1 space-y-2.5">
+                  <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.12] bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+                    {hackathon.title}
+                  </h1>
 
-              {/* Clean Inline Organizer & Partner Credit */}
-              <div className="flex items-center gap-3 flex-wrap text-xs sm:text-sm text-zinc-400">
-                <span>
-                  Organized by{' '}
-                  <strong className="text-zinc-100 font-semibold">
-                    {hackathon.organizer}
-                  </strong>
-                </span>
+                  <p className="text-xs sm:text-sm text-zinc-400">
+                    Organized by{' '}
+                    <strong className="text-zinc-100 font-semibold">
+                      {hackathon.organizer}
+                    </strong>
+                  </p>
+                </div>
+
                 {eventLogo && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#090C12] border border-white/12">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#090C12] border border-white/15 p-2 shrink-0 flex items-center justify-center shadow-[0_14px_34px_-10px_rgba(0,0,0,0.95)] ring-1 ring-white/[0.04]">
                     <img
                       src={eventLogo}
                       alt={hackathon.organizer || hackathon.title}
-                      className="h-4 w-auto max-w-[68px] object-contain rounded-sm"
+                      className="w-full h-full object-contain rounded-xl"
                     />
                   </div>
                 )}
