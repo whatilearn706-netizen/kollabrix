@@ -4,107 +4,218 @@ import React, { useRef, useState } from 'react';
 import { motion, useInView } from 'motion/react';
 import Link from 'next/link';
 import {
-  Users, Trophy, Brain, UserPlus, Code2, Rocket, ArrowUpRight, Sparkles
+  Users,
+  Trophy,
+  Brain,
+  UserPlus,
+  Code2,
+  Rocket,
+  ArrowRight,
+  Swords,
+  Clock,
+  Lightbulb,
+  Bot,
+  Flame,
+  LayoutGrid,
 } from 'lucide-react';
 
-const features = [
+type HubCategory = 'all' | 'compete' | 'build' | 'campus';
+
+interface CampusToolItem {
+  title: string;
+  badge: string;
+  live?: boolean;
+  category: Exclude<HubCategory, 'all'>;
+  description: string;
+  icon: React.ElementType;
+  accentText: string;
+  accentBorder: string;
+  iconStyle: string;
+  glowColor: string;
+  href: string;
+  openInNewTab?: boolean;
+}
+
+const CAMPUS_TOOLS: CampusToolItem[] = [
+  // Compete (4)
   {
-    title: 'Real-time Workspace',
-    priority: 'PRIORITY 01',
-    priorityBadge: 'CORE COLLABORATION',
-    priorityTheme: 'border-orange-500/50 bg-orange-500/15 text-orange-300 shadow-orange-500/20',
-    glowColor: 'rgba(234, 88, 12, 0.35)',
-    description:
-      'Huddle with your team, track milestones, manage tasks, and ship code — all in one seamless collaborative environment with voice rooms, GitHub sync, and live discussions.',
-    icon: Users,
-    iconBg: 'bg-orange-500/10 text-orange-400 border border-orange-500/25',
-    span: 'md:col-span-2',
-    href: '/my-projects',
+    title: '1v1 Battle Arena',
+    badge: 'LIVE DUELS',
+    live: true,
+    category: 'compete',
+    description: 'Race coders head-to-head in 3-minute ELO speed duels.',
+    icon: Swords,
+    accentText: 'text-emerald-300',
+    accentBorder: 'border-emerald-500/35 bg-emerald-500/10',
+    iconStyle: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+    glowColor: 'rgba(16, 185, 129, 0.22)',
+    href: '/arena',
   },
   {
-    title: 'Hackathon Engine',
-    priority: 'PRIORITY 02',
-    priorityBadge: 'ARENA & MATCHES',
-    priorityTheme: 'border-amber-500/50 bg-amber-500/15 text-amber-300 shadow-amber-500/20',
-    glowColor: 'rgba(245, 158, 11, 0.35)',
-    description:
-      'Host or join hackathons with built-in team formation, submission tracking, and judging workflows.',
+    title: 'Campus War',
+    badge: 'INTER-COLLEGE',
+    live: true,
+    category: 'compete',
+    description: 'Represent your university in live squad-vs-squad clashes.',
+    icon: Flame,
+    accentText: 'text-rose-300',
+    accentBorder: 'border-rose-500/35 bg-rose-500/10',
+    iconStyle: 'bg-rose-500/10 text-rose-300 border-rose-500/25',
+    glowColor: 'rgba(244, 63, 94, 0.22)',
+    href: '/war',
+  },
+  {
+    title: 'Hackathons',
+    badge: 'PRIZE POOLS',
+    live: true,
+    category: 'compete',
+    description: 'Join verified campus sprints, form squads & submit builds.',
     icon: Trophy,
-    iconBg: 'bg-amber-500/10 text-amber-400 border border-amber-500/25',
-    span: '',
+    accentText: 'text-cyan-300',
+    accentBorder: 'border-cyan-500/35 bg-cyan-500/10',
+    iconStyle: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25',
+    glowColor: 'rgba(6, 182, 212, 0.22)',
     href: '/hackathons',
   },
   {
-    title: 'Smart Matching',
-    priority: 'PRIORITY 03',
-    priorityBadge: 'TALENT FINDER',
-    priorityTheme: 'border-emerald-500/50 bg-emerald-500/15 text-emerald-300 shadow-emerald-500/20',
-    glowColor: 'rgba(16, 185, 129, 0.35)',
-    description:
-      'Find collaborators who complement your skills. Our algorithm surfaces the perfect teammates for your project.',
-    icon: UserPlus,
-    iconBg: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25',
-    span: '',
-    href: '/teammates',
+    title: 'Campus Leaderboard',
+    badge: 'RANKINGS',
+    category: 'compete',
+    description: 'See top-ranked student coders, teams & colleges nationwide.',
+    icon: Trophy,
+    accentText: 'text-violet-300',
+    accentBorder: 'border-violet-500/35 bg-violet-500/10',
+    iconStyle: 'bg-violet-500/10 text-violet-300 border-violet-500/25',
+    glowColor: 'rgba(139, 92, 246, 0.22)',
+    href: '/leaderboard',
   },
+
+  // Build & AI (4)
   {
-    title: 'Competitive Practice',
-    priority: 'PRIORITY 04',
-    priorityBadge: 'DSA & RANKINGS',
-    priorityTheme: 'border-blue-500/50 bg-blue-500/15 text-blue-300 shadow-blue-500/20',
-    glowColor: 'rgba(59, 130, 246, 0.35)',
-    description:
-      'Compete in placement OA simulations and faculty lab tests with anti-cheat and instant rankings.',
-    icon: Code2,
-    iconBg: 'bg-blue-500/10 text-blue-400 border border-blue-500/25',
-    span: '',
-    href: '/icpc',
-  },
-  {
-    title: 'Spark AI',
-    priority: 'PRIORITY 05',
-    priorityBadge: 'IDEATION COPILOT',
-    priorityTheme: 'border-violet-500/50 bg-violet-500/15 text-violet-300 shadow-violet-500/20',
-    glowColor: 'rgba(139, 92, 246, 0.35)',
-    description:
-      'AI-powered brainstorming, code generation, and project assistance at your fingertips.',
+    title: 'AI Spark Studio',
+    badge: 'AI CO-PILOT',
+    category: 'build',
+    description: 'Generate winning hackathon concepts, specs & tech stacks.',
     icon: Brain,
-    iconBg: 'bg-violet-500/10 text-violet-400 border border-violet-500/25',
-    span: '',
+    accentText: 'text-violet-300',
+    accentBorder: 'border-violet-500/35 bg-violet-500/10',
+    iconStyle: 'bg-violet-500/10 text-violet-300 border-violet-500/25',
+    glowColor: 'rgba(139, 92, 246, 0.22)',
     href: '/spark',
   },
   {
+    title: 'AI Project Planner',
+    badge: 'ROADMAP',
+    category: 'build',
+    description: 'Split project briefs into sprint milestones & daily tasks.',
+    icon: Bot,
+    accentText: 'text-sky-300',
+    accentBorder: 'border-sky-500/35 bg-sky-500/10',
+    iconStyle: 'bg-sky-500/10 text-sky-300 border-sky-500/25',
+    glowColor: 'rgba(56, 189, 248, 0.22)',
+    href: '/planner',
+  },
+  {
+    title: 'Team Workspace',
+    badge: 'HUDDLE & TASKS',
+    category: 'build',
+    description: 'Collaborate with voice huddles, task boards & GitHub sync.',
+    icon: Users,
+    accentText: 'text-emerald-300',
+    accentBorder: 'border-emerald-500/35 bg-emerald-500/10',
+    iconStyle: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25',
+    glowColor: 'rgba(16, 185, 129, 0.22)',
+    href: '/my-projects',
+  },
+  {
+    title: 'Find Teammates',
+    badge: 'SQUAD MATCH',
+    category: 'build',
+    description: 'Match with verified builders by skills, role & campus.',
+    icon: UserPlus,
+    accentText: 'text-cyan-300',
+    accentBorder: 'border-cyan-500/35 bg-cyan-500/10',
+    iconStyle: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25',
+    glowColor: 'rgba(6, 182, 212, 0.22)',
+    href: '/teammates',
+  },
+
+  // Campus & Practice (4)
+  {
+    title: 'Deadlines Radar',
+    badge: 'COUNTDOWNS',
+    live: true,
+    category: 'campus',
+    description: 'Track closing hackathon registrations before slots lock.',
+    icon: Clock,
+    accentText: 'text-rose-300',
+    accentBorder: 'border-rose-500/35 bg-rose-500/10',
+    iconStyle: 'bg-rose-500/10 text-rose-300 border-rose-500/25',
+    glowColor: 'rgba(244, 63, 94, 0.22)',
+    href: '/deadlines',
+  },
+  {
+    title: 'Practice IDE',
+    badge: 'OA & ICPC',
+    category: 'campus',
+    description: 'Timed placement OA simulations & proctored DSA rounds.',
+    icon: Code2,
+    accentText: 'text-blue-300',
+    accentBorder: 'border-blue-500/35 bg-blue-500/10',
+    iconStyle: 'bg-blue-500/10 text-blue-300 border-blue-500/25',
+    glowColor: 'rgba(59, 130, 246, 0.22)',
+    href: '/icpc',
+  },
+  {
+    title: 'Faculty Problems',
+    badge: 'CAMPUS BRIEFS',
+    category: 'campus',
+    description: 'Tackle real research & industry problem statements.',
+    icon: Lightbulb,
+    accentText: 'text-sky-300',
+    accentBorder: 'border-sky-500/35 bg-sky-500/10',
+    iconStyle: 'bg-sky-500/10 text-sky-300 border-sky-500/25',
+    glowColor: 'rgba(56, 189, 248, 0.22)',
+    href: '/problems',
+  },
+  {
     title: 'Starter Kits & Resources',
-    priority: 'PRIORITY 06',
-    priorityBadge: 'CURATED TEMPLATES',
-    priorityTheme: 'border-cyan-500/50 bg-cyan-500/15 text-cyan-300 shadow-cyan-500/20',
-    glowColor: 'rgba(6, 182, 212, 0.35)',
-    description:
-      'Launch projects instantly with curated templates, learning paths, and boilerplate code from the community.',
+    badge: 'TEMPLATES',
+    category: 'campus',
+    description: 'Launch fast with curated boilerplate kits & coding tracks.',
     icon: Rocket,
-    iconBg: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/25',
-    span: 'md:col-span-2',
+    accentText: 'text-teal-300',
+    accentBorder: 'border-teal-500/35 bg-teal-500/10',
+    iconStyle: 'bg-teal-500/10 text-teal-300 border-teal-500/25',
+    glowColor: 'rgba(20, 184, 166, 0.22)',
     href: '/resources',
+    openInNewTab: true,
   },
 ];
 
-function FeatureCard({
-  feature,
+const HUB_TABS: Array<{ id: HubCategory; label: string; count: number }> = [
+  { id: 'all', label: 'All Tools', count: CAMPUS_TOOLS.length },
+  { id: 'compete', label: 'Compete', count: CAMPUS_TOOLS.filter((t) => t.category === 'compete').length },
+  { id: 'build', label: 'Build & AI', count: CAMPUS_TOOLS.filter((t) => t.category === 'build').length },
+  { id: 'campus', label: 'Campus & Practice', count: CAMPUS_TOOLS.filter((t) => t.category === 'campus').length },
+];
+
+function ToolLauncherCard({
+  tool,
   index,
   hoveredIndex,
   onHover,
 }: {
-  feature: (typeof features)[0];
+  tool: CampusToolItem;
   index: number;
   hoveredIndex: number | null;
   onHover: (idx: number | null) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px' });
+  const isInView = useInView(ref, { once: true, margin: '-40px' });
 
   const isCurrentHovered = hoveredIndex === index;
-  const isOtherHovered = hoveredIndex !== null && !isCurrentHovered;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -113,133 +224,167 @@ function FeatureCard({
     cardRef.current.style.setProperty('--my', `${e.clientY - rect.top}px`);
   };
 
+  const Icon = tool.icon;
+
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={isInView ? { opacity: isOtherHovered ? 0.45 : 1, y: 0 } : {}}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{
-        delay: index * 0.07,
-        duration: 0.5,
+        delay: Math.min(index * 0.04, 0.25),
+        duration: 0.4,
         ease: [0.25, 0.4, 0.25, 1],
       }}
-      className={`relative ${feature.span}`}
-      style={{ zIndex: isCurrentHovered ? 30 : 1 }}
       onMouseEnter={() => onHover(index)}
       onMouseLeave={() => onHover(null)}
       onMouseMove={handleMouseMove}
+      className="h-full"
     >
-      <Link href={feature.href} className="block h-full group focus-visible:outline-none">
-        <motion.div
+      <Link
+        href={tool.href}
+        target={tool.openInNewTab ? '_blank' : undefined}
+        rel={tool.openInNewTab ? 'noopener noreferrer' : undefined}
+        className="block h-full group focus-visible:outline-none"
+      >
+        <div
           ref={cardRef}
-          animate={{
-            scale: isCurrentHovered ? 1.04 : 1,
-            y: isCurrentHovered ? -6 : 0,
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 380,
-            damping: 24,
-          }}
           style={{
             boxShadow: isCurrentHovered
-              ? `0 25px 60px -12px rgba(0, 0, 0, 0.85), 0 0 35px ${feature.glowColor}`
-              : '0 4px 20px -4px rgba(0, 0, 0, 0.4)',
+              ? `0 20px 45px -12px rgba(0, 0, 0, 0.9), 0 0 28px ${tool.glowColor}`
+              : '0 6px 22px -6px rgba(0, 0, 0, 0.55)',
           }}
-          className={`h-full rounded-2xl p-6 md:p-8 border transition-colors duration-200 backdrop-blur-md relative overflow-hidden flex flex-col justify-between transform-gpu will-change-transform ${
+          className={`h-full rounded-2xl p-5 border transition-all duration-200 relative overflow-hidden flex flex-col justify-between bg-[#090C12]/90 backdrop-blur-xl ${
             isCurrentHovered
-              ? 'border-white/35 bg-[#12151F]'
-              : 'border-white/[0.07] bg-white/[0.02]'
+              ? 'border-white/30 bg-[#0e131d] -translate-y-1'
+              : 'border-white/[0.09] hover:border-white/25'
           }`}
         >
-          {/* Hardware-Accelerated Mouse Following Spotlight Glow (0 React re-renders) */}
+          {/* Top hairline highlight */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+          {/* Cursor-following spotlight glow */}
           {isCurrentHovered && (
             <div
               className="absolute pointer-events-none -inset-px transition-opacity duration-300 opacity-100"
               style={{
-                background: `radial-gradient(400px circle at var(--mx, 50%) var(--my, 50%), ${feature.glowColor}, transparent 65%)`,
+                background: `radial-gradient(280px circle at var(--mx, 50%) var(--my, 50%), ${tool.glowColor}, transparent 65%)`,
               }}
             />
           )}
 
-          {/* Top Row: Icon & Clean Corner Action */}
-          <div className="relative z-10 flex items-start justify-between gap-4 mb-5">
+          {/* Top Row: Icon & Live/Category Badge */}
+          <div className="relative z-10 flex items-center justify-between gap-2 mb-4">
             <div
-              className={`inline-flex items-center justify-center w-12 h-12 rounded-xl ${feature.iconBg} transition-transform duration-300 group-hover:scale-110 shadow-sm`}
+              className={`inline-flex items-center justify-center w-10 h-10 rounded-xl border ${tool.iconStyle} transition-transform duration-200 group-hover:scale-105 shadow-inner`}
             >
-              <feature.icon className="w-6 h-6" />
+              <Icon className="w-5 h-5" />
             </div>
 
-            <div
-              className={`p-2 rounded-xl border border-white/5 bg-white/[0.02] text-slate-400 group-hover:text-white group-hover:border-white/20 transition-all ${
-                isCurrentHovered ? 'translate-x-0.5 -translate-y-0.5 text-white bg-white/[0.08]' : ''
-              }`}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border ${tool.accentBorder} ${tool.accentText}`}
             >
-              <ArrowUpRight className="w-4 h-4" />
-            </div>
+              {tool.live && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
+              )}
+              <span>{tool.badge}</span>
+            </span>
           </div>
 
-          {/* Middle: Title & Description */}
-          <div className="relative z-10">
-            <h3 className="font-heading text-xl font-bold text-white mb-2.5 flex items-center gap-2 group-hover:text-amber-300 transition-colors">
-              <span>{feature.title}</span>
+          {/* Middle: Title & Short Action Line */}
+          <div className="relative z-10 space-y-1.5 mb-4">
+            <h3 className="font-heading text-base sm:text-lg font-bold text-white tracking-tight group-hover:text-white transition-colors">
+              {tool.title}
             </h3>
-            <p className="text-slate-400 text-[14px] sm:text-[15px] leading-relaxed">
-              {feature.description}
+            <p className="text-slate-400 text-xs sm:text-[13px] leading-relaxed line-clamp-2">
+              {tool.description}
             </p>
           </div>
 
-          {/* Bottom Pop Action Drawer: Appears when mouse focuses on card */}
-          <motion.div
-            initial={false}
-            animate={{
-              height: isCurrentHovered ? 'auto' : 0,
-              opacity: isCurrentHovered ? 1 : 0,
-              marginTop: isCurrentHovered ? 16 : 0,
-            }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden relative z-10 border-t border-white/10 pt-3 flex items-center justify-between text-xs font-semibold text-slate-200"
-          >
-            <span className="flex items-center gap-1.5 text-amber-300">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Explore Capability</span>
+          {/* Bottom Action Strip (Always visible on desktop & mobile — tap to launch) */}
+          <div className="relative z-10 pt-3 border-t border-white/[0.07] flex items-center justify-between text-[11px] font-mono">
+            <span className="text-slate-400 group-hover:text-slate-200 transition-colors">
+              Tap to open
             </span>
-            <span className="text-slate-400 font-mono text-[11px]">Click to open &rarr;</span>
-          </motion.div>
-        </motion.div>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.06] group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-200 text-slate-200 group-hover:text-slate-950 border border-white/10 group-hover:border-white/50 font-bold transition-all">
+              <span>Launch</span>
+              <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </div>
+        </div>
       </Link>
     </motion.div>
   );
 }
 
 export function LandingFeatures() {
+  const [activeCategory, setActiveCategory] = useState<HubCategory>('all');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
+  const visibleTools =
+    activeCategory === 'all'
+      ? CAMPUS_TOOLS
+      : CAMPUS_TOOLS.filter((tool) => tool.category === activeCategory);
+
   return (
-    <section className="py-24 md:py-32 px-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Section header */}
-        <div className="max-w-2xl mb-16">
-          <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-400 mb-4 block">
-            Platform Capabilities
-          </span>
-          <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">
-            Everything you need to ship something{' '}
-            <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-teal-300 bg-clip-text text-transparent">
-              extraordinary.
-            </span>
-          </h2>
-          <p className="text-slate-400 text-sm mt-3">
-            Explore the core infrastructure powering collegiate teams and competitive coders.
-          </p>
+    <section className="relative py-20 md:py-24 px-5 sm:px-8 lg:px-12 bg-black border-t border-white/[0.06]">
+      <div className="max-w-[1440px] mx-auto">
+        {/* Section Header + Category Filter Pills */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 sm:mb-12">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase bg-white/[0.06] text-slate-200 border border-white/15 mb-3">
+              <LayoutGrid className="w-3.5 h-3.5 text-cyan-300" />
+              <span>Campus Command Hub</span>
+            </div>
+            <h2 className="font-heading text-2xl sm:text-4xl lg:text-[2.65rem] font-bold text-white leading-tight tracking-tight">
+              Every Tool on Campus —{' '}
+              <span className="bg-gradient-to-b from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                Tap to Launch.
+              </span>
+            </h2>
+            <p className="text-slate-400 text-xs sm:text-sm mt-2">
+              Jump directly into duels, campus wars, hackathons, live deadlines, AI builders, and coding prep in one tap.
+            </p>
+          </div>
+
+          {/* Interactive Filter Pills */}
+          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#090C12] border border-white/10 overflow-x-auto self-start lg:self-auto shadow-inner">
+            {HUB_TABS.map((tab) => {
+              const isSelected = activeCategory === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(tab.id);
+                    setHoveredIndex(null);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-gradient-to-b from-white to-slate-200 text-slate-950 shadow-sm border border-white/50'
+                      : 'text-slate-400 hover:text-white hover:bg-white/[0.05] border border-transparent'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-md ${
+                      isSelected ? 'bg-black/10 text-slate-900' : 'bg-white/[0.06] text-slate-400'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Bento grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-          {features.map((feature, i) => (
-            <FeatureCard
-              key={feature.title}
-              feature={feature}
+        {/* 12-Tile Balanced Interactive Launcher Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {visibleTools.map((tool, i) => (
+            <ToolLauncherCard
+              key={tool.title}
+              tool={tool}
               index={i}
               hoveredIndex={hoveredIndex}
               onHover={setHoveredIndex}

@@ -356,8 +356,29 @@ function ArenaPageContent() {
             </span>
           </Link>
 
-          {/* Audio & Status Controls */}
-          <div className="flex items-center gap-3">
+          {/* Quick Mode Links + Audio Controls */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+            <Link
+              href="/war"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/55 hover:bg-black/80 border border-white/15 hover:border-white/35 text-xs font-mono font-bold text-slate-200 hover:text-white backdrop-blur-md transition-all"
+            >
+              <Flame className="w-3.5 h-3.5 text-rose-400" />
+              <span>Campus War</span>
+            </Link>
+            <Link
+              href="/leaderboard"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/55 hover:bg-black/80 border border-white/15 hover:border-white/35 text-xs font-mono font-bold text-slate-200 hover:text-white backdrop-blur-md transition-all"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>Leaderboard</span>
+            </Link>
+            <Link
+              href="/icpc"
+              className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-black/55 hover:bg-black/80 border border-white/15 hover:border-white/35 text-xs font-mono font-bold text-slate-200 hover:text-white backdrop-blur-md transition-all"
+            >
+              <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Practice IDE</span>
+            </Link>
             <button
               type="button"
               onClick={toggleAudio}

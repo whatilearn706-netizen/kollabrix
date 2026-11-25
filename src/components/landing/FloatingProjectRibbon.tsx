@@ -61,11 +61,11 @@ const SYNTAX_DOTS = ['bg-amber-400', 'bg-sky-400', 'bg-emerald-400'];
 // Card 4 -> 5: 3 sec
 // Card 5 -> 1: 1 sec
 const CARD_INTERVALS_MS = [
-  3000, // 1 to 2 after 3 sec
-  2000, // 2 to 3 after 2 sec
-  3000, // 3 to 4 after 3 sec
-  3000, // 4 to 5 after 3 sec
-  1000, // 5 to 1 after 1 sec
+  4000,
+  3500,
+  4000,
+  4000,
+  3500,
 ];
 
 export function FloatingProjectRibbon() {
@@ -111,16 +111,16 @@ export function FloatingProjectRibbon() {
     setActiveIndex((index + totalCards) % totalCards);
   };
 
-  // Continuous auto-rotation loop matching exact sequence:
-  // 1 -> 2 (20s) -> 3 (17s) -> 4 (19s) -> 5 (22s) -> 1 (18s) continuously
+  // Auto-rotation loop pauses gracefully when hovered so users can inspect or click
   useEffect(() => {
-    const duration = CARD_INTERVALS_MS[activeIndex % CARD_INTERVALS_MS.length] || 20000;
+    if (isHovered) return;
+    const duration = CARD_INTERVALS_MS[activeIndex % CARD_INTERVALS_MS.length] || 4000;
     const timer = setTimeout(() => {
       setActiveIndex((prev) => (prev + 1) % totalCards);
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [activeIndex, totalCards]);
+  }, [activeIndex, totalCards, isHovered]);
 
   // Keyboard navigation when user interacts with carousel
   useEffect(() => {
