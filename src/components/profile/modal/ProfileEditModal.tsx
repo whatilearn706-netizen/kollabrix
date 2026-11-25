@@ -1011,7 +1011,7 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
               <div className="flex items-center gap-2">
                 {currentStep < maxSteps ? (
                   <>
-                    {userRoleType === 'student' && (
+                    {userRoleType === 'student' && currentStep !== 4 && (
                       <button
                         type="button"
                         disabled={isSubmitting}
@@ -1024,11 +1024,25 @@ export function ProfileEditModal({ forceOpen = false, mode = 'onboarding' }: Pro
                     )}
                     <button
                       type="button"
+                      disabled={userRoleType === 'student' && currentStep === 4 && !isCollegeVerified}
                       onClick={handleNext}
-                      className="h-10 px-5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 shadow-md border border-white/40 transition-all active:scale-[0.99] cursor-pointer"
+                      title={
+                        userRoleType === 'student' && currentStep === 4 && !isCollegeVerified
+                          ? 'Complete ID Card & Apple Face ID Match above to continue, or click Skip for now.'
+                          : undefined
+                      }
+                      className={`h-10 px-5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all ${
+                        userRoleType === 'student' && currentStep === 4 && !isCollegeVerified
+                          ? 'bg-white/10 text-slate-400 border border-white/10 cursor-not-allowed opacity-60'
+                          : 'bg-gradient-to-r from-slate-100 via-slate-200 to-slate-300 hover:from-white hover:to-slate-100 text-slate-950 shadow-md border border-white/40 active:scale-[0.99] cursor-pointer'
+                      }`}
                     >
-                      <span>Next: {activeStepTitles[currentStep]?.tag || 'Next'}</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
+                      <span>
+                        {userRoleType === 'student' && currentStep === 4 && !isCollegeVerified
+                          ? 'Verify Face ID First'
+                          : `Next: ${activeStepTitles[currentStep]?.tag || 'Next'}`}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
                     </button>
                   </>
                 ) : (

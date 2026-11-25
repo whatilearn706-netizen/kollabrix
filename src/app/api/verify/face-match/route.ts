@@ -45,29 +45,19 @@ async function verifyBiometricWithGemini(
   if (keys.length === 0) return null;
 
   const models = [
-    'gemini-3.6-flash',
     'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-flash-latest',
   ];
   const prompt = `You are a bank-grade biometric forensics and facial landmark identity verification AI.
-Examine and compare these two facial images:
+Examine and compare these two facial images STRICTLY:
 - Image 1: Live camera selfie captured in real time.
-- Image 2: Identity document portrait (from the student's physical collegiate ID card).
+- Image 2: Isolated student portrait from the physical ID card.
 
 Biometric Verification Protocol:
-1. Is there a genuine human face visible in Image 1?
-2. Is there a student portrait/face visible in Image 2?
-3. Compare the facial geometry:
-   - Eye shape, distance between pupils, and eyebrow curvature.
-   - Nose bridge width and nasal tip angle.
-   - Jawline, chin contour, and cheekbone structure.
-   - Mouth width and lip shape.
-   - Account for realistic variations: camera focal length/perspective, lighting differences, hairstyles, facial hair growth, spectacles/glasses, and minor age changes (e.g. ID photo taken 1-3 years prior).
-4. Distinguish between:
-   - Case A: Same individual with expected camera/print differences -> MATCH (confidence >= 80%).
-   - Case B: Two completely different people (e.g. friend's ID card, impersonation attempt, sibling) -> STRICT MISMATCH (confidence < 50%).
+1. Confirm there is a genuine human face visible in Image 1 AND a clear student portrait in Image 2.
+2. Strictly compare bone structure, eye shape, inter-pupillary ratio, nose bridge width, cheekbone geometry, jawline contour, and ear/mouth proportions.
+3. If these images appear to be two different people (for example a friend's ID card, cousin/sibling, or someone else), OR if the card portrait is wearing prescription glasses while the live user clearly has a different facial structure -> REJECT STRICTLY: set "isMatched": false and "matchScore": < 30.
+4. ONLY return "isMatched": true (score >= 82) when facial geometry clearly matches the SAME person. Never guess "match" on ambiguity or poor lighting.
 
 Return ONLY a valid JSON object matching this schema:
 {
@@ -78,7 +68,8 @@ Return ONLY a valid JSON object matching this schema:
   "reason": "Detailed biometric rationale"
 }`;
 
-  for (let attempt = 0; attempt < keys.length; attempt++) {
+  const maxAttempts = Math.min(2, keys.length);
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const key = keys[(geminiFacePoolIndex + attempt) % keys.length];
     for (const model of models) {
       try {
@@ -87,7 +78,7 @@ Return ONLY a valid JSON object matching this schema:
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(9000),
+            signal: AbortSignal.timeout(8500),
             body: JSON.stringify({
               contents: [
                 {
@@ -275,10 +266,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // ── 2. Isolate Card Photo (Zero Tolerance for Background Live Face) ──
+    // ── 2. Strictly Isolate Card Portrait (Zero Tolerance for Background Live Face Contamination) ──
     let sourceBufferToCompare: Buffer | null = null;
+    let isolatedCropUsed = false;
 
-    // Check if the cropped passport portrait has a face
     if (refBuffer && refBuffer !== fullCardBuffer) {
       try {
         const cropDetect = await client.send(
@@ -287,15 +278,18 @@ export async function POST(request: NextRequest) {
             Attributes: ['DEFAULT'],
           })
         );
-        if ((cropDetect.FaceDetails || []).length > 0) {
+        const cropFaces = cropDetect.FaceDetails || [];
+        // Card portrait crop MUST isolate 1 portrait face cleanly (never multiple faces)
+        if (cropFaces.length === 1) {
           sourceBufferToCompare = refBuffer;
+          isolatedCropUsed = true;
         }
       } catch (cropErr: any) {
         console.warn('Crop face detection note:', cropErr?.name, cropErr?.message);
       }
     }
 
-    // If no crop, inspect the card frame
+    // Only inspect fullCardBuffer if it contains strictly ONE small card portrait (Width < 0.25) and NO background user head
     if (!sourceBufferToCompare && fullCardBuffer) {
       try {
         const cardDetect = await client.send(
@@ -305,8 +299,7 @@ export async function POST(request: NextRequest) {
           })
         );
         const cardFaces = cardDetect.FaceDetails || [];
-
-        if (cardFaces.length > 0) {
+        if (cardFaces.length === 1 && (cardFaces[0]?.BoundingBox?.Width || 1) < 0.25) {
           sourceBufferToCompare = fullCardBuffer;
         }
       } catch (cardErr: any) {
@@ -314,98 +307,93 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If AWS could not isolate face on card photo, try Gemini Multimodal Biometrics
     if (!sourceBufferToCompare) {
-      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
-      if (geminiResult) {
-        return NextResponse.json({
-          ...geminiResult,
-          engine: 'Gemini-Multimodal-Biometric',
-          verifiedAt: new Date().toISOString(),
-        });
-      }
-
       return NextResponse.json({
         success: true,
         hasFace: true,
         isMatched: false,
         matchScore: 0,
         engine: 'AWS-Rekognition-Biometric',
-        reason: 'No student photo detected on the ID card. Please hold your ID card closer and steady in the frame.',
+        reason: 'Could not cleanly isolate the student photo from the ID card without background interference. Please rescan your ID card closer inside the box.',
         verifiedAt: new Date().toISOString(),
       });
     }
 
-    // ── 3. Forensic 1:1 Vector Landmark Comparison (Fail-Closed) ──
+    // ── 3. Forensic 1:1 Vector Landmark Comparison (Fail-Closed Against Friend/Proxy IDs) ──
     try {
-      const compareRes = await client.send(
-        new CompareFacesCommand({
-          SourceImage: { Bytes: sourceBufferToCompare },
-          TargetImage: { Bytes: liveBuffer },
-          SimilarityThreshold: 70, // Calibrated for webcam-captured printed ID card photos
-        })
-      );
+      const [compareRes, geminiConsensus] = await Promise.all([
+        client.send(
+          new CompareFacesCommand({
+            SourceImage: { Bytes: sourceBufferToCompare },
+            TargetImage: { Bytes: liveBuffer },
+            SimilarityThreshold: 50,
+          })
+        ),
+        // Run fast Gemini check in parallel ONLY on the isolated reference portrait
+        isolatedCropUsed ? verifyBiometricWithGemini(cleanLive, cleanRef).catch(() => null) : Promise.resolve(null),
+      ]);
 
       const matches = compareRes.FaceMatches || [];
-      const unmatched = compareRes.UnmatchedFaces || [];
+      const topSimilarity = matches[0]?.Similarity || 0;
+      const awsScore = Math.round(topSimilarity * 10) / 10;
 
-      // Same cardholder confirmed by AWS Rekognition
-      if (matches.length > 0 && matches[0]?.Similarity && matches[0].Similarity >= 72) {
-        const score = Math.round(matches[0].Similarity * 10) / 10;
+      // Hard Fail-Closed Rejection: Anything below 82% in AWS Rekognition is NEVER approved (friend/impersonator protection)
+      if (matches.length === 0 || topSimilarity < 82) {
+        return NextResponse.json({
+          success: true,
+          hasFace: true,
+          isMatched: false,
+          matchScore: awsScore,
+          engine: 'AWS-Rekognition-Biometric',
+          reason: `Biometric Mismatch (${awsScore}% similarity): Live face does not match the student photo on this ID card. You cannot verify using a friend's or another student's ID card.`,
+          verifiedAt: new Date().toISOString(),
+        });
+      }
+
+      // High-Confidence Match (>= 92%) on isolated portrait
+      if (topSimilarity >= 92) {
         return NextResponse.json({
           success: true,
           hasFace: true,
           isMatched: true,
-          matchScore: score,
+          matchScore: awsScore,
           engine: 'AWS-Rekognition-Biometric',
-          reason: `Biometric face signature matches ID card portrait (${score}% similarity).`,
+          reason: `Biometric face signature verified against ID card portrait (${awsScore}% similarity).`,
           verifiedAt: new Date().toISOString(),
         });
       }
 
-      // If AWS gives 60-79% or unmatched due to print grain or lighting, give Gemini second opinion
-      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
-      if (geminiResult && geminiResult.isMatched) {
+      // Gray Zone (82% - 91.9%): Require explicit Gemini Vision consensus (never approve borderline alone)
+      if (geminiConsensus && geminiConsensus.isMatched && geminiConsensus.matchScore >= 80) {
         return NextResponse.json({
-          ...geminiResult,
-          engine: 'Gemini-Multimodal-Biometric-Consensus',
+          success: true,
+          hasFace: true,
+          isMatched: true,
+          matchScore: awsScore,
+          engine: 'AWS-Gemini-Dual-Biometric-Consensus',
+          reason: `Dual biometric consensus verified (${awsScore}% similarity).`,
           verifiedAt: new Date().toISOString(),
         });
       }
-
-      // Confirmed Mismatch: Friend's Card or Different Individual -> STRICT REJECTION
-      const highestScore = matches[0]?.Similarity
-        ? Math.round(matches[0].Similarity * 10) / 10
-        : (geminiResult?.matchScore || (unmatched.length > 0 ? 18.0 : 0.0));
 
       return NextResponse.json({
         success: true,
         hasFace: true,
         isMatched: false,
-        matchScore: highestScore,
+        matchScore: awsScore,
         engine: 'AWS-Rekognition-Biometric',
-        reason: geminiResult?.reason || 'Warning: Face does not match the photo on this student ID card. You must verify using your own ID card.',
+        reason: geminiConsensus?.reason || `Biometric confidence too low (${awsScore}%) or inconsistent with ID card portrait. Hold your own ID card clearly and look straight into the camera.`,
         verifiedAt: new Date().toISOString(),
       });
     } catch (compErr: any) {
       console.warn('CompareFaces execution note:', compErr?.name, compErr?.message);
-      
-      const geminiResult = await verifyBiometricWithGemini(cleanLive, cleanRef);
-      if (geminiResult) {
-        return NextResponse.json({
-          ...geminiResult,
-          engine: 'Gemini-Multimodal-Biometric-Fallback',
-          verifiedAt: new Date().toISOString(),
-        });
-      }
-
       return NextResponse.json({
         success: true,
         hasFace: true,
         isMatched: false,
         matchScore: 0,
         engine: 'AWS-Rekognition-Biometric',
-        reason: 'Biometric verification could not match face. Please hold your ID card flat and look directly into the camera.',
+        reason: 'Biometric comparison failed to verify identity. Please ensure good lighting and hold your own physical ID card flat.',
         verifiedAt: new Date().toISOString(),
       });
     }

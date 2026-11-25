@@ -293,19 +293,32 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
 
         const currentList: any[] = Array.isArray(pData?.value) ? pData.value : [];
+        const existingEntry = currentList.find(
+          (item: any) =>
+            item.userId === sanitizedPayload.user_id ||
+            (sanitizedPayload.username && item.username?.toLowerCase() === sanitizedPayload.username.toLowerCase())
+        );
         const cleanList = currentList.filter(
           (item: any) =>
             item.userId !== sanitizedPayload.user_id &&
             item.username?.toLowerCase() !== (sanitizedPayload.username || '').toLowerCase()
         );
+        const preservedRollNo =
+          (sanitizedPayload.student_roll_no || '').toString().trim() ||
+          existingEntry?.rollNumber ||
+          existingEntry?.studentRollNumber ||
+          '';
+
         cleanList.unshift({
           userId: sanitizedPayload.user_id,
-          username: sanitizedPayload.username || '',
-          displayName: sanitizedPayload.display_name || '',
-          college: sanitizedPayload.college || 'Collegiate Institution',
-          course: sanitizedPayload.course || '',
-          academicYear: sanitizedPayload.academic_year || '',
-          verifiedAt: sanitizedPayload.college_verified_at || new Date().toISOString(),
+          username: sanitizedPayload.username || existingEntry?.username || '',
+          displayName: sanitizedPayload.display_name || existingEntry?.displayName || '',
+          college: sanitizedPayload.college || existingEntry?.college || 'Collegiate Institution',
+          ...(preservedRollNo ? { rollNumber: preservedRollNo } : {}),
+          course: sanitizedPayload.course || existingEntry?.course || '',
+          academicYear: sanitizedPayload.academic_year || existingEntry?.academicYear || '',
+          verifiedAt: sanitizedPayload.college_verified_at || existingEntry?.verifiedAt || new Date().toISOString(),
+          verificationMethod: existingEntry?.verificationMethod || 'path_b_face_id',
           status: 'approved',
           collegeVerified: true,
         });

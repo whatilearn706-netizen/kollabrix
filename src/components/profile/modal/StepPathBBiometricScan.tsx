@@ -9,7 +9,6 @@ import {
   AlertCircle,
   Sparkles,
   RefreshCw,
-  Edit3,
   Check,
   Lock,
   ArrowRight,
@@ -381,7 +380,6 @@ export function StepPathBBiometricScan({
     academicYear: isVerified ? currentAcademicYear || '1st Year (Freshman)' : '1st Year (Freshman)',
     studentName: isVerified ? (displayName || '') : '',
   });
-  const [isEditingExtracted, setIsEditingExtracted] = useState(false);
 
   // Fraud Prevention & Liveness State
   const [duplicateCardError, setDuplicateCardError] = useState<string | null>(null);
@@ -583,7 +581,7 @@ export function StepPathBBiometricScan({
         const res = await fetch('/api/verify/id-card/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(14000),
+          signal: AbortSignal.timeout(16000),
           body: JSON.stringify({
             cardImage: frameBase64,
             displayName,
@@ -610,36 +608,47 @@ export function StepPathBBiometricScan({
           return;
         }
 
-        // Genuine physical student card detected
+        // Genuine physical student card detected (must have card studentName + isolated portrait crop)
         if (data.success && data.isCardDetected && data.extracted) {
           const ext = data.extracted;
+          const verifiedCardName = (ext.studentName || '').trim();
+          const verifiedCollege = (ext.college || '').trim();
+
+          if (verifiedCardName.length < 2 || !verifiedCollege) {
+            if (!isCardDetectedRef.current) {
+              setLastLiveDetection('Card visible — hold steady so Student Name & College read clearly...');
+            }
+            return;
+          }
+
+          // Strictly isolate the student passport photo before locking card scan
+          const crop = await cropPassportPhotoFromCard(frameBase64, ext.portraitBox);
+          if (!crop) {
+            if (!isCardDetectedRef.current) {
+              setLastLiveDetection('Card text read — hold card steady to capture ID portrait photo...');
+            }
+            return;
+          }
+
+          setCardPortraitCrop(crop);
           setIsCardDetected(true);
           isCardDetectedRef.current = true;
-          // Keep the full frame snapshot so no part of the card (horizontal or vertical) is cropped out
           const cardSnapshot = frameBase64;
           setIdCardSnapshot(cardSnapshot);
           idCardSnapshotRef.current = cardSnapshot;
           setDuplicateCardError(null);
 
-          const verifiedCardName = (ext.studentName || '').trim();
-
           setExtractedData({
-            college: ext.college || currentCollege || '',
-            studentRollNo: ext.studentRollNo || '',
-            course: ext.course || 'B.Tech - Computer Science & Engineering',
-            academicYear: ext.academicYear || '1st Year (Freshman)',
-            studentName: verifiedCardName, // EXACT CARD NAME! NO Google fallback!
+            college: verifiedCollege,
+            studentRollNo: (ext.studentRollNo || '').trim(),
+            course: (ext.course || 'B.Tech - Computer Science & Engineering').trim(),
+            academicYear: (ext.academicYear || '1st Year (Freshman)').trim(),
+            studentName: verifiedCardName,
           });
 
           const rollStr = ext.studentRollNo ? ` • Roll: ${ext.studentRollNo}` : '';
-          const nameStr = verifiedCardName ? ` • ${verifiedCardName}` : '';
-          setLastLiveDetection(`✓ Card Verified: ${nameStr || 'Physical Student ID'}${rollStr}`);
+          setLastLiveDetection(`✓ Card Verified: ${verifiedCardName}${rollStr}`);
           playSound('beep');
-
-          // Crop passport portrait from card frame
-          cropPassportPhotoFromCard(frameBase64, ext.portraitBox).then((crop) => {
-            if (crop) setCardPortraitCrop(crop);
-          });
         } else {
           // No physical card recognized in this frame
           if (!isCardDetectedRef.current) {
@@ -732,8 +741,9 @@ export function StepPathBBiometricScan({
 
   // ── Initiate Continuous Face ID Scanning & Backend Match ──
   const handleStartFaceContinuous = useCallback(() => {
-    if (!idCardSnapshot) {
+    if (!idCardSnapshot || !cardPortraitCrop) {
       setStage('card_continuous');
+      setLastLiveDetection('Please scan your physical ID card so both details and portrait photo are captured.');
       return;
     }
 
@@ -773,7 +783,7 @@ export function StepPathBBiometricScan({
       playSound('success');
 
       const faceToSave = liveFaceImg || faceSnapshot || captureCurrentFrame() || '';
-      const verifiedStudentName = (extractedData.studentName || displayName || 'Student Builder').trim();
+      const verifiedStudentName = extractedData.studentName?.trim() || '';
 
       setTimeout(async () => {
         stopCamera();
@@ -945,7 +955,6 @@ export function StepPathBBiometricScan({
     isLivenessConfirmed,
     userId,
     username,
-    displayName,
     extractedData,
     onVerificationComplete,
     stopCamera,
@@ -1293,16 +1302,12 @@ export function StepPathBBiometricScan({
                     <CheckCircle className="w-3.5 h-3.5" />
                     Backend Optical Scan Complete
                   </span>
-                  <h3 className="text-sm font-bold text-white">Extracted Card Details</h3>
+                  <h3 className="text-sm font-bold text-white">Extracted Card Details (Locked)</h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingExtracted(!isEditingExtracted)}
-                  className="px-3 py-1 rounded-xl bg-white/[0.05] hover:bg-white/10 text-xs text-amber-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>{isEditingExtracted ? 'Done Editing' : 'Edit Details'}</span>
-                </button>
+                <span className="px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-mono text-emerald-300 font-bold flex items-center gap-1.5">
+                  <Lock className="w-3 h-3" />
+                  <span>Verified From Card</span>
+                </span>
               </div>
 
           {/* Fraud Gate: Duplicate Card Warning Banner */}
@@ -1386,7 +1391,7 @@ export function StepPathBBiometricScan({
               )}
             </div>
 
-            {/* Extracted Fields */}
+            {/* Extracted Fields (Strictly Locked to Card) */}
             <div className="sm:col-span-2 space-y-2.5">
               {/* Verified Student Legal Name */}
               <div>
@@ -1394,57 +1399,26 @@ export function StepPathBBiometricScan({
                   <label className="block text-[10px] font-mono text-slate-400 uppercase">
                     Student Legal Name (Printed on Card)
                   </label>
-                  {isEditingExtracted ? (
-                    <span className="text-amber-300 font-bold text-[10px] font-mono">
-                      Edit Name if Typo
-                    </span>
-                  ) : (
-                    <span className="text-emerald-400 font-bold text-[10px] font-mono flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" /> Locked to ID Card
-                    </span>
-                  )}
+                  <span className="text-emerald-400 font-bold text-[10px] font-mono flex items-center gap-1">
+                    <Lock className="w-2.5 h-2.5" /> Locked to ID Card
+                  </span>
                 </div>
-                {isEditingExtracted ? (
-                  <input
-                    type="text"
-                    value={extractedData.studentName}
-                    onChange={(e) =>
-                      setExtractedData({ ...extractedData, studentName: e.target.value })
-                    }
-                    placeholder="e.g. Mayank Goyal"
-                    className="w-full px-3 py-1.5 rounded-xl bg-white/[0.06] border border-amber-400/50 text-xs font-bold text-white focus:outline-none focus:border-amber-400"
-                  />
-                ) : (
-                  <div className="px-3 py-1.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center justify-between shadow-inner">
-                    <span>
-                      {extractedData.studentName && !/what\s*i\s*learn/i.test(extractedData.studentName)
-                        ? extractedData.studentName
-                        : 'Name on card (Click Edit to enter)'}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                      ID Card Verified
-                    </span>
-                  </div>
-                )}
+                <div className="px-3 py-1.5 rounded-xl bg-emerald-950/25 border border-emerald-500/30 text-xs font-bold text-emerald-300 flex items-center justify-between shadow-inner">
+                  <span>{extractedData.studentName || 'Rescan card to read name'}</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                    ID Card Verified
+                  </span>
+                </div>
               </div>
 
               <div>
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
                   Collegiate Institution / University
                 </label>
-                {isEditingExtracted ? (
-                  <input
-                    type="text"
-                    value={extractedData.college}
-                    onChange={(e) => setExtractedData({ ...extractedData, college: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/20 text-xs text-white focus:outline-none focus:border-cyan-400"
-                  />
-                ) : (
-                  <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-semibold text-emerald-300 flex items-center justify-between">
-                    <span>{extractedData.college}</span>
-                    <Lock className="w-3 h-3 text-slate-400" />
-                  </div>
-                )}
+                <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-semibold text-emerald-300 flex items-center justify-between">
+                  <span>{extractedData.college}</span>
+                  <Lock className="w-3 h-3 text-slate-400" />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1452,47 +1426,20 @@ export function StepPathBBiometricScan({
                   <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
                     Roll / Student ID No.
                   </label>
-                  {isEditingExtracted ? (
-                    <input
-                      type="text"
-                      value={extractedData.studentRollNo}
-                      onChange={(e) =>
-                        setExtractedData({ ...extractedData, studentRollNo: e.target.value })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/20 text-xs text-white focus:outline-none focus:border-cyan-400"
-                    />
-                  ) : (
-                    <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono font-bold text-white flex items-center justify-between">
-                      <span>{extractedData.studentRollNo}</span>
-                      <Lock className="w-3 h-3 text-slate-400" />
-                    </div>
-                  )}
+                  <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono font-bold text-white flex items-center justify-between">
+                    <span>{extractedData.studentRollNo || '—'}</span>
+                    <Lock className="w-3 h-3 text-slate-400" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
                     Academic Year
                   </label>
-                  {isEditingExtracted ? (
-                    <select
-                      value={extractedData.academicYear}
-                      onChange={(e) =>
-                        setExtractedData({ ...extractedData, academicYear: e.target.value })
-                      }
-                      className="w-full px-3 py-1.5 rounded-xl bg-slate-900 border border-white/20 text-xs text-white focus:outline-none focus:border-cyan-400"
-                    >
-                      <option value="1st Year (Freshman)">1st Year (Freshman)</option>
-                      <option value="2nd Year (Sophomore)">2nd Year (Sophomore)</option>
-                      <option value="3rd Year (Junior)">3rd Year (Junior)</option>
-                      <option value="4th Year (Senior)">4th Year (Senior)</option>
-                      <option value="Postgraduate / Masters">Postgraduate / Masters</option>
-                    </select>
-                  ) : (
-                    <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-medium text-slate-200 flex items-center justify-between">
-                      <span>{extractedData.academicYear}</span>
-                      <Lock className="w-3 h-3 text-slate-400" />
-                    </div>
-                  )}
+                  <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-medium text-slate-200 flex items-center justify-between">
+                    <span>{extractedData.academicYear}</span>
+                    <Lock className="w-3 h-3 text-slate-400" />
+                  </div>
                 </div>
               </div>
 
@@ -1500,19 +1447,10 @@ export function StepPathBBiometricScan({
                 <label className="block text-[10px] font-mono text-slate-400 uppercase mb-0.5">
                   Course / Degree Program
                 </label>
-                {isEditingExtracted ? (
-                  <input
-                    type="text"
-                    value={extractedData.course}
-                    onChange={(e) => setExtractedData({ ...extractedData, course: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-xl bg-white/[0.06] border border-white/20 text-xs text-white focus:outline-none focus:border-cyan-400"
-                  />
-                ) : (
-                  <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-slate-300 flex items-center justify-between">
-                    <span>{extractedData.course}</span>
-                    <Lock className="w-3 h-3 text-slate-400" />
-                  </div>
-                )}
+                <div className="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-slate-300 flex items-center justify-between">
+                  <span>{extractedData.course}</span>
+                  <Lock className="w-3 h-3 text-slate-400" />
+                </div>
               </div>
             </div>
           </div>
@@ -1780,11 +1718,7 @@ export function StepPathBBiometricScan({
               <div className="col-span-2 pb-1.5 border-b border-emerald-500/10">
                 <span className="text-[10px] text-slate-400 block font-mono">VERIFIED STUDENT NAME (LOCKED)</span>
                 <span className="font-bold text-emerald-300 truncate block flex items-center gap-1.5">
-                  <span>
-                    {extractedData.studentName && !/what\s*i\s*learn/i.test(extractedData.studentName)
-                      ? extractedData.studentName
-                      : (displayName && !/what\s*i\s*learn/i.test(displayName) ? displayName : 'Student Builder')}
-                  </span>
+                  <span>{extractedData.studentName || displayName || 'Student Builder'}</span>
                   <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
                 </span>
               </div>

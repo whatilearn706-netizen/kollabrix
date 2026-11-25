@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createWorker } from 'tesseract.js';
 import {
   RekognitionClient,
   DetectTextCommand,
@@ -149,7 +148,7 @@ Return ONLY a valid JSON object matching this schema:
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(4500),
+          signal: AbortSignal.timeout(8500),
           body: JSON.stringify({
             contents: [
               {
@@ -449,12 +448,15 @@ Return ONLY a valid JSON object matching this schema:
   };
 }
 
-// ── 2. High-Accuracy Local Fallback Parser (When API Key is Absent) ──
-function parseCollegiateData(rawText: string, userDisplayName?: string, existingCollege?: string) {
+// ── 2. High-Accuracy Local Fallback Parser (When API Key is Absent or Vision Timed Out) ──
+function parseCollegiateData(rawText: string, _userDisplayName?: string, existingCollege?: string) {
+  const uiNoiseRegex =
+    /kollabrix|step\s*\d+\s*of\s*\d+|apple\s*face\s*id|continuous\s*optical|analyzing\s*frames|hold\s*physical|scan\s*now|save\s*[&l]\s*finish|review\s*&\s*lock|skip\s*verification|remaining|captured|faculty/i;
+
   const lines = rawText
     .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l.length > 1);
+    .filter((l) => l.length > 1 && !uiNoiseRegex.test(l));
 
   if (lines.length < 2) {
     return {
@@ -474,56 +476,73 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
 
   const fullText = lines.join('\n');
 
-  // 1. College Extraction
+  // 1. College Extraction (Priority: Named Institutions first, Generic suffixes second)
   let college = '';
-  const collegeKeywords = [
-    's-vyasa', 'svyasa', 'boss coder', 'bosscoder',
-    'indian institute of technology', 'iit',
-    'national institute of technology', 'nit',
-    'bits pilani', 'birla institute',
-    'delhi technological university', 'dtu',
-    'netaji subhas', 'nsut',
-    'vellore institute of technology', 'vit',
-    'srm institute', 'srm',
-    'thapar institute', 'thapar',
-    'manipal university', 'manipal',
-    'amity university',
-    'chandigarh university',
-    'jadavpur university',
-    'anna university',
-    'deemed to be university',
-    'university', 'institute of technology', 'college of engineering', 'polytechnic', 'campus',
+  const specificCollegeRules: Array<{ match: RegExp; canonical?: string }> = [
+    { match: /\b(s-?vyasa|svyasa|vivekananda\s*yoga\s*anusandhana)\b/i, canonical: 'S-VYASA Deemed to be University' },
+    { match: /\b(bosscoder|boss\s*coder)\b/i, canonical: 'Bosscoder Academy' },
+    { match: /\bindian\s+institute\s+of\s+technology\b|\biit\s+[a-z]{3,}/i },
+    { match: /\bnational\s+institute\s+of\s+technology\b|\bnit\s+[a-z]{3,}/i },
+    { match: /\b(bits\s*pilani|birla\s+institute\s+of\s+technology)\b/i },
+    { match: /\b(delhi\s+technological\s+university|dtu)\b/i },
+    { match: /\b(netaji\s+subhas|nsut)\b/i },
+    { match: /\b(vellore\s+institute\s+of\s+technology|vit)\b/i },
+    { match: /\b(srm\s+institute|srm\s+university)\b/i },
+    { match: /\b(thapar\s+institute)\b/i },
+    { match: /\b(manipal\s+(?:academy|university|institute))\b/i },
+    { match: /\b(amity\s+university)\b/i },
+    { match: /\b(chandigarh\s+university)\b/i },
+    { match: /\b(jadavpur\s+university)\b/i },
+    { match: /\b(anna\s+university)\b/i },
   ];
 
-  for (const line of lines) {
-    const lower = line.toLowerCase();
-    for (const kw of collegeKeywords) {
-      if (lower.includes(kw)) {
-        if (kw.includes('s-vyasa') || kw.includes('svyasa')) {
-          college = 'S-VYASA Deemed to be University';
-          break;
-        } else {
-          college = line.replace(/^(student|identity|id card|government of india|accredited)\s*[:\-]?\s*/i, '').trim();
-          break;
-        }
+  for (const rule of specificCollegeRules) {
+    if (rule.match.test(fullText)) {
+      if (rule.canonical) {
+        college = rule.canonical;
+      } else {
+        const matchedLine = lines.find((l) => rule.match.test(l)) || '';
+        college = matchedLine.replace(/^(student|identity|id card|government of india|accredited)\s*[:\-]?\s*/i, '').trim();
       }
+      break;
     }
-    if (college) break;
   }
 
-  if (!college && existingCollege) {
-    college = existingCollege;
-  }
   if (!college) {
-    for (const line of lines) {
-      if (line.length > 5 && !/student|identity|card|name|roll|valid|signature|holder|phone/i.test(line)) {
-        college = line;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lower = line.toLowerCase();
+      if (/deemed\s+to\s+be\s+university|university|institute\s+of\s+technology|college\s+of\s+engineering|polytechnic/i.test(lower)) {
+        const cleanLine = line.replace(/^(student|identity|id card|government of india|accredited)\s*[:\-]?\s*/i, '').trim();
+        // If line is generic "Deemed to be University", prepend the institution header line above it if present
+        if (/^deemed\s+to\s+be\s+university$/i.test(cleanLine) && i > 0) {
+          const prev = lines[i - 1].trim();
+          if (prev.length >= 2 && !/student|identity|card|valid/i.test(prev)) {
+            college = `${prev} ${cleanLine}`;
+            break;
+          }
+        }
+        college = cleanLine;
         break;
       }
     }
   }
+
+  // Only inherit existingCollege if it is a real university name (never overwrite with generic "Deemed to be University")
+  if (
+    (!college || /^deemed\s+to\s+be\s+university$/i.test(college)) &&
+    existingCollege &&
+    !/^deemed\s+to\s+be\s+university$|^collegiate\s+institute/i.test(existingCollege.trim())
+  ) {
+    college = existingCollege.trim();
+  }
   if (!college) {
-    college = 'Collegiate Institute of Technology';
+    for (const line of lines) {
+      if (line.length > 5 && !/student|identity|card|name|roll|valid|signature|holder|phone|temporary|authoris/i.test(line)) {
+        college = line;
+        break;
+      }
+    }
   }
 
   // 2. Roll Number Extraction
@@ -531,7 +550,7 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
   const rollMatch = fullText.match(
     /(?:roll\s*(?:no\.?|num(?:ber)?|#)?|id\s*(?:no\.?|num(?:ber)?|#)|reg(?:istration)?\s*(?:no\.?|num(?:ber)?|#)?|enrol(?:l)?ment\s*(?:no\.?|num(?:ber)?|#)?|student\s*(?:id\s*(?:no\.?|#)|roll)|urn|usn|prn)\s*[:\-]?\s*([A-Za-z0-9\-_/]+)/i
   );
-  if (rollMatch && rollMatch[1] && rollMatch[1].length >= 3 && !/identity|card|student|name|issue|valid/i.test(rollMatch[1])) {
+  if (rollMatch && rollMatch[1] && rollMatch[1].length >= 4 && !/identity|card|student|name|issue|valid/i.test(rollMatch[1])) {
     rollNo = rollMatch[1].trim();
   } else {
     const pattern = fullText.match(/\b([0-9]{8,14}|[0-9]{2,4}[A-Za-z]{2,5}[0-9]{2,6}|[A-Za-z]{2,4}[0-9]{6,10})\b/);
@@ -540,19 +559,22 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
     }
   }
 
-  // 3. Course / Degree Extraction
+  // 3. Course / Degree Extraction (Preserve specialization like (AI & ML), normalize OCR Al -> AI)
   let course = '';
-  const courseMatch = fullText.match(
-    /(?:B\.?\s*Tech|B\.?E\b|BCA|MCA|M\.?\s*Tech|B\.?\s*Sc|M\.?\s*Sc|B\.?\s*Com|MBA|Ph\.?D|Bachelor\s*of\s*(?:Technology|Engineering|Science|Computer\s*Applications))(?:\s+(?:in|of)\s+[A-Za-z\s&]+|\s+[A-Za-z\s&]{2,30})?/i
-  );
-  if (courseMatch) {
-    const rawMatched = courseMatch[0].split('\n')[0].trim();
-    if (/cse|computer/i.test(fullText) || /cse|computer/i.test(rawMatched)) {
-      course = 'B.Tech Computer Science & Engineering (CSE)';
-    } else {
-      course = rawMatched;
-    }
-  } else if (/computer\s*science|cse|information\s*technology|it\b|artificial\s*intelligence|ai\s*&\s*ml/i.test(fullText)) {
+  const normalizedCourseText = fullText
+    .replace(/\bB\.?\s*Tech\b/gi, 'B.Tech')
+    .replace(/\(\s*Al\s*&\s*ML\s*\)/gi, '(AI & ML)')
+    .replace(/\bAl\s*&\s*ML\b/gi, 'AI & ML');
+
+  const courseLine = normalizedCourseText
+    .split(/\r?\n/)
+    .find((l) => /\b(B\.Tech|B\.E|BCA|MCA|M\.Tech|B\.Sc|M\.Sc|B\.Com|MBA|Ph\.D|Bachelor)\b/i.test(l));
+
+  if (courseLine) {
+    course = courseLine.trim();
+  } else if (/ai\s*&\s*ml|artificial\s*intelligence/i.test(normalizedCourseText)) {
+    course = 'B.Tech - CSE (AI & ML)';
+  } else if (/computer\s*science|\bcse\b/i.test(normalizedCourseText)) {
     course = 'B.Tech Computer Science & Engineering (CSE)';
   } else {
     course = 'B.Tech Computer Science';
@@ -578,25 +600,27 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
     }
   }
 
-  // 5. Student Name Extraction from Raw OCR
+  // 5. Student Name Extraction from Raw OCR (Supports initials like "VIKAS N" or "R K SHARMA")
   let cardStudentName = '';
+  const nonNameWordsRegex =
+    /\b(college|university|institute|department|student|identity|engineering|technology|card|valid|till|temporary|deemed|authorized|authorised|signatory|branch|course|program|campus|hostel|library|january|february|march|april|may|june|july|august|september|october|november|december|b\.?tech|cse|aiml|ai|ml|signature|holder|phone|address|blood|dob|father|mother|issue|what\s*i\s*learn|kollabrix|svyasa|s-vyasa)\b/i;
 
   const nameLabelMatch = fullText.match(
-    /(?:name\s*(?:of\s*(?:student|holder|candidate))?|student\s*name)\s*[:\-]?\s*([A-Za-z\s.]{3,35})/i
+    /(?:name\s*(?:of\s*(?:student|holder|candidate))?|student\s*name)\s*[:\-]?\s*([A-Za-z][A-Za-z\s.]{2,35})/i
   );
   if (nameLabelMatch && nameLabelMatch[1]) {
     const cand = nameLabelMatch[1].trim();
-    if (!/college|university|institute|technology|signature|valid|blood|dob|father|address|holder/i.test(cand)) {
+    if (!nonNameWordsRegex.test(cand) && !/\d/.test(cand)) {
       cardStudentName = cand;
     }
   }
 
   if (!cardStudentName) {
     for (const line of lines) {
-      if (
-        /^[A-Za-z]{2,}(?:\s+[A-Za-z]{2,}){1,3}$/.test(line) &&
-        !/college|university|institute|department|student|identity|engineering|technology|card|valid|temporary|deemed|authorized|signatory|branch|course|program|campus/i.test(line)
-      ) {
+      if (/\d/.test(line)) continue;
+      if (nonNameWordsRegex.test(line)) continue;
+      // Allow 2-4 tokens where at least one token has >= 2 letters and initials (e.g. "VIKAS N", "A. K. VERMA") are allowed
+      if (/^(?:[A-Za-z]{2,20}(?:\s+[A-Za-z]{1,20}\.?){1,3}|[A-Za-z]\.?\s+[A-Za-z]{2,20}(?:\s+[A-Za-z]{1,20}\.?){0,2})$/.test(line)) {
         cardStudentName = line.trim();
         break;
       }
@@ -604,20 +628,25 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
   }
 
   const finalStudentName = cardStudentName || '';
-  const isCardRecognized = Boolean(rollNo || (college && !/collegiate institute of technology/i.test(college)));
+  const hasRealCollege = Boolean(college && !/^collegiate institute of technology$|^deemed to be university$/i.test(college));
+  const isCardRecognized = Boolean(finalStudentName && (rollNo || hasRealCollege));
 
   return {
     isCardDetected: isCardRecognized,
-    reason: isCardRecognized ? 'Physical student ID card detected.' : 'No physical student ID card recognized in frame.',
-    college: isCardRecognized ? college : '',
+    reason: isCardRecognized
+      ? 'Physical student ID card detected.'
+      : rollNo || hasRealCollege
+      ? 'ID card spotted — hold steady and clear so your printed Name and Roll Number can be read.'
+      : 'No physical student ID card recognized in frame.',
+    college: isCardRecognized ? (college || 'Collegiate Institution') : '',
     studentRollNo: rollNo,
     course,
     academicYear,
     studentName: finalStudentName,
     portraitBox: null,
     cardNameFound: Boolean(cardStudentName),
-    confidence: isCardRecognized ? 88.5 : 0,
-    source: 'tesseract-heuristic-engine',
+    confidence: isCardRecognized ? 91.5 : 0,
+    source: 'ocr-heuristic-engine',
   };
 }
 
@@ -745,9 +774,13 @@ export async function POST(request: NextRequest) {
 
     const [geminiRes, awsRes] = await Promise.all([geminiPromise, awsPromise]);
 
-    if (geminiRes && geminiRes.isCardDetected) {
-      extractedData = geminiRes;
-    } else if (awsRes && awsRes.isCardDetected) {
+    if (geminiRes && geminiRes.isCardDetected && geminiRes.studentName) {
+      extractedData = {
+        ...geminiRes,
+        portraitBox: geminiRes.portraitBox || awsRes?.portraitBox || null,
+        studentRollNo: geminiRes.studentRollNo || awsRes?.studentRollNo || '',
+      };
+    } else if (awsRes && awsRes.isCardDetected && awsRes.studentName) {
       extractedData = awsRes;
     } else {
       extractedData = geminiRes || awsRes;
@@ -769,38 +802,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Last-Resort Tesseract Optical OCR Fallback
-    if (!extractedData) {
-      let recognizedText = '';
-      try {
-        const ocrPromise = (async () => {
-          let worker: any = null;
-          try {
-            worker = await createWorker('eng');
-            const ret = await worker.recognize(cardImage);
-            return ret?.data?.text || '';
-          } finally {
-            if (worker) {
-              await worker.terminate().catch(() => {});
-            }
-          }
-        })();
-
-        const timeoutPromise = new Promise<string>((resolve) => setTimeout(() => resolve(''), 3500));
-        recognizedText = await Promise.race([ocrPromise, timeoutPromise]);
-      } catch (ocrErr: any) {
-        console.warn('Backend Tesseract note:', ocrErr?.message);
-      }
-
-      extractedData = parseCollegiateData(recognizedText, displayName, existingCollege);
-    }
-
-    // If no physical card was detected in the frame:
-    if (!extractedData || !extractedData.isCardDetected) {
+    // Require genuine student name & card detection before locking details
+    if (!extractedData || !extractedData.isCardDetected || !extractedData.studentName || extractedData.studentName.trim().length < 2) {
       return NextResponse.json({
         success: true,
         isCardDetected: false,
-        reason: extractedData?.reason || 'No physical college student ID card detected in frame. Please hold your student ID card up to the camera.',
+        reason:
+          extractedData?.reason ||
+          'Hold your physical student ID card slightly closer and steady so your printed Name, College, and Roll Number are clearly readable.',
         extracted: null,
       });
     }
