@@ -8,31 +8,31 @@ import { BroadcastBannerConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/ma
 
 const THEME_STYLES: Record<BroadcastBannerConfig['theme'], { bg: string; text: string; badge: string; button: string }> = {
   gradient: {
-    bg: 'bg-[#090B10]',
+    bg: 'bg-black',
     text: 'text-slate-200',
     badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
     button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
   },
   indigo: {
-    bg: 'bg-[#090B10]',
+    bg: 'bg-black',
     text: 'text-slate-200',
     badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
     button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
   },
   emerald: {
-    bg: 'bg-[#090B10]',
+    bg: 'bg-black',
     text: 'text-slate-200',
     badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
     button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
   },
   amber: {
-    bg: 'bg-[#090B10]',
+    bg: 'bg-black',
     text: 'text-slate-200',
     badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
     button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',
   },
   rose: {
-    bg: 'bg-[#090B10]',
+    bg: 'bg-black',
     text: 'text-slate-200',
     badge: 'bg-white/[0.08] text-white border-white/20 shadow-[0_0_12px_rgba(255,255,255,0.08)]',
     button: 'bg-gradient-to-r from-white via-slate-100 to-slate-200 text-slate-950 font-bold hover:from-white hover:to-white hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_15px_rgba(255,255,255,0.35)] border border-white/60 transition-all',

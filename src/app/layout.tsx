@@ -310,7 +310,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" style={{ colorScheme: 'dark', backgroundColor: '#090B10' }}>
+    <html lang="en" className="dark" style={{ colorScheme: 'dark', backgroundColor: '#000000' }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -336,7 +336,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-[#090B10] text-slate-100 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative overflow-x-hidden">
+      <body className="min-h-screen bg-black text-slate-100 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative overflow-x-hidden">
         <NetworkResilienceProvider>
           <AuthProvider>
           <AnalyticsProvider>

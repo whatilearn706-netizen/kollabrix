@@ -149,7 +149,7 @@ export function Navbar() {
       style={{
         backgroundColor:
           (isNavbarDark
-            ? 'rgba(9, 11, 16, 0.85)'
+            ? 'rgba(0, 0, 0, 0.88)'
             : theme.navbarBgColor || 'rgba(255, 255, 255, 0.85)'),
         borderColor:
           (isNavbarDark

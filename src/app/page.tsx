@@ -7,7 +7,7 @@ import { LandingCTA } from '@/components/landing/CTASection';
 
 export default function HomePage() {
   return (
-    <div className="dark bg-[#090B10] text-slate-100 min-h-screen">
+    <div className="dark bg-black text-slate-100 min-h-screen">
       <LandingHero />
       <FloatingProjectRibbon />
       <HangingHackathonPasses />
