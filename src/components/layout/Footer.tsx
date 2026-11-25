@@ -30,7 +30,7 @@ export function Footer() {
       <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16">
         <div
           style={{ borderColor: isFooterDark ? 'rgba(255, 255, 255, 0.08)' : theme.borderColor }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 pb-10 border-b"
         >
           {/* Brand Info */}
           <div className="space-y-3.5 md:col-span-1">
@@ -131,48 +131,6 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
-
-          {/* Technical Architecture */}
-          <div className="space-y-2.5">
-            <h4
-              style={{ color: isFooterDark ? '#F1F5F9' : theme.headingColor }}
-              className="text-xs font-bold uppercase tracking-wider font-mono"
-            >
-              Architecture
-            </h4>
-            <p className="text-xs opacity-80 leading-relaxed">
-              Engineered with Next.js App Router, Supabase PostgreSQL, and cryptographic access control.
-            </p>
-            <div className="pt-2 flex flex-wrap gap-1.5 font-mono text-[10px]">
-              <span
-                style={{
-                  backgroundColor: theme.surfaceColor,
-                  borderColor: theme.borderColor,
-                }}
-                className="px-2 py-0.5 rounded-md border font-semibold shadow-xs"
-              >
-                PostgreSQL RLS
-              </span>
-              <span
-                style={{
-                  backgroundColor: theme.surfaceColor,
-                  borderColor: theme.borderColor,
-                }}
-                className="px-2 py-0.5 rounded-md border font-semibold shadow-xs"
-              >
-                Multi-Tenant
-              </span>
-              <span
-                style={{
-                  backgroundColor: theme.surfaceColor,
-                  borderColor: theme.borderColor,
-                }}
-                className="px-2 py-0.5 rounded-md border font-semibold shadow-xs"
-              >
-                Reactive Theme
-              </span>
-            </div>
           </div>
         </div>
 
