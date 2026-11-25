@@ -220,8 +220,7 @@ export function LandingFeatures() {
       <div className="max-w-6xl mx-auto">
         {/* Section header */}
         <div className="max-w-2xl mb-16">
-          <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-400 mb-4 block flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping inline-block" />
+          <span className="text-sm font-semibold uppercase tracking-[0.15em] text-cyan-400 mb-4 block">
             Platform Capabilities
           </span>
           <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight">

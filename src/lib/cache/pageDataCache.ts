@@ -406,20 +406,40 @@ export async function prefetchTeammatesData(): Promise<void> {
       .select('*')
       .neq('is_suspended', true)
       .neq('status', 'suspended')
+      .order('college_verified', { ascending: false })
       .order('updated_at', { ascending: false })
-      .limit(60);
+      .limit(200);
 
     const verifiedUserIds = new Set<string>();
     try {
-      const { data: vData } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'linkedin_college_verifications')
-        .maybeSingle();
-      if (Array.isArray(vData?.value)) {
-        vData.value.forEach((v: any) => {
-          if (v.userId) verifiedUserIds.add(v.userId);
-          if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+      const [vRes, sRes] = await Promise.all([
+        supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'linkedin_college_verifications')
+          .maybeSingle(),
+        supabase
+          .from('platform_settings')
+          .select('value')
+          .eq('key', 'student_id_verifications')
+          .maybeSingle(),
+      ]);
+
+      if (Array.isArray(vRes.data?.value)) {
+        vRes.data.value.forEach((v: any) => {
+          const isApproved = v.status === 'approved' || v.collegeVerified === true || v.facultyVerified === true;
+          if (isApproved && v.status !== 'pending' && v.status !== 'rejected') {
+            if (v.userId) verifiedUserIds.add(v.userId);
+            if (v.username) verifiedUserIds.add(v.username.toLowerCase().trim());
+          }
+        });
+      }
+      if (Array.isArray(sRes.data?.value)) {
+        sRes.data.value.forEach((s: any) => {
+          if (s.status === 'approved' || String(s.id || '').includes('faceid')) {
+            if (s.userId) verifiedUserIds.add(s.userId);
+            if (s.username) verifiedUserIds.add(s.username.toLowerCase().trim());
+          }
         });
       }
     } catch {}
@@ -442,7 +462,7 @@ export async function prefetchTeammatesData(): Promise<void> {
           return { ...p, college_verified: isVerified };
         });
 
-      setPageCache('kollabrix_teammates_real_v8', activeProfs);
+      setPageCache('kollabrix_teammates_real_v9', activeProfs);
     }
   } catch {}
 }

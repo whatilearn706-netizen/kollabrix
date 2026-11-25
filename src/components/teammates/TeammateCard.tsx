@@ -136,7 +136,7 @@ export function TeammateCard({ match, onInvite, isInvited = false }: TeammateCar
         >
           {profile.bio || (
             <span className="italic opacity-60">
-              Active campus builder open to innovative projects and hackathons.
+              No custom bio added yet.
             </span>
           )}
         </p>

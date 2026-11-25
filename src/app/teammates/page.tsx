@@ -9,6 +9,8 @@ import { Profile, Project, TeammateMatch } from '@/types/database';
 import {
   calculateProjectTeammateMatch,
   calculatePeerTeammateMatch,
+  calculatePublicTeammateMatch,
+  compareTeammateMatches,
   isFacultyProfile,
 } from '@/lib/teammateMatching';
 import { TeammateCard } from '@/components/teammates/TeammateCard';
@@ -399,7 +401,7 @@ export default function TeammatesPage() {
   const { theme } = useSiteTheme();
 
   // Instant In-Memory / Stale-While-Revalidate Cache for Real Database Profiles
-  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v8');
+  const cachedProfiles = getPageCache<Profile[]>('kollabrix_teammates_real_v9');
 
   const [allProfiles, setAllProfiles] = useState<Profile[]>(() =>
     cachedProfiles && cachedProfiles.length > 0
@@ -491,8 +493,9 @@ export default function TeammatesPage() {
             .select('*')
             .or('is_suspended.is.null,is_suspended.eq.false')
             .or('status.is.null,status.neq.suspended')
+            .order('college_verified', { ascending: false })
             .order('updated_at', { ascending: false })
-            .limit(100),
+            .limit(250),
           supabase
             .from('platform_settings')
             .select('key, value')
@@ -566,7 +569,7 @@ export default function TeammatesPage() {
           // Genuine registered student users from the database are displayed
           if (activeProfs.length > 0) {
             setAllProfiles(activeProfs);
-            setPageCache('kollabrix_teammates_real_v8', activeProfs);
+            setPageCache('kollabrix_teammates_real_v9', activeProfs);
           } else {
             setAllProfiles(FALLBACK_STUDENT_PROFILES);
           }
@@ -638,6 +641,7 @@ export default function TeammatesPage() {
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v6');
       localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v7');
+      localStorage.removeItem('linkora_cache_kollabrix_teammates_real_v8');
       sessionStorage.removeItem('linkora_cache_linkora_teammates_profiles_v7');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v2');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v3');
@@ -645,6 +649,7 @@ export default function TeammatesPage() {
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v5');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v6');
       sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v7');
+      sessionStorage.removeItem('linkora_cache_kollabrix_teammates_real_v8');
     } catch {}
   }, []);
 
@@ -770,20 +775,19 @@ export default function TeammatesPage() {
         const match = calculatePeerTeammateMatch(cand, profile, matchWeights);
         if (match) results.push(match);
       } else {
-        // Unauthenticated visitor view: show general profile score
-        results.push({
-          profile: cand,
-          match_score: 75,
-          matching_skills: (cand.skills || []).slice(0, 3),
-          matching_roles: (cand.preferred_roles || []).slice(0, 1),
-          matching_interests: (cand.interests || []).slice(0, 2),
-          reasons: ['Active campus builder with verified skills'],
-        });
+        // Unauthenticated visitor view: rank genuinely by verification & profile completeness
+        if (cand.is_portfolio_public === false) continue;
+        results.push(calculatePublicTeammateMatch(cand));
       }
     }
 
-    // Sort by match score descending
-    return results.sort((a, b) => b.match_score - a.match_score);
+    // Rank verified & richly filled builders at the top, incomplete/unverified stubs at the bottom
+    return results.sort((a, b) =>
+      compareTeammateMatches(a, b, {
+        prioritizeQualityTier: !activeProject,
+        currentUserId: user?.id,
+      })
+    );
   }, [allProfiles, activeProject, profile, user, existingMemberIds, matchWeights, suspendedUserIds, facultyUserIds]);
 
   // Extract unique skills and roles from available candidates for filters
