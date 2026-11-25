@@ -70,8 +70,8 @@ export function StudioLightRig({
           initial={{ opacity: 0, scaleX: 0.78 }}
           animate={{ opacity: 1, scaleX: 1 }}
           transition={{
-            duration: 0.5,
-            ease: [0.22, 1, 0.36, 1],
+            duration: 0.55,
+            ease: [0.16, 1, 0.3, 1],
           }}
           className="relative z-20 w-[240px] xs:w-[280px] sm:w-[340px] md:w-[420px] h-[5px] sm:h-[6px] rounded-full will-change-transform"
           style={{
@@ -88,19 +88,19 @@ export function StudioLightRig({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="absolute -top-3 w-[300px] sm:w-[460px] h-10 bg-radial-gradient from-white/40 via-white/10 to-transparent blur-md rounded-full pointer-events-none"
         />
       </div>
 
       {/* =========================================================================
           3. VOLUMETRIC CONICAL LIGHT BEAM (Theatrical Stage Spotlight)
-          Blooms smoothly once right after the tube ignites and remains completely steady.
+          Blooms smoothly in sync with the light bar and remains completely steady.
          ========================================================================= */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.65, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
         className="relative w-full max-w-[1400px] h-[580px] sm:h-[700px] md:h-[820px] pointer-events-none -mt-[3px] flex justify-center overflow-visible"
       >
         {/* SVG Volumetric Light Cone with exact angular spread */}

@@ -170,9 +170,10 @@ const renderCodeTokens = (line: string, lang: 'py' | 'cpp') => {
 
 export function LandingHero() {
   const router = useRouter();
-  const { user } = useAuth();
-  const prevUserRef = useRef(user);
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const wasLoggedOutRef = useRef(false);
   const [triggerLightPowerOn, setTriggerLightPowerOn] = useState(false);
+  const [heroEntranceKey, setHeroEntranceKey] = useState(0);
 
   // Eagerly prefetch the Battle Arena route and preload its visual background for instant navigation
   useEffect(() => {
@@ -191,12 +192,15 @@ export function LandingHero() {
   }, [router]);
 
   useEffect(() => {
-    // When user authenticates (login), fire the dramatic studio lights power-on reveal
-    if (!prevUserRef.current && user) {
+    if (!isAuthLoading && !user) {
+      wasLoggedOutRef.current = true;
+    } else if (wasLoggedOutRef.current && user) {
+      // Replay the full Light -> Slow Laptop -> Heading -> Buttons reveal on fresh login
+      wasLoggedOutRef.current = false;
       setTriggerLightPowerOn(true);
+      setHeroEntranceKey((prev) => prev + 1);
     }
-    prevUserRef.current = user;
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   const heroRef = useRef<HTMLElement>(null);
 
@@ -388,6 +392,7 @@ export function LandingHero() {
           MAIN HERO CONTAINER (Centered Architecture)
          ========================================================================= */}
       <motion.div
+        key={heroEntranceKey}
         style={{ opacity: contentOpacity, y: contentY }}
         className="relative z-10 w-full max-w-[1440px] mx-auto flex-1 flex flex-col items-center justify-start text-center my-auto"
       >
@@ -395,7 +400,7 @@ export function LandingHero() {
         <motion.h1
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.62, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.85, delay: 1.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-2xl sm:text-4xl md:text-5xl lg:text-[3.25rem] xl:text-[3.8rem] font-black tracking-tight leading-tight select-none text-center max-w-[1400px] px-2 will-change-transform"
         >
           <span className="inline lg:whitespace-nowrap bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_4px_24px_rgba(0,0,0,0.9)]">
@@ -410,7 +415,7 @@ export function LandingHero() {
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.88, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.7, delay: 1.5, ease: [0.16, 1, 0.3, 1] }}
           className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3.5 sm:gap-4 will-change-transform"
         >
           {/* Primary Button */}
@@ -440,9 +445,9 @@ export function LandingHero() {
 
         {/* ================= CENTERED PHOTOREALISTIC AWWWARDS MACBOOK (ELEVATED 3D STAGE) ================= */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.97, y: 24 }}
+          initial={{ opacity: 0, scale: 0.96, y: 32 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.75, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.25, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-20 w-full max-w-[940px] xl:max-w-[1040px] mt-4 sm:mt-6 transition-transform duration-300 ease-out mx-auto will-change-transform"
           style={{
             perspective: '1400px',
