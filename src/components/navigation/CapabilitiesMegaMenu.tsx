@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { clsx } from 'clsx';
@@ -293,18 +294,26 @@ function PreviewVisual({ item }: { item: CapabilityItem }) {
 export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }) {
   const pathname = usePathname() || '';
   const [isOpen, setIsOpen] = useState(false);
-  const [menuTop, setMenuTop] = useState(72);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 72, left: 0 });
   const [hoveredItem, setHoveredItem] = useState<CapabilityItem>(CAPABILITY_ITEMS[0]);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openedByHoverAtRef = useRef<number>(0);
 
   const isRouteActive = CAPABILITY_ITEMS.some((item) => pathname.startsWith(item.href));
 
-  const syncMenuTop = () => {
+  const syncMenuPos = () => {
     if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setMenuTop(Math.round(rect.bottom + 8));
+      const navEl = containerRef.current.closest('nav');
+      const anchorRect = (navEl || containerRef.current).getBoundingClientRect();
+      const centerX = anchorRect.left + anchorRect.width / 2;
+      const panelWidth = Math.min(740, window.innerWidth - 32);
+      const clampedLeft = Math.max(16, Math.min(centerX - panelWidth / 2, window.innerWidth - panelWidth - 16));
+      setMenuPos({
+        top: Math.round(anchorRect.bottom + 8),
+        left: Math.round(clampedLeft),
+      });
     }
   };
 
@@ -320,7 +329,12 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
       if (e.key === 'Escape') setIsOpen(false);
     };
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        (!panelRef.current || !panelRef.current.contains(target))
+      ) {
         setIsOpen(false);
       }
     };
@@ -340,7 +354,7 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
     if (!isOpen) {
       openedByHoverAtRef.current = Date.now();
     }
-    syncMenuTop();
+    syncMenuPos();
     setIsOpen(true);
   };
 
@@ -351,7 +365,7 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
   };
 
   const handleTriggerClick = () => {
-    syncMenuTop();
+    syncMenuPos();
     if (isOpen && Date.now() - openedByHoverAtRef.current < 400) {
       // Hover just opened the menu right before click landed; keep it open cleanly
       openedByHoverAtRef.current = 0;
@@ -403,15 +417,20 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
         />
       </button>
 
-      {/* Split "Live Preview" Frosted-Glass Mega Menu (Dead-center under navbar capsule via inset-x-0 mx-auto) */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-label="Platform Capabilities Menu"
-          style={{ top: `${menuTop}px` }}
-          className="fixed inset-x-0 mx-auto z-[9999] w-[740px] max-w-[calc(100vw-2rem)] pt-3 -mt-2 select-none"
-        >
-          <div className="relative rounded-2xl bg-[#090b10]/95 backdrop-blur-2xl backdrop-saturate-150 border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.2)] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150">
+      {/* Split "Live Preview" Frosted-Glass Mega Menu (Portaled to document.body to escape nav backdrop-filter) */}
+      {isOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-label="Platform Capabilities Menu"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{ top: `${menuPos.top}px`, left: `${menuPos.left}px` }}
+            className="fixed z-[9999] w-[740px] max-w-[calc(100vw-2rem)] pt-3 -mt-2 select-none"
+          >
+            <div className="relative rounded-2xl bg-[#090b10]/95 backdrop-blur-2xl backdrop-saturate-150 border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.2)] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150">
             {/* Subtle top hairline glow */}
             <div className="pointer-events-none absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
@@ -558,8 +577,9 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
               </div>
             </div>
           </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
