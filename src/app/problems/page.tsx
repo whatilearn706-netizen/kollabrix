@@ -296,25 +296,25 @@ export default function ProblemStatementsPage() {
   return (
     <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 py-10 space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-charcoal-800 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2">
+          <div className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider mb-2 text-zinc-300">
             {isTeacher ? (
               <>
-                <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span className="text-purple-700 dark:text-purple-300 font-bold">Faculty Problem Statements</span>
+                <GraduationCap className="w-4 h-4 text-zinc-200" />
+                <span className="font-bold">Faculty Problem Statements</span>
               </>
             ) : (
               <>
-                <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span className="text-amber-700 dark:text-amber-300 font-bold">Collegiate Challenges</span>
+                <Lightbulb className="w-4 h-4 text-zinc-200" />
+                <span className="font-bold">Collegiate Challenges</span>
               </>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
             {isTeacher ? 'Faculty Problem Statements' : 'Collegiate Problems & Challenges'}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed font-medium">
+          <p className="mt-1 text-xs sm:text-sm text-zinc-400 max-w-2xl leading-relaxed font-medium">
             {isTeacher
               ? 'Author, supervise, and evaluate collegiate problem statements and institutional research challenges.'
               : 'Real-world challenges and academic problem statements proposed by college faculty mentors. Select your college, build a solution, and apply your answer directly.'}
@@ -328,7 +328,7 @@ export default function ProblemStatementsPage() {
                 variant="primary"
                 size="md"
                 leftIcon={<PlusCircle className="w-4 h-4" />}
-                className="bg-brand-600 hover:bg-brand-500 font-bold"
+                className="bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60 font-bold"
               >
                 Post Problem Statement
               </Button>
@@ -338,17 +338,17 @@ export default function ProblemStatementsPage() {
       </div>
 
       {/* Filter and Search Bar: 4 Columns (Search, Category, Difficulty, College) */}
-      <div className="rounded-2xl bg-charcoal-900 border border-charcoal-750 p-4 space-y-4 shadow-sm">
+      <div className="rounded-2xl bg-[#090C12] border border-white/10 p-4 space-y-4 shadow-sm">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* 1. Search */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3 pointer-events-none" />
             <input
               type="text"
               placeholder="Search challenges, skills..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-charcoal-850 border border-charcoal-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-brand-500 font-medium"
+              className="w-full pl-9 pr-3 py-2 bg-black/60 border border-white/12 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/35 font-medium"
             />
           </div>
 
@@ -357,7 +357,7 @@ export default function ProblemStatementsPage() {
             options={CATEGORIES.map((c) => ({ value: c, label: c === 'All' ? 'All Categories' : c }))}
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value as ProjectCategory | 'All')}
-            className="bg-charcoal-850 border-charcoal-700 text-white text-xs"
+            className="bg-black/60 border-white/12 text-white text-xs"
           />
 
           {/* 3. Difficulty */}
@@ -365,7 +365,7 @@ export default function ProblemStatementsPage() {
             options={DIFFICULTIES.map((d) => ({ value: d, label: d === 'All' ? 'All Difficulties' : d }))}
             value={selectedDifficulty}
             onChange={(e) => setSelectedDifficulty(e.target.value as ProjectDifficulty | 'All')}
-            className="bg-charcoal-850 border-charcoal-700 text-white text-xs"
+            className="bg-black/60 border-white/12 text-white text-xs"
           />
 
           {/* 4. College Name (Auto-populated from faculty problems) */}
@@ -373,13 +373,13 @@ export default function ProblemStatementsPage() {
             options={availableColleges.map((col) => ({ value: col, label: col }))}
             value={selectedCollege}
             onChange={(e) => setSelectedCollege(e.target.value)}
-            className="bg-charcoal-850 border-charcoal-700 text-white text-xs font-medium"
+            className="bg-black/60 border-white/12 text-white text-xs font-medium"
           />
         </div>
       </div>
 
       {/* Scrollable Container with Blur-to-Focus Stack */}
-      <div className="relative rounded-3xl border border-slate-200/90 dark:border-charcoal-800 bg-slate-50/50 dark:bg-charcoal-900/40 p-2 sm:p-4 shadow-xs overflow-hidden">
+      <div className="relative rounded-3xl border border-white/10 bg-[#090C12]/70 p-2 sm:p-4 shadow-xs overflow-hidden">
         {/* Blur Curtains for Upper & Lower Margins */}
         <div className="scroll-blur-curtain-top" />
         <div className="scroll-blur-curtain-bottom" />
@@ -388,23 +388,28 @@ export default function ProblemStatementsPage() {
         <div className="tech-scroll-viewport blur-focus-scroll px-1 py-3">
           {isLoading ? (
             <div className="py-20 text-center space-y-4">
-              <div className="w-8 h-8 rounded-full border-2 border-brand-500 border-t-transparent animate-spin mx-auto" />
-              <p className="text-xs text-slate-300 font-mono">Loading problem statements...</p>
+              <div className="w-8 h-8 rounded-full border-2 border-white/60 border-t-transparent animate-spin mx-auto" />
+              <p className="text-xs text-zinc-400 font-mono">Loading problem statements...</p>
             </div>
           ) : filteredProblems.length === 0 ? (
-            <div className="rounded-2xl bg-charcoal-900 border border-charcoal-800 p-12 text-center space-y-4 my-6 max-w-lg mx-auto">
-              <div className="w-12 h-12 rounded-2xl bg-charcoal-800 flex items-center justify-center mx-auto text-slate-300">
+            <div className="rounded-2xl bg-[#090C12] border border-white/10 p-12 text-center space-y-4 my-6 max-w-lg mx-auto">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.06] border border-white/15 flex items-center justify-center mx-auto text-zinc-200">
                 <FileCode2 className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-white">No Problem Statements Found</h3>
-              <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
                 {searchTerm || selectedCategory !== 'All' || selectedDifficulty !== 'All' || selectedCollege !== 'All Colleges'
                   ? 'No challenges match your active filters. Try resetting the college or category filters.'
                   : 'Faculty mentors have not posted any problem statements yet. Check back soon for collegiate challenges.'}
               </p>
               {isTeacher && (
                 <Link href="/problems/new">
-                  <Button variant="primary" size="sm" leftIcon={<PlusCircle className="w-4 h-4" />}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<PlusCircle className="w-4 h-4" />}
+                    className="bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60 font-bold"
+                  >
                     Post the First Problem Statement
                   </Button>
                 </Link>
@@ -437,7 +442,7 @@ export default function ProblemStatementsPage() {
                 return (
                   <div
                     key={problem.id}
-                    className="blur-to-focus-card rounded-2xl bg-charcoal-900 border border-charcoal-750 hover:border-charcoal-600 p-6 flex flex-col justify-between gap-6 transition-all shadow-md group"
+                    className="blur-to-focus-card rounded-2xl bg-[#090C12] border border-white/10 hover:border-white/25 p-6 flex flex-col justify-between gap-6 transition-all shadow-md group"
                     style={{ animationDelay: `${Math.min(idx * 40, 360)}ms` }}
                   >
                     <div className="space-y-4">
@@ -447,7 +452,7 @@ export default function ProblemStatementsPage() {
                           <Badge variant="difficulty" difficulty={problem.difficulty} />
                         </div>
                         {problem.status !== 'Published' && (
-                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white/10 text-zinc-200 border border-white/20">
                             {problem.status}
                           </span>
                         )}
@@ -456,11 +461,11 @@ export default function ProblemStatementsPage() {
                       <div>
                         <Link
                           href={`/problems/${problem.id}`}
-                          className="text-lg font-bold text-white group-hover:text-brand-300 transition-colors line-clamp-2 leading-snug"
+                          className="text-lg font-bold text-white group-hover:text-zinc-200 transition-colors line-clamp-2 leading-snug"
                         >
                           {problem.title}
                         </Link>
-                        <p className="mt-2 text-xs text-slate-200 line-clamp-3 leading-relaxed font-normal">
+                        <p className="mt-2 text-xs text-zinc-300 line-clamp-3 leading-relaxed font-normal">
                           {problem.description}
                         </p>
                       </div>
@@ -471,13 +476,13 @@ export default function ProblemStatementsPage() {
                           {problem.required_skills.slice(0, 4).map((skill, i) => (
                             <span
                               key={i}
-                              className="text-[11px] px-2 py-0.5 rounded bg-charcoal-800 text-slate-100 border border-charcoal-700 font-medium"
+                              className="text-[11px] px-2 py-0.5 rounded bg-black/60 text-zinc-200 border border-white/10 font-medium"
                             >
                               {skill}
                             </span>
                           ))}
                           {problem.required_skills.length > 4 && (
-                            <span className="text-[10px] text-slate-400 self-center">
+                            <span className="text-[10px] text-zinc-400 self-center">
                               +{problem.required_skills.length - 4} more
                             </span>
                           )}
@@ -485,9 +490,9 @@ export default function ProblemStatementsPage() {
                       )}
                     </div>
 
-                    <div className="pt-4 border-t border-charcoal-800 space-y-4">
+                    <div className="pt-4 border-t border-white/10 space-y-4">
                       {/* Faculty Author & College Info */}
-                      <div className="flex items-center justify-between text-xs text-slate-300 gap-2">
+                      <div className="flex items-center justify-between text-xs text-zinc-300 gap-2">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <Avatar
                             name={authorName}
@@ -496,16 +501,16 @@ export default function ProblemStatementsPage() {
                           />
                           <div className="min-w-0">
                             <p className="font-bold text-white truncate">{authorName}</p>
-                            <p className="text-[11px] text-brand-300 font-medium truncate flex items-center gap-1">
-                              <Building className="w-3 h-3 text-brand-400 shrink-0" />
+                            <p className="text-[11px] text-zinc-300 font-medium truncate flex items-center gap-1">
+                              <Building className="w-3 h-3 text-zinc-400 shrink-0" />
                               <span>{collegeName}</span>
                             </p>
                           </div>
                         </div>
 
                         {problem.deadline && (
-                          <div className="flex items-center gap-1 text-[11px] text-amber-300 font-medium shrink-0">
-                            <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                          <div className="flex items-center gap-1 text-[11px] text-zinc-300 font-medium shrink-0">
+                            <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                             <span>Due {problem.deadline}</span>
                           </div>
                         )}
@@ -514,14 +519,14 @@ export default function ProblemStatementsPage() {
                       {/* Action Buttons */}
                       <div className="flex items-center justify-between gap-2 pt-1">
                         <Link href={`/problems/${problem.id}`}>
-                          <Button variant="ghost" size="sm" className="text-slate-200 hover:text-white" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
+                          <Button variant="ghost" size="sm" className="text-zinc-300 hover:text-white" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
                             View Details
                           </Button>
                         </Link>
 
                         {isAuthor ? (
                           <Link href={`/problems/${problem.id}/edit`}>
-                            <Button variant="secondary" size="sm" className="bg-charcoal-800 hover:bg-charcoal-700 text-white border-charcoal-700 font-semibold">
+                            <Button variant="secondary" size="sm" className="bg-black/60 hover:bg-white/[0.08] text-white border border-white/15 font-semibold">
                               Edit Problem
                             </Button>
                           </Link>
@@ -540,7 +545,7 @@ export default function ProblemStatementsPage() {
                             <Button
                               variant="primary"
                               size="sm"
-                              className="bg-brand-600 hover:bg-brand-500 text-white font-bold"
+                              className="bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60 font-bold"
                               leftIcon={<Sparkles className="w-3.5 h-3.5" />}
                             >
                               Apply the Answer

@@ -233,27 +233,27 @@ ${blueprint.milestones
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-charcoal-950 text-slate-900 dark:text-slate-100 py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+    <div className="min-h-screen bg-black text-zinc-100 py-12 px-4 sm:px-6 lg:px-8 transition-colors">
       <div className="max-w-5xl mx-auto space-y-10">
         {/* Header Hero */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-[#090C12] border border-white/15 text-zinc-300 shadow-2xs">
+            <Sparkles className="w-3.5 h-3.5 text-zinc-200" />
             <span>AI SPARK • HACKATHON &amp; SQUAD STUDIO</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
             Turn Rough Ideas into Winning Squads
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-zinc-400 max-w-2xl mx-auto">
             Give us any project prompt or hackathon theme. Our synthesis engine generates an actionable architecture, winning judge angle, teammate gap analysis, and ATS-ready resume proof-of-work.
           </p>
         </div>
 
         {/* Input Console */}
-        <div className="rounded-3xl bg-white dark:bg-charcoal-900 border border-slate-200 dark:border-charcoal-800 p-6 sm:p-8 shadow-sm space-y-5">
+        <div className="rounded-3xl bg-[#090C12] border border-white/12 p-6 sm:p-8 shadow-2xl space-y-5">
           {/* Track Selector Pills */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
               Select Competition Track / Objective:
             </label>
             <div className="flex flex-wrap gap-2">
@@ -264,8 +264,8 @@ ${blueprint.milestones
                   onClick={() => setSelectedTrack(t.id)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                     selectedTrack === t.id
-                      ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
-                      : 'bg-slate-100 dark:bg-charcoal-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-charcoal-700 hover:border-amber-400'
+                      ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border-white/70 font-bold shadow-xs'
+                      : 'bg-black/50 text-zinc-300 border-white/12 hover:border-white/30 hover:text-white'
                   }`}
                 >
                   {t.label}
@@ -277,13 +277,13 @@ ${blueprint.milestones
           {/* Main Idea Prompt */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-300">
                 What do you want to build?
               </label>
               <button
                 type="button"
                 onClick={() => setShowSkillInput(!showSkillInput)}
-                className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-zinc-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>{showSkillInput ? 'Hide Skills' : '+ Audit My Squad Gap'}</span>
@@ -295,33 +295,33 @@ ${blueprint.milestones
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="e.g. Build an autonomous drone dispatch system for large campuses that delivers lab equipment and library books..."
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-slate-50 dark:bg-charcoal-800 text-slate-900 dark:text-white placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-y"
+              className="w-full px-4 py-3 rounded-2xl border border-white/12 bg-black/60 text-white placeholder:text-zinc-500 text-sm focus:outline-none focus:border-white/35 focus:ring-0 transition-all resize-y"
             />
           </div>
 
           {/* Optional Squad Gap Input */}
           {showSkillInput && (
-            <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 space-y-2 animate-in fade-in duration-200">
+            <div className="p-4 rounded-2xl bg-black/50 border border-white/15 space-y-2 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
-                  <Target className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-xs font-bold text-zinc-200 flex items-center gap-1.5">
+                  <Target className="w-4 h-4 text-zinc-300" />
                   <span>Your Current Skills (AI will calculate missing team roles):</span>
                 </span>
-                <span className="text-[10px] text-amber-700 dark:text-amber-400">Optional</span>
+                <span className="text-[10px] text-zinc-400">Optional</span>
               </div>
               <input
                 type="text"
                 value={userSkills}
                 onChange={(e) => setUserSkills(e.target.value)}
                 placeholder="e.g. React, Tailwind, Next.js (or: Python, PyTorch)"
-                className="w-full px-3.5 py-2 rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-charcoal-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full px-3.5 py-2 rounded-xl border border-white/12 bg-[#090C12] text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/35"
               />
             </div>
           )}
 
           {/* Quick Inspiration Pills */}
           <div className="space-y-2">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
               Popular Inspirations:
             </span>
             <div className="flex flex-wrap gap-2">
@@ -333,16 +333,17 @@ ${blueprint.milestones
                     setPrompt(insp);
                     handleGenerate(insp);
                   }}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-charcoal-800 hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-charcoal-700 transition-all cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium bg-black/50 hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/10 hover:border-white/25 transition-all cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  ⚡ {insp}
+                  <Sparkles className="w-3 h-3 text-zinc-400 shrink-0" />
+                  <span>{insp}</span>
                 </button>
               ))}
             </div>
           </div>
 
           {errorMsg && (
-            <p className="text-xs text-rose-500 font-semibold">{errorMsg}</p>
+            <p className="text-xs text-rose-400 font-semibold">{errorMsg}</p>
           )}
 
           {/* Generate Button */}
@@ -350,7 +351,7 @@ ${blueprint.milestones
             type="button"
             onClick={() => handleGenerate()}
             disabled={isGenerating || !prompt.trim()}
-            className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:opacity-95 text-white font-bold text-sm shadow-md transition-all active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-b from-white via-zinc-100 to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/70 font-black text-sm shadow-[0_0_25px_rgba(255,255,255,0.12)] transition-all active:scale-[0.99] flex items-center justify-center gap-2 disabled:opacity-45 cursor-pointer"
           >
             {isGenerating ? (
               <>
@@ -368,23 +369,23 @@ ${blueprint.milestones
 
         {/* Generated Blueprint View */}
         {blueprint && (
-          <div className="rounded-3xl bg-white dark:bg-charcoal-900 border border-amber-500/30 p-6 sm:p-10 shadow-xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="rounded-3xl bg-[#090C12] border border-white/15 p-6 sm:p-10 shadow-2xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
             {/* Top Bar: Badges & Title */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-200 dark:border-charcoal-800 pb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-white/10 pb-6">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white/10 border border-white/20 text-zinc-100">
                     {blueprint.category}
                   </span>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-violet-500/15 border border-violet-500/30 text-violet-600 dark:text-violet-400">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white/[0.06] border border-white/15 text-zinc-300">
                     Difficulty: {blueprint.difficulty}
                   </span>
                   {blueprint.hackathonTrack && (
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-500/15 border border-blue-500/30 text-blue-600 dark:text-blue-400">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white/[0.06] border border-white/15 text-zinc-300">
                       {blueprint.hackathonTrack}
                     </span>
                   )}
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-1">
                     <Zap className="w-3.5 h-3.5" />
                     <span>{blueprint.engine}</span>
                   </span>
@@ -420,7 +421,7 @@ ${blueprint.milestones
                 <button
                   type="button"
                   onClick={handleConvertToProject}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:opacity-95 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/60 text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                 >
                   <span>Launch Live Project</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -430,15 +431,15 @@ ${blueprint.milestones
 
             {/* Scorecard Matrix */}
             {blueprint.scores && (
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-transparent border border-amber-500/20 space-y-4">
+              <div className="p-5 rounded-2xl bg-black/50 border border-white/12 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <Trophy className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                    <Trophy className="w-4 h-4 text-zinc-200" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
                       Official Hackathon Judging Rubric &amp; Readiness
                     </span>
                   </div>
-                  <div className="px-3 py-1 rounded-full text-xs font-black bg-amber-500 text-white shadow-2xs">
+                  <div className="px-3 py-1 rounded-full text-xs font-black bg-white text-zinc-950 shadow-2xs">
                     {Math.round(blueprint.scores.overall)}/100 Overall Score
                   </div>
                 </div>

@@ -873,35 +873,31 @@ export default function IcpcCollegiateArenaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen bg-black text-zinc-100 flex flex-col selection:bg-white/20 selection:text-white">
       <main className="flex-1 pb-20">
 
-        {/* Minimal Hero Section */}
-        <section className="relative pt-10 pb-12 overflow-hidden border-b border-charcoal-800/80 bg-gradient-to-b from-charcoal-950 via-slate-900 to-charcoal-900">
-          {/* Subtle Ambient Orbs */}
-          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-600/10 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute top-1/3 right-10 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+        {/* Minimal Obsidian Hero Section */}
+        <section className="relative pt-10 pb-12 overflow-hidden border-b border-white/10 bg-black">
+          {/* Subtle Top-Left Titanium Radial Glow */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(255,255,255,0.065),_transparent_58%)] pointer-events-none" />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
               {/* Left Column: Clean Title, Intro & Host CTA */}
               <div className="space-y-4 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-mono font-medium backdrop-blur-md">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#090C12] border border-white/15 text-zinc-300 text-xs font-mono font-medium">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                   </span>
                   <span>COMPETITIVE PRACTICE</span>
                 </div>
 
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-                  Competitive{' '}
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-violet-400">
-                    Practice.
-                  </span>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent leading-tight">
+                  Competitive Practice.
                 </h1>
 
-                <p className="text-sm sm:text-base text-slate-400 leading-relaxed font-normal max-w-xl">
+                <p className="text-sm sm:text-base text-zinc-400 leading-relaxed font-normal max-w-xl">
                   Solve company placement OA challenges, take faculty lab assessments with anti-cheat, and sharpen your algorithmic skills.
                 </p>
 
@@ -910,8 +906,8 @@ export default function IcpcCollegiateArenaPage() {
                     variant="primary"
                     size="md"
                     onClick={handleHostContestClick}
-                    leftIcon={<Sparkles className="w-4 h-4 text-cyan-300" />}
-                    className="bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-md border-0 text-xs"
+                    leftIcon={<Sparkles className="w-4 h-4 text-zinc-950" />}
+                    className="bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 font-bold px-5 py-2.5 rounded-xl shadow-md border border-white/70 text-xs"
                   >
                     Host Faculty Lab
                   </Button>
@@ -920,44 +916,44 @@ export default function IcpcCollegiateArenaPage() {
                       <Button
                         variant="outline"
                         size="md"
-                        leftIcon={<ShieldAlert className="w-4 h-4 text-cyan-400" />}
-                        className="border-cyan-500/40 text-cyan-300 hover:text-white hover:bg-cyan-500/20 font-bold px-4 py-2.5 rounded-xl text-xs"
+                        leftIcon={<ShieldAlert className="w-4 h-4 text-zinc-200" />}
+                        className="border-white/15 bg-[#090C12] text-zinc-200 hover:text-white hover:bg-white/[0.08] font-bold px-4 py-2.5 rounded-xl text-xs"
                       >
-                        🛡️ Faculty Proctor Desk
+                        Faculty Proctor Desk
                       </Button>
                     </Link>
                   )}
                 </div>
               </div>
 
-              {/* Right Column: Sleek, Minimal Student Stats Card */}
-              <div className="flex items-center gap-5 p-4 rounded-2xl bg-charcoal-900/80 border border-charcoal-750 backdrop-blur-md shadow-xl self-start lg:self-auto">
+              {/* Right Column: Sleek Obsidian Student Stats Card */}
+              <div className="flex items-center gap-5 p-4 rounded-2xl bg-[#090C12] border border-white/12 shadow-xl self-start lg:self-auto">
                 {/* Streak */}
-                <div className="flex items-center gap-3 pr-5 border-r border-charcoal-750">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg shadow-sm">
-                    🔥
+                <div className="flex items-center gap-3 pr-5 border-r border-white/10">
+                  <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-zinc-200 text-lg shadow-sm">
+                    <Flame className="w-5 h-5 text-zinc-200" />
                   </div>
                   <div>
-                    <div className="text-xs font-mono text-slate-400">Streak</div>
+                    <div className="text-xs font-mono text-zinc-400">Streak</div>
                     <div className="text-base font-black text-white">
-                      {progress.streak} <span className="text-xs font-medium text-amber-400">day{progress.streak > 1 ? 's' : ''}</span>
+                      {progress.streak} <span className="text-xs font-medium text-zinc-400">day{progress.streak > 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Points */}
-                <div className="pr-5 border-r border-charcoal-750">
-                  <div className="text-xs font-mono text-slate-400">Arena Points</div>
-                  <div className="text-base font-black text-amber-300 font-mono">
-                    {progress.totalPoints} <span className="text-[10px] text-slate-400 font-sans">pts</span>
+                <div className="pr-5 border-r border-white/10">
+                  <div className="text-xs font-mono text-zinc-400">Arena Points</div>
+                  <div className="text-base font-black text-white font-mono">
+                    {progress.totalPoints} <span className="text-[10px] text-zinc-400 font-sans">pts</span>
                   </div>
                 </div>
 
                 {/* Solved */}
                 <div>
-                  <div className="text-xs font-mono text-slate-400">Solved</div>
+                  <div className="text-xs font-mono text-zinc-400">Solved</div>
                   <div className="text-base font-black text-emerald-400 font-mono">
-                    {progress.solvedProblemIds.length} <span className="text-[10px] text-slate-400 font-sans">probs</span>
+                    {progress.solvedProblemIds.length} <span className="text-[10px] text-zinc-400 font-sans">probs</span>
                   </div>
                 </div>
               </div>
@@ -968,12 +964,10 @@ export default function IcpcCollegiateArenaPage() {
         {/* Campus Champions Leaderboard Section (Controlled via Admin Control Center Toggle) */}
         {isLeaderboardLive && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 animate-fadeIn">
-            <div className="rounded-3xl bg-charcoal-900/90 border border-charcoal-750 p-5 sm:p-7 shadow-elevated relative overflow-hidden backdrop-blur-md">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-500/10 via-cyan-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-charcoal-800 pb-5">
+            <div className="rounded-3xl bg-[#090C12] border border-white/12 p-5 sm:p-7 shadow-elevated relative overflow-hidden">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-md">
+                  <div className="w-10 h-10 rounded-2xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-zinc-200 shadow-md">
                     <Trophy className="w-5 h-5" />
                   </div>
                   <div>
@@ -983,24 +977,24 @@ export default function IcpcCollegiateArenaPage() {
                         LIVE
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-zinc-400">
                       Top placement contenders &amp; competitive coders ranked by problem solves and streak
                     </p>
                   </div>
                 </div>
 
                 {/* Weekly vs Overall Tab Switcher */}
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-charcoal-950 border border-charcoal-800 self-start sm:self-auto">
+                <div className="flex items-center gap-1 p-1 rounded-xl bg-black/60 border border-white/12 self-start sm:self-auto">
                   <button
                     type="button"
                     onClick={() => setLeaderboardTab('weekly')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       leaderboardTab === 'weekly'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border border-white/60 shadow-xs'
+                        : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <Zap className="w-3.5 h-3.5" />
                     <span>Weekly (Resets Mon)</span>
                   </button>
                   <button
@@ -1008,11 +1002,11 @@ export default function IcpcCollegiateArenaPage() {
                     onClick={() => setLeaderboardTab('all-time')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       leaderboardTab === 'all-time'
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border border-white/60 shadow-xs'
+                        : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+                    <Trophy className="w-3.5 h-3.5" />
                     <span>All-Time Overall</span>
                   </button>
                 </div>
@@ -1021,32 +1015,26 @@ export default function IcpcCollegiateArenaPage() {
               {/* Leaderboard Grid */}
               <div className="mt-4 grid grid-cols-1 md:grid-cols-5 gap-3">
                 {(leaderboardTab === 'weekly' ? WEEKLY_LEADERBOARD : OVERALL_LEADERBOARD).map((champ) => {
-                  const isGold = champ.rank === 1;
-                  const isSilver = champ.rank === 2;
-                  const isBronze = champ.rank === 3;
+                  const isTop = champ.rank <= 3;
                   return (
                     <div
                       key={champ.name}
                       className={`p-3.5 rounded-2xl border transition-all ${
-                        isGold
-                          ? 'bg-gradient-to-b from-amber-500/15 to-charcoal-950 border-amber-500/40 shadow-lg shadow-amber-500/5'
-                          : isSilver
-                          ? 'bg-gradient-to-b from-slate-400/10 to-charcoal-950 border-slate-400/30'
-                          : isBronze
-                          ? 'bg-gradient-to-b from-amber-700/10 to-charcoal-950 border-amber-700/30'
-                          : 'bg-charcoal-950/70 border-charcoal-800'
+                        champ.rank === 1
+                          ? 'bg-white/[0.07] border-white/30'
+                          : isTop
+                          ? 'bg-white/[0.04] border-white/15'
+                          : 'bg-black/50 border-white/10'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span
                           className={`text-xs font-mono font-black px-2 py-0.5 rounded-md ${
-                            isGold
-                              ? 'bg-amber-400 text-charcoal-950'
-                              : isSilver
-                              ? 'bg-slate-300 text-charcoal-950'
-                              : isBronze
-                              ? 'bg-amber-700 text-white'
-                              : 'bg-charcoal-800 text-slate-300'
+                            champ.rank === 1
+                              ? 'bg-white text-zinc-950'
+                              : isTop
+                              ? 'bg-white/15 text-white'
+                              : 'bg-white/[0.06] text-zinc-400'
                           }`}
                         >
                           #{champ.rank}
@@ -1056,12 +1044,12 @@ export default function IcpcCollegiateArenaPage() {
                       <div className="font-bold text-white text-xs truncate" title={champ.name}>
                         {champ.name}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate mb-2" title={champ.college}>
+                      <div className="text-[10px] text-zinc-400 truncate mb-2" title={champ.college}>
                         {champ.college}
                       </div>
-                      <div className="flex items-center justify-between text-[11px] font-mono pt-2 border-t border-charcoal-800/80">
-                        <span className="text-amber-300 font-bold">{champ.points} pts</span>
-                        <span className="text-orange-400 flex items-center gap-0.5">
+                      <div className="flex items-center justify-between text-[11px] font-mono pt-2 border-t border-white/10">
+                        <span className="text-zinc-100 font-bold">{champ.points} pts</span>
+                        <span className="text-zinc-400 flex items-center gap-0.5">
                           <Flame className="w-3 h-3" />
                           <span>{champ.streak}d</span>
                         </span>
@@ -1072,19 +1060,19 @@ export default function IcpcCollegiateArenaPage() {
               </div>
 
               {/* Current User Standing Banner */}
-              <div className="mt-4 p-3 rounded-2xl bg-charcoal-950/80 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="mt-4 p-3 rounded-2xl bg-black/55 border border-white/12 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center font-bold text-xs">
+                  <div className="w-7 h-7 rounded-lg bg-white/10 text-white border border-white/20 flex items-center justify-center font-bold text-xs">
                     #1
                   </div>
                   <div>
                     <span className="font-bold text-white">Your Standing: </span>
-                    <span className="text-cyan-300 font-mono font-bold">
-                      {profile?.display_name || user?.email?.split('@')[0] || 'You'} ({progress.totalPoints} pts • 🔥 {progress.streak}d streak)
+                    <span className="text-zinc-200 font-mono font-bold">
+                      {profile?.display_name || user?.email?.split('@')[0] || 'You'} ({progress.totalPoints} pts • {progress.streak}d streak)
                     </span>
                   </div>
                 </div>
-                <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+                <div className="text-[11px] font-mono text-zinc-400 flex items-center gap-2">
                   <span className="text-emerald-400 font-bold">✓ Daily streak active</span>
                   <span>•</span>
                   <span>Solve questions below to increase your rank</span>
@@ -1099,46 +1087,52 @@ export default function IcpcCollegiateArenaPage() {
           {/* Controls Header: Category Track Tabs on Left & Search Bar on Right */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             {/* Category Track Selector */}
-            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 overflow-x-auto select-none scrollbar-none">
+            <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-[#090C12] border border-white/12 overflow-x-auto select-none scrollbar-none">
               <button
                 type="button"
                 onClick={() => setSelectedTrack('placement')}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'placement'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-xs'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border border-white/60 shadow-xs'
+                    : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                <span>🏢 Company Placement</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200">
+                <span>Company Placement</span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                  selectedTrack === 'placement' ? 'bg-zinc-950/15 text-zinc-950' : 'bg-white/[0.08] text-zinc-300'
+                }`}>
                   {contests.filter((c) => c.category === 'placement' || Boolean(c.companyTag)).length}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedTrack('faculty')}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'faculty'
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-xs'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border border-white/60 shadow-xs'
+                    : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                <span>🎓 Faculty Labs</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200">
+                <span>Faculty Labs</span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                  selectedTrack === 'faculty' ? 'bg-zinc-950/15 text-zinc-950' : 'bg-white/[0.08] text-zinc-300'
+                }`}>
                   {contests.filter((c) => c.category === 'faculty' || c.visibility === 'passcode').length}
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => setSelectedTrack('icpc')}
-                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   selectedTrack === 'icpc'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-xs'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-gradient-to-b from-white to-zinc-200 text-zinc-950 border border-white/60 shadow-xs'
+                    : 'text-zinc-400 hover:text-white'
                 }`}
               >
-                <span>⚡ Speedrun Contests</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-cyan-500/30 text-cyan-200">
+                <span>Speedrun Contests</span>
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
+                  selectedTrack === 'icpc' ? 'bg-zinc-950/15 text-zinc-950' : 'bg-white/[0.08] text-zinc-300'
+                }`}>
                   {contests.filter((c) => c.category === 'icpc' || (!c.category && !c.companyTag && c.visibility !== 'passcode')).length}
                 </span>
               </button>
@@ -1146,19 +1140,19 @@ export default function IcpcCollegiateArenaPage() {
 
             {/* Search Input */}
             <div className="relative w-full lg:w-80">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search company (Amazon, TCS), topic, or professor..."
-                className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-charcoal-900 border border-charcoal-750 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono transition-colors shadow-inner"
+                className="w-full pl-10 pr-8 py-2.5 rounded-2xl bg-[#090C12] border border-white/12 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-white/35 font-mono transition-colors shadow-inner"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white text-xs font-bold cursor-pointer"
                 >
                   ✕
                 </button>
@@ -1169,19 +1163,19 @@ export default function IcpcCollegiateArenaPage() {
           {/* Contests Grid */}
           {isLoading ? (
             <div className="py-20 text-center space-y-3">
-              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-xs font-mono text-slate-400">Loading live collegiate contests & problem sets...</p>
+              <div className="w-8 h-8 border-2 border-white/60 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs font-mono text-zinc-400">Loading live collegiate contests &amp; problem sets...</p>
             </div>
           ) : filteredContests.length === 0 ? (
-            <div className="py-16 text-center rounded-3xl bg-charcoal-900/50 border border-charcoal-800 space-y-3">
-              <Terminal className="w-10 h-10 text-slate-500 mx-auto" />
+            <div className="py-16 text-center rounded-3xl bg-[#090C12] border border-white/10 space-y-3">
+              <Terminal className="w-10 h-10 text-zinc-400 mx-auto" />
               <h3 className="text-base font-bold text-white">No Contests Found</h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              <p className="text-xs text-zinc-400 max-w-sm mx-auto">
                 No active collegiate contests match your search or filter. Switch tabs or upload a new challenge as faculty.
               </p>
             </div>
           ) : (
-            <div className="relative rounded-3xl border border-charcoal-800 bg-charcoal-950/40 p-2 sm:p-4 shadow-xs overflow-hidden">
+            <div className="relative rounded-3xl border border-white/10 bg-[#090C12]/60 p-2 sm:p-4 shadow-xs overflow-hidden">
               {/* Blur Curtains for Upper & Lower Margins */}
               <div className="scroll-blur-curtain-top" />
               <div className="scroll-blur-curtain-bottom" />
@@ -1198,41 +1192,40 @@ export default function IcpcCollegiateArenaPage() {
                       className="blur-to-focus-card h-full"
                       style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
                     >
-                      <div className="h-full rounded-3xl bg-charcoal-900/90 border border-charcoal-750 hover:border-cyan-500/40 transition-all duration-300 p-6 flex flex-col justify-between space-y-5 shadow-elevated group">
+                      <div className="h-full rounded-3xl bg-[#090C12] border border-white/10 hover:border-white/25 transition-all duration-300 p-6 flex flex-col justify-between space-y-5 shadow-elevated group">
                         <div className="space-y-4">
                           {/* Badge Row */}
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Category Track Badge */}
                               {contest.category === 'placement' || contest.companyTag ? (
-                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider flex items-center gap-1">
-                                  <span>🏢 {contest.companyTag || 'Placement'}</span>
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-white/[0.06] text-zinc-200 border border-white/15 uppercase tracking-wider flex items-center gap-1">
+                                  <span>{contest.companyTag || 'Placement'}</span>
                                 </span>
                               ) : contest.category === 'faculty' || contest.visibility === 'passcode' ? (
-                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 uppercase tracking-wider flex items-center gap-1">
-                                  <span>🎓 Faculty Lab</span>
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-white/[0.06] text-zinc-200 border border-white/15 uppercase tracking-wider flex items-center gap-1">
+                                  <span>Faculty Lab</span>
                                 </span>
                               ) : (
-                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider flex items-center gap-1">
-                                  <span>⚡ ICPC &amp; Speedrun</span>
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-white/[0.06] text-zinc-200 border border-white/15 uppercase tracking-wider flex items-center gap-1">
+                                  <span>ICPC &amp; Speedrun</span>
                                 </span>
                               )}
 
                               <span
-                                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider ${
+                                className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full border uppercase tracking-wider flex items-center gap-1.5 ${
                                   contest.status === 'live'
-                                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                                    : isUpcoming
-                                    ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40'
-                                    : 'bg-slate-700/40 text-slate-300 border-slate-600'
+                                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                    : 'bg-white/[0.05] text-zinc-300 border-white/12'
                                 }`}
                               >
-                                {contest.status === 'live' ? '🟢 Live Contest' : isUpcoming ? '🕒 Upcoming' : '🏁 Practice Mode'}
+                                <span className={`w-1.5 h-1.5 rounded-full ${contest.status === 'live' ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-400'}`} />
+                                <span>{contest.status === 'live' ? 'Live Contest' : isUpcoming ? 'Upcoming' : 'Practice Mode'}</span>
                               </span>
                               {contest.visibility === 'passcode' && (
                                 <div className="flex items-center gap-1.5">
-                                  <span className="text-[10px] font-mono text-purple-300 px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 flex items-center gap-1">
-                                    <Lock className="w-3 h-3 text-purple-400" />
+                                  <span className="text-[10px] font-mono text-zinc-200 px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/15 flex items-center gap-1">
+                                    <Lock className="w-3 h-3 text-zinc-300" />
                                     <span>Private Room</span>
                                   </span>
                                   <button
@@ -1241,7 +1234,7 @@ export default function IcpcCollegiateArenaPage() {
                                       e.stopPropagation();
                                       handleCopyRoomLink(contest);
                                     }}
-                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/35 border border-purple-500/40 text-[10px] font-mono font-bold text-purple-300 transition-colors cursor-pointer shadow-xs"
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/15 text-[10px] font-mono font-bold text-zinc-200 transition-colors cursor-pointer shadow-xs"
                                     title="Copy Direct Classroom Invite Link"
                                   >
                                     {copiedContestId === contest.id ? (
@@ -1260,50 +1253,50 @@ export default function IcpcCollegiateArenaPage() {
                               )}
                             </div>
 
-                            <span className="text-xs font-mono text-slate-400 flex items-center gap-1">
-                              <Users className="w-3.5 h-3.5 text-cyan-400" />
+                            <span className="text-xs font-mono text-zinc-400 flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5 text-zinc-300" />
                               <span>{contest.participantCount} Registered</span>
                             </span>
                           </div>
 
                     {/* Title & Subtitle */}
                     <div>
-                      <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      <h3 className="text-xl font-bold text-white group-hover:text-zinc-200 transition-colors">
                         {contest.title}
                       </h3>
-                      <p className="text-xs text-slate-400 mt-1">{contest.subtitle}</p>
+                      <p className="text-xs text-zinc-400 mt-1">{contest.subtitle}</p>
                     </div>
 
                     {/* Upcoming Contest Countdown Banner */}
                     {isUpcoming && contest.startTime && (
-                      <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between text-xs font-mono text-indigo-300">
+                      <div className="p-3 rounded-2xl bg-black/55 border border-white/15 flex items-center justify-between text-xs font-mono text-zinc-200">
                         <span className="flex items-center gap-1.5 font-bold">
-                          <Clock className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+                          <Clock className="w-3.5 h-3.5 text-zinc-300 animate-pulse" />
                           <span>Opens: {formatContestSchedule(contest.startTime)}</span>
                         </span>
-                        <span className="text-[11px] text-indigo-300/90 font-bold bg-indigo-500/20 px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] text-zinc-200 font-bold bg-white/10 px-2 py-0.5 rounded-md">
                           {getTimeUntilContest(contest.startTime)}
                         </span>
                       </div>
                     )}
 
                     {/* Organizer Meta */}
-                    <div className="p-3 rounded-2xl bg-charcoal-950/70 border border-charcoal-800 flex items-center justify-between text-xs text-slate-300">
+                    <div className="p-3 rounded-2xl bg-black/55 border border-white/10 flex items-center justify-between text-xs text-zinc-300">
                       <div className="flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-violet-400 shrink-0" />
+                        <GraduationCap className="w-4 h-4 text-zinc-300 shrink-0" />
                         <div>
                           <span className="font-bold text-white">{contest.organizer}</span>
-                          <span className="text-[11px] text-slate-400 block">{contest.college}</span>
+                          <span className="text-[11px] text-zinc-400 block">{contest.college}</span>
                         </div>
                       </div>
-                      <div className="text-right text-[11px] font-mono text-slate-400">
+                      <div className="text-right text-[11px] font-mono text-zinc-400">
                         <span>Duration: {contest.durationMinutes} min</span>
                       </div>
                     </div>
 
                     {/* Problems List preview */}
                     <div className="space-y-2">
-                      <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                      <span className="text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider block">
                         Problem Set ({contest.problems.length})
                       </span>
                       <div className="space-y-1.5">
@@ -1317,26 +1310,26 @@ export default function IcpcCollegiateArenaPage() {
                               }
                               handleInitiateArena(contest, problem);
                             }}
-                            className={`p-3 rounded-xl bg-charcoal-950/50 border border-charcoal-800 transition-all flex items-center justify-between gap-3 ${
+                            className={`p-3 rounded-xl bg-black/45 border border-white/10 transition-all flex items-center justify-between gap-3 ${
                               isUpcoming
-                                ? 'cursor-not-allowed opacity-80'
-                                : 'hover:bg-charcoal-800/80 hover:border-cyan-500/50 cursor-pointer group/prob'
+                                ? 'cursor-not-allowed opacity-75'
+                                : 'hover:bg-white/[0.06] hover:border-white/25 cursor-pointer group/prob'
                             }`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="text-xs font-mono font-bold text-cyan-400 shrink-0">
+                              <span className="text-xs font-mono font-bold text-zinc-300 shrink-0">
                                 {String.fromCharCode(65 + pIdx)}.
                               </span>
-                              <span className="text-xs font-bold text-slate-200 group-hover/prob:text-white truncate">
+                              <span className="text-xs font-bold text-zinc-100 group-hover/prob:text-white truncate">
                                 {problem.title}
                               </span>
                               <span
                                 className={`text-[9px] font-mono px-2 py-0.5 rounded-full border shrink-0 ${
                                   problem.difficulty === 'Easy'
-                                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                                     : problem.difficulty === 'Hard'
-                                    ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
-                                    : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                    : 'bg-white/[0.06] border-white/15 text-zinc-300'
                                 }`}
                               >
                                 {problem.difficulty}
@@ -1344,15 +1337,15 @@ export default function IcpcCollegiateArenaPage() {
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-[11px] font-mono text-slate-400">+{problem.points} pts</span>
+                              <span className="text-[11px] font-mono text-zinc-400">+{problem.points} pts</span>
                               {progress.solvedProblemIds.includes(problem.id) ? (
                                 <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold select-none">
                                   <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                                   <span>Solved</span>
                                 </div>
                               ) : isUpcoming ? (
-                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[10px] font-mono font-bold select-none">
-                                  <Lock className="w-2.5 h-2.5 text-indigo-400" />
+                                <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 text-zinc-300 text-[10px] font-mono font-bold select-none">
+                                  <Lock className="w-2.5 h-2.5 text-zinc-300" />
                                   <span>Locked</span>
                                 </div>
                               ) : (
@@ -1363,7 +1356,7 @@ export default function IcpcCollegiateArenaPage() {
                                     e.stopPropagation();
                                     handleInitiateArena(contest, problem);
                                   }}
-                                  className="text-[10px] h-6 px-2 border-cyan-500/30 text-cyan-300 group-hover/prob:bg-cyan-500/20"
+                                  className="text-[10px] h-6 px-2.5 border-white/15 bg-white/[0.05] text-zinc-200 group-hover/prob:bg-white/15 group-hover/prob:text-white"
                                 >
                                   Solve
                                 </Button>
@@ -1376,15 +1369,15 @@ export default function IcpcCollegiateArenaPage() {
                   </div>
 
                   {/* Card Bottom CTA */}
-                  <div className="pt-3 border-t border-charcoal-800/80 flex items-center justify-between text-xs gap-2">
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono text-slate-500">
+                      <span className="text-[11px] font-mono text-zinc-400">
                         Scoring: {(contest.scoringType || 'icpc').toUpperCase()}
                       </span>
                       {isFacultyUser && (contest.category === 'faculty' || contest.visibility === 'passcode') && (
                         <Link href="/teacher/dashboard?tab=icpc">
-                          <span className="text-[10px] font-mono font-bold text-cyan-400 hover:text-cyan-300 underline cursor-pointer">
-                            🛡️ Proctor Desk
+                          <span className="text-[10px] font-mono font-bold text-zinc-300 hover:text-white underline cursor-pointer">
+                            Proctor Desk
                           </span>
                         </Link>
                       )}
@@ -1403,8 +1396,8 @@ export default function IcpcCollegiateArenaPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => setUpcomingLockedContest(contest)}
-                            className="bg-indigo-950/40 border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/40 font-mono text-xs cursor-pointer shadow-xs"
-                            leftIcon={<Clock className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />}
+                            className="bg-black/60 border-white/15 text-zinc-200 hover:bg-white/[0.08] font-mono text-xs cursor-pointer shadow-xs"
+                            leftIcon={<Clock className="w-3.5 h-3.5 text-zinc-300" />}
                           >
                             <span>Opens {formatContestSchedule(contest.startTime)}</span>
                           </Button>
@@ -1420,23 +1413,21 @@ export default function IcpcCollegiateArenaPage() {
                           }}
                           rightIcon={
                             !user ? (
-                              <Lock className="w-3.5 h-3.5 text-cyan-200" />
+                              <Lock className="w-3.5 h-3.5 text-zinc-300" />
                             ) : contest.visibility === 'passcode' && !unlockedContests[contest.id] ? (
-                              <Lock className="w-3.5 h-3.5 text-purple-200" />
+                              <Lock className="w-3.5 h-3.5 text-zinc-950" />
                             ) : isContestFullySolved ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             ) : (
-                              <ArrowRight className="w-3.5 h-3.5" />
+                              <ArrowRight className="w-3.5 h-3.5 text-zinc-950" />
                             )
                           }
                           className={
                             !user
-                              ? 'bg-charcoal-800 text-slate-300 font-bold text-xs'
-                              : contest.visibility === 'passcode' && !unlockedContests[contest.id]
-                              ? 'bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs'
+                              ? 'bg-white/[0.08] border border-white/15 text-zinc-200 hover:bg-white/[0.14] font-bold text-xs'
                               : isContestFullySolved
-                              ? 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20'
-                              : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs'
+                              ? 'bg-emerald-500/15 border border-emerald-500/35 text-emerald-300 hover:bg-emerald-500/25 font-bold text-xs'
+                              : 'bg-gradient-to-b from-white to-zinc-200 hover:from-white hover:to-white text-zinc-950 border border-white/70 font-bold text-xs shadow-sm'
                           }
                         >
                           {!user
@@ -1444,7 +1435,7 @@ export default function IcpcCollegiateArenaPage() {
                             : contest.visibility === 'passcode' && !unlockedContests[contest.id]
                             ? 'Enter with Passcode'
                             : isContestFullySolved
-                            ? `✓ Submitted (${solvedCount}/${contest.problems.length}) • Review Arena`
+                            ? `Submitted (${solvedCount}/${contest.problems.length}) • Review Arena`
                             : solvedCount > 0
                             ? `Enter Arena (${solvedCount}/${contest.problems.length} Done)`
                             : 'Enter Arena'}
