@@ -35,17 +35,17 @@ export function BrandLogo({
     <div className={`flex items-center gap-3 group select-none ${className}`}>
       {/* Official Obsidian & Brushed Silver Dual-Chevron Spark Mark (Pure Transparency) */}
       <div
-        className={`${iconSizes[size]} relative shrink-0 flex items-center justify-center group-hover:scale-108 transition-all duration-300 select-none`}
+        className={`${iconSizes[size]} relative shrink-0 flex items-center justify-center group-hover:scale-110 transition-all duration-300 select-none`}
       >
-        {/* Cool Silver-White Ambient Core Backlight */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-slate-300/20 via-white/15 to-transparent blur-md pointer-events-none group-hover:from-slate-200/35 group-hover:via-white/25 transition-all duration-300 scale-125" />
+        {/* Cool Silver-White Ambient Core Backlight (Intensifies brightly on cursor hover) */}
+        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-slate-300/20 via-white/15 to-transparent blur-md pointer-events-none scale-125 group-hover:from-white/55 group-hover:via-slate-200/45 group-hover:to-white/15 group-hover:blur-lg group-hover:scale-150 transition-all duration-300" />
 
         {/* Inline Vector SVG Emblem: Zero network dependency, 100% guaranteed rendering in all incognito / private tabs */}
         <svg
           viewBox="0 0 512 512"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_14px_rgba(226,232,240,0.4)] drop-shadow-[0_0_20px_rgba(255,255,255,0.18)] transition-all duration-300"
+          className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_4px_14px_rgba(226,232,240,0.4)] drop-shadow-[0_0_20px_rgba(255,255,255,0.18)] group-hover:drop-shadow-[0_0_22px_rgba(255,255,255,0.9)] group-hover:drop-shadow-[0_0_42px_rgba(226,232,240,0.65)] group-hover:brightness-125 transition-all duration-300"
           aria-label="Kollabrix Official Silver-Obsidian Emblem"
         >
           <defs>

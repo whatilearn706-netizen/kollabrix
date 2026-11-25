@@ -325,20 +325,34 @@ export function FloatingProjectRibbon() {
                     e.currentTarget.style.setProperty('--my', `${e.clientY - rect.top}px`);
                   }}
                   className={`group/card absolute w-[295px] sm:w-[335px] md:w-[365px] h-[415px] sm:h-[450px] rounded-[22px] overflow-hidden cursor-pointer select-none [transform-style:preserve-3d] will-change-transform ${
-                    isCenter ? 'pointer-events-auto' : 'pointer-events-auto hover:opacity-95'
+                    isCenter ? 'p-[2px] bg-white/20 pointer-events-auto' : 'pointer-events-auto hover:opacity-95'
                   }`}
                   style={{
                     boxShadow: isCenter
-                      ? `0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 36px ${accent.glow}`
+                      ? `0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 28px rgba(226, 232, 240, 0.22), 0 0 36px ${accent.glow}`
                       : '0 20px 45px -15px rgba(0, 0, 0, 0.9)',
                   }}
                 >
+                  {/* Animated Traveling Silver Glowing Border Line (Active Front Card Only) */}
+                  {isCenter && (
+                    <motion.div
+                      aria-hidden="true"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 3.4, repeat: Infinity, ease: 'linear' }}
+                      className="absolute -inset-[120%] pointer-events-none z-0"
+                      style={{
+                        background:
+                          'conic-gradient(from 0deg, transparent 0deg, transparent 245deg, rgba(148,163,184,0.35) 280deg, rgba(255,255,255,1) 318deg, rgba(226,232,240,0.95) 338deg, transparent 360deg)',
+                      }}
+                    />
+                  )}
+
                   {/* 90% Obsidian / Carbon Dark Glass Substrate */}
                   <div
-                    className={`relative w-full h-full p-5 sm:p-6 flex flex-col justify-between bg-gradient-to-b from-[#0f141e] via-[#0a0d14] to-[#07090e] text-white rounded-[22px] overflow-hidden backdrop-blur-2xl ${
+                    className={`relative z-10 w-full h-full p-5 sm:p-6 flex flex-col justify-between bg-gradient-to-b from-[#0f141e] via-[#0a0d14] to-[#07090e] text-white overflow-hidden backdrop-blur-2xl ${
                       isCenter
-                        ? 'border-2 border-white/25 border-t-white/45'
-                        : 'border-[1.5px] border-white/[0.16] border-t-white/30'
+                        ? 'rounded-[20px]'
+                        : 'rounded-[22px] border-[1.5px] border-white/[0.16] border-t-white/30'
                     }`}
                   >
                     {/* Subtle micro-grid mesh + Cursor-reactive ray-traced spotlight */}
