@@ -22,9 +22,9 @@ export function BrandLogo({
   };
 
   const textSizes = {
-    sm: 'text-sm tracking-[0.14em]',
-    md: 'text-lg tracking-[0.18em]',
-    lg: 'text-2xl tracking-[0.2em]',
+    sm: 'text-[15px] sm:text-base tracking-[0.15em]',
+    md: 'text-[19px] sm:text-[21px] tracking-[0.16em]',
+    lg: 'text-2xl sm:text-[28px] tracking-[0.18em]',
   };
 
   // Check if title is Kollabrix or default
@@ -132,7 +132,7 @@ export function BrandLogo({
           }`}
         >
           {isKollabrixBrand ? (
-            <span className="flex items-center tracking-[0.15em] font-extrabold select-none uppercase">
+            <span className="flex items-center font-extrabold select-none uppercase">
               <span className="inline-flex items-baseline drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]">
                 <span
                   className={
