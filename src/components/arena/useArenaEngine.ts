@@ -275,8 +275,15 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       setMyCheatStrikes(0);
       setShowCheatModal(false);
 
-      if (webMode) setActiveTab('html');
-      else setActiveTab((lang === 'web' ? 'python' : lang) as AlgoLanguage);
+      if (webMode) {
+        const htmlSame = Boolean(enriched.starterHtml && enriched.targetComponentHtml && enriched.starterHtml.replace(/\s+/g, '') === enriched.targetComponentHtml.replace(/\s+/g, ''));
+        const cssSame = !enriched.targetComponentCss || Boolean(enriched.starterCss && enriched.starterCss.replace(/\s+/g, '') === enriched.targetComponentCss.replace(/\s+/g, ''));
+        if (enriched.arena === 'bug_hunt' && htmlSame && !cssSame) setActiveTab('css');
+        else if (enriched.arena === 'bug_hunt' && htmlSame && cssSame && (enriched.starterJs || enriched.targetComponentJs)) setActiveTab('js');
+        else setActiveTab('html');
+      } else {
+        setActiveTab((lang === 'web' ? 'python' : lang) as AlgoLanguage);
+      }
     },
     []
   );
@@ -747,6 +754,8 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
           targetJs: activeQuestion.targetComponentJs,
           starterHtml: activeQuestion.starterHtml,
           starterCss: activeQuestion.starterCss,
+          starterJs: activeQuestion.starterJs,
+          isBugHunt: activeQuestion.arena === 'bug_hunt',
         }
       );
       setWebEvaluation(evalRes);

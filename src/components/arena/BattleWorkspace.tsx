@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Check,
@@ -14,13 +14,16 @@ import {
   Maximize2,
   Minimize2,
   RotateCcw,
+  ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Volume2,
   VolumeX,
   Zap,
 } from 'lucide-react';
 import { EditorTab, formatClock, isWebArenaQuestion } from './arenaTypes';
 import { buildWebPreviewDoc, FOG_SYNTAX_LINES } from './arenaHelpers';
+import { EditorHintItem, getEditorHints } from './editorSnippets';
 import { useArenaEngine } from './useArenaEngine';
 import { useResizableSplit } from './useResizableSplit';
 
@@ -28,17 +31,37 @@ interface BattleWorkspaceProps {
   engine: ReturnType<typeof useArenaEngine>;
 }
 
+const AUTO_CLOSE_PAIRS: Record<string, string> = {
+  '(': ')',
+  '[': ']',
+  '{': '}',
+  '"': '"',
+  "'": "'",
+};
+
 /**
  * Stage 3: Resizable 3-Pane Live Combat HUD.
- * Left: Spec + Stacked Blueprint (top) & Yours Live Preview (below) + Test Runner
- * Center: Code Editor | Right: Fog-of-War Rival Monitor
+ * Features stacked Web previews, VS Code / IntelliJ Emmet autocomplete hints,
+ * and an Anti-Copy-Paste fair-play shield inside the compiler editor.
  */
 export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   const q = engine.activeQuestion;
   const isWeb = isWebArenaQuestion(q, engine.combatMode);
   const [specCollapsed, setSpecCollapsed] = useState(false);
+  const [selectedCaseIdx, setSelectedCaseIdx] = useState<number | null>(null);
+  const [pasteNotice, setPasteNotice] = useState<string>('');
+  const [cursorPos, setCursorPos] = useState<number>(0);
+  const [selectedHintIdx, setSelectedHintIdx] = useState<number>(0);
+  const [hintsDismissed, setHintsDismissed] = useState<boolean>(false);
 
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const split = useResizableSplit(isWeb ? 33 : 27, isWeb ? 21 : 25);
+
+  useEffect(() => {
+    if (!pasteNotice) return;
+    const t = setTimeout(() => setPasteNotice(''), 3800);
+    return () => clearTimeout(t);
+  }, [pasteNotice]);
 
   const currentFileLabel = useMemo(() => {
     const slug = q.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'solution';
@@ -79,9 +102,40 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
     engine.handleCodeChange(val, setter);
   };
 
+  // VS Code / IntelliJ style Emmet & snippet suggestions at current cursor
+  const hintState = useMemo(() => {
+    if (hintsDismissed) return { replaceStart: cursorPos, items: [] as EditorHintItem[] };
+    return getEditorHints(engine.activeTab, activeBuffer.slice(0, cursorPos));
+  }, [engine.activeTab, activeBuffer, cursorPos, hintsDismissed]);
+
+  useEffect(() => {
+    setSelectedHintIdx(0);
+  }, [hintState.items.length, hintState.replaceStart]);
+
+  const acceptHint = (item: EditorHintItem) => {
+    const before = activeBuffer.slice(0, hintState.replaceStart);
+    const after = activeBuffer.slice(cursorPos);
+    const nextCode = `${before}${item.insertText}${after}`;
+    const nextCaret = before.length + item.insertText.length + item.cursorOffset;
+    setActiveBuffer(nextCode);
+    setCursorPos(nextCaret);
+    setHintsDismissed(true);
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(nextCaret, nextCaret);
+      }
+    });
+  };
+
+  const blockPasteAction = () => {
+    setPasteNotice('🛡️ Fair-Play Shield: Copy-paste is disabled in Battle Arena. Type your fix manually.');
+  };
+
   const linesCount = Math.max(14, activeBuffer.split('\n').length);
   const yourPct = Math.min(100, Math.round((engine.userTestsPassed / Math.max(1, engine.totalTests)) * 100));
   const rivalPct = Math.min(100, Math.round((engine.rivalTestsPassed / Math.max(1, engine.totalTests)) * 100));
+
   const targetDoc = useMemo(
     () => buildWebPreviewDoc(q.targetComponentHtml || '', q.targetComponentCss || '', q.targetComponentJs || ''),
     [q.targetComponentHtml, q.targetComponentCss, q.targetComponentJs]
@@ -113,17 +167,15 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
           </span>
         </div>
 
-        {/* Surgical Red Clock */}
         <div
           className={`px-4 py-1 rounded-xl bg-red-950/75 border border-red-500/45 shadow-[0_0_20px_rgba(239,68,68,0.28)] flex items-center gap-2 font-mono text-sm font-black text-red-400 ${
-            engine.timeLeft <= 30 ? 'animate-pulse border-red-400' : ''
+            engine.timeLeft <= 20 ? 'animate-pulse border-red-400' : ''
           }`}
         >
           <Clock className="w-3.5 h-3.5 text-red-400" />
           <span>{formatClock(engine.timeLeft)}</span>
         </div>
 
-        {/* Tug-of-War Progress + Actions */}
         <div className="flex items-center gap-2 sm:gap-2.5">
           <div className="hidden xl:flex items-center gap-2.5 text-[11px] font-mono">
             <span className="text-slate-200 font-bold">YOU: {engine.userTestsPassed}/{engine.totalTests}</span>
@@ -208,7 +260,6 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
             </div>
 
             <div className="flex-1 min-h-0 flex flex-col p-3 gap-2.5 overflow-hidden">
-              {/* Objective Brief */}
               {(!isWeb || !specCollapsed) && (
                 <div className={`space-y-2 text-xs overflow-y-auto shrink-0 ${isWeb ? 'max-h-36 pr-1' : 'flex-1'}`}>
                   <h2 className="text-base font-black text-white tracking-tight">{q.title}</h2>
@@ -226,10 +277,8 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                 </div>
               )}
 
-              {/* Web Dev Mode: Blueprint on TOP + Yours directly BELOW */}
               {isWeb && (
                 <div ref={split.webStackRef} className="flex-1 min-h-[260px] flex flex-col">
-                  {/* Blueprint (Top) */}
                   <div
                     style={{ height: `${100 - split.widths.yoursRatio}%` }}
                     className="min-h-[90px] rounded-xl overflow-hidden border border-white/15 bg-[#05080F] flex flex-col"
@@ -246,7 +295,6 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                     />
                   </div>
 
-                  {/* Vertical Resize Handle between Blueprint and Yours */}
                   <div
                     role="separator"
                     aria-orientation="horizontal"
@@ -261,7 +309,6 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                     </div>
                   </div>
 
-                  {/* Yours (Below Blueprint) */}
                   <div
                     style={{ height: `${split.widths.yoursRatio}%` }}
                     className="min-h-[90px] rounded-xl overflow-hidden border border-emerald-500/30 bg-[#05080F] flex flex-col"
@@ -285,8 +332,8 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
             </div>
           </div>
 
-          {/* Test Runner Box */}
-          <div className="rounded-2xl bg-[#0A0E17] border border-white/10 p-3 space-y-2 max-h-40 overflow-y-auto shrink-0">
+          {/* Clickable Test Runner Box with stdout details */}
+          <div className="rounded-2xl bg-[#0A0E17] border border-white/10 p-3 space-y-2 max-h-48 overflow-y-auto shrink-0">
             <div className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">Test Runner</div>
             <div className="space-y-1.5">
               {visibleCases.map((tc: any, idx: number) => {
@@ -294,22 +341,34 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                 const isHidden = Boolean(tc?.isHidden);
                 const passed = verdict ? verdict.status === 'Accepted' : Boolean(tc?.passed);
                 const failed = verdict && verdict.status !== 'Accepted';
+                const expanded = selectedCaseIdx === idx;
                 return (
-                  <div
-                    key={idx}
-                    className={`px-3 py-1.5 rounded-xl border font-mono text-[11px] flex items-center justify-between gap-2 ${
-                      passed
-                        ? 'bg-emerald-950/35 border-emerald-500/40 text-emerald-300'
-                        : failed
-                          ? 'bg-red-950/35 border-red-500/40 text-red-300'
-                          : 'bg-[#05080F] border-white/10 text-slate-400'
-                    }`}
-                  >
-                    <span className="truncate">
-                      {isHidden ? `Hidden Case ${idx + 1}` : tc?.testName || `Case ${idx + 1}`}:{' '}
-                      <strong className="text-white">{verdict ? verdict.status : 'Pending'}</strong>
-                    </span>
-                    {passed && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                  <div key={idx} className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCaseIdx(expanded ? null : idx)}
+                      className={`w-full text-left px-3 py-1.5 rounded-xl border font-mono text-[11px] flex items-center justify-between gap-2 cursor-pointer ${
+                        passed
+                          ? 'bg-emerald-950/35 border-emerald-500/40 text-emerald-300'
+                          : failed
+                            ? 'bg-red-950/35 border-red-500/40 text-red-300'
+                            : 'bg-[#05080F] border-white/10 text-slate-400'
+                      }`}
+                    >
+                      <span className="truncate">
+                        {isHidden ? `Hidden Case ${idx + 1}` : tc?.testName || `Case ${idx + 1}`}:{' '}
+                        <strong className="text-white">{verdict ? verdict.status : 'Pending'}</strong>
+                      </span>
+                      {passed && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                    </button>
+                    {expanded && verdict && (
+                      <div className="px-3 py-2 rounded-lg bg-[#05080F] border border-white/10 font-mono text-[10px] text-slate-300 space-y-1">
+                        {!isHidden && !isWeb && tc?.expectedOutput && (
+                          <div><span className="text-slate-500">Expected:</span> {tc.expectedOutput}</div>
+                        )}
+                        <div className="break-words"><span className="text-slate-500">Output:</span> {verdict.stdout}</div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -332,7 +391,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
           </div>
         </div>
 
-        {/* CENTER PANE: Your Code Editor */}
+        {/* CENTER PANE: Your Code Editor with VS Code Emmet Hints & Anti-Paste Shield */}
         <section
           style={{ '--pane-w': `${split.centerPct}%` } as React.CSSProperties}
           className="w-full lg:w-[var(--pane-w)] shrink-0 min-h-[360px] lg:min-h-0 rounded-2xl bg-[#0A0E17] border border-white/10 flex flex-col overflow-hidden"
@@ -360,37 +419,154 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-mono text-slate-500 uppercase">Your Code Editor</span>
+            <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+              <span className="hidden sm:inline-flex items-center gap-1 text-slate-400">
+                <Sparkles className="w-3 h-3 text-slate-300" />
+                Emmet / Hints Active
+              </span>
+              <span className="text-slate-600">&bull;</span>
+              <span className="text-slate-500 uppercase">No-Paste</span>
+            </div>
           </div>
 
-          <div className="flex-1 min-h-0 flex bg-[#05080E] overflow-hidden">
+          <div className="relative flex-1 min-h-0 flex bg-[#05080E] overflow-hidden">
             <div className="w-10 py-3 pr-2 text-right font-mono text-xs leading-6 text-slate-600 select-none border-r border-white/[0.06] bg-[#04060B]">
               {Array.from({ length: linesCount }, (_, i) => (
                 <div key={i + 1}>{i + 1}</div>
               ))}
             </div>
             <textarea
+              ref={textareaRef}
               value={activeBuffer}
-              onChange={(e) => setActiveBuffer(e.target.value)}
+              onPaste={(e) => {
+                e.preventDefault();
+                blockPasteAction();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                blockPasteAction();
+              }}
+              onClick={(e) => {
+                setCursorPos(e.currentTarget.selectionStart);
+              }}
+              onChange={(e) => {
+                setHintsDismissed(false);
+                setCursorPos(e.target.selectionStart);
+                setActiveBuffer(e.target.value);
+              }}
               onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+                  e.preventDefault();
+                  blockPasteAction();
+                  return;
+                }
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                   e.preventDefault();
                   engine.runOrSubmit(false);
-                } else if (e.key === 'Tab') {
+                  return;
+                }
+
+                // IntelliSense keyboard navigation & acceptance
+                if (hintState.items.length > 0) {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSelectedHintIdx((i) => (i + 1) % hintState.items.length);
+                    return;
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSelectedHintIdx((i) => (i - 1 + hintState.items.length) % hintState.items.length);
+                    return;
+                  }
+                  if (e.key === 'Tab' || e.key === 'Enter') {
+                    e.preventDefault();
+                    acceptHint(hintState.items[selectedHintIdx] || hintState.items[0]);
+                    return;
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setHintsDismissed(true);
+                    return;
+                  }
+                }
+
+                if (e.key === 'Tab') {
                   e.preventDefault();
                   const target = e.currentTarget;
                   const s = target.selectionStart;
                   const end = target.selectionEnd;
-                  setActiveBuffer(`${activeBuffer.slice(0, s)}  ${activeBuffer.slice(end)}`);
+                  const next = `${activeBuffer.slice(0, s)}  ${activeBuffer.slice(end)}`;
+                  setActiveBuffer(next);
+                  setCursorPos(s + 2);
                   requestAnimationFrame(() => target.setSelectionRange(s + 2, s + 2));
+                  return;
+                }
+
+                // Auto-closing brackets and quotes
+                const closing = AUTO_CLOSE_PAIRS[e.key];
+                if (closing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                  const target = e.currentTarget;
+                  const s = target.selectionStart;
+                  const end = target.selectionEnd;
+                  if (s === end) {
+                    e.preventDefault();
+                    const next = `${activeBuffer.slice(0, s)}${e.key}${closing}${activeBuffer.slice(end)}`;
+                    setActiveBuffer(next);
+                    setCursorPos(s + 1);
+                    requestAnimationFrame(() => target.setSelectionRange(s + 1, s + 1));
+                  }
                 }
               }}
               spellCheck={false}
-              className="flex-1 p-3 bg-transparent text-slate-100 font-mono text-xs leading-6 resize-none outline-none overflow-y-auto"
+              className="flex-1 p-3 bg-transparent text-slate-100 font-mono text-xs leading-6 resize-none outline-none overflow-y-auto select-text"
             />
+
+            {/* Floating VS Code / IntelliJ Abbreviation Hints Bar */}
+            {hintState.items.length > 0 && (
+              <div
+                role="listbox"
+                aria-label="Code autocomplete suggestions"
+                className="absolute left-12 bottom-3 z-20 w-80 max-w-[calc(100%-3.5rem)] rounded-xl bg-[#0A0F1A]/95 border border-white/20 shadow-[0_14px_36px_rgba(0,0,0,0.85)] backdrop-blur-xl overflow-hidden"
+              >
+                <div className="px-3 py-1 bg-white/[0.04] border-b border-white/10 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span>IntelliSense Hints</span>
+                  <span>Tab / Enter to expand</span>
+                </div>
+                <div className="divide-y divide-white/[0.05]">
+                  {hintState.items.map((item, idx) => (
+                    <button
+                      key={`${item.badge}-${item.label}`}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        acceptHint(item);
+                      }}
+                      className={`w-full px-3 py-1.5 text-left font-mono text-[11px] flex items-center justify-between gap-2 cursor-pointer ${
+                        idx === selectedHintIdx ? 'bg-white/[0.12] text-white' : 'text-slate-300 hover:bg-white/[0.06]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="px-1.5 py-0.5 rounded bg-white/[0.08] text-[9px] font-bold text-slate-200 shrink-0">
+                          {item.badge}
+                        </span>
+                        <span className="font-bold text-white shrink-0">{item.label}</span>
+                        <span className="text-slate-400 truncate">{item.preview}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {engine.statusNotice && (
+          {pasteNotice && (
+            <div className="px-3.5 py-2 border-t bg-red-950/60 border-red-500/40 text-xs font-mono text-red-200 flex items-center gap-2">
+              <ShieldAlert className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span>{pasteNotice}</span>
+            </div>
+          )}
+
+          {engine.statusNotice && !pasteNotice && (
             <div
               className={`px-3.5 py-2 border-t text-xs font-mono ${
                 engine.statusNotice.type === 'ok'
@@ -405,9 +581,15 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
           )}
 
           <div className="px-3.5 py-2.5 border-t border-white/10 bg-[#070A11] flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 font-mono text-xs text-slate-300">
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>{engine.myWpm} WPM</span>
+            <div className="flex items-center gap-3 font-mono text-xs text-slate-300">
+              <span className="inline-flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>{engine.myWpm} WPM</span>
+              </span>
+              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-emerald-400">
+                <ShieldCheck className="w-3 h-3" />
+                Anti-Paste Shield
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <button

@@ -206,6 +206,8 @@ export function evaluateWebCoordinateGraph(
     targetJs?: string;
     starterHtml?: string;
     starterCss?: string;
+    starterJs?: string;
+    isBugHunt?: boolean;
   }
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
@@ -214,6 +216,8 @@ export function evaluateWebCoordinateGraph(
   const cleanTargetJs = (options?.targetJs || '').trim();
   const starterHtml = (options?.starterHtml || '').trim();
   const starterCss = (options?.starterCss || '').trim();
+  const starterJs = (options?.starterJs || '').trim();
+  const isBugHunt = Boolean(options?.isBugHunt);
 
   // Strip all comments from student & starter code before evaluation
   const htmlNoComments = cleanHtml.replace(/<!--[\s\S]*?-->/g, '').trim();
@@ -221,6 +225,7 @@ export function evaluateWebCoordinateGraph(
   const cssNoComments = cleanCss.replace(/\/\*[\s\S]*?\*\//g, '').trim();
   const starterCssNoComments = starterCss.replace(/\/\*[\s\S]*?\*\//g, '').trim();
   const jsNoComments = cleanJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim();
+  const starterJsNoComments = starterJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim();
 
   // Determine mode strictly based on question tags, fallback to target content
   const rawTags = (options?.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
@@ -240,8 +245,15 @@ export function evaluateWebCoordinateGraph(
     ? (rawTags.includes('javascript') || rawTags.includes('js'))
     : Boolean(cleanTargetJs && cleanTargetJs.length > 25 && !cleanTargetJs.startsWith('//'));
 
-  // 1. Strict starter & empty code validation
+  // 1. Strict starter & empty code validation (in Bug Hunt, starter HTML/CSS may already be clean when bug is in JS)
+  const targetHtmlNoComments = (targetHtml || '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  const starterHtmlMatchesTarget =
+    isBugHunt &&
+    starterHtmlNoComments.length > 0 &&
+    starterHtmlNoComments.replace(/\s+/g, '') === targetHtmlNoComments.replace(/\s+/g, '');
+
   const isStarterHtmlUnchanged =
+    !starterHtmlMatchesTarget &&
     starterHtmlNoComments.length > 0 &&
     htmlNoComments.replace(/\s+/g, '') === starterHtmlNoComments.replace(/\s+/g, '');
 
@@ -259,10 +271,22 @@ export function evaluateWebCoordinateGraph(
     htmlNoComments.length > 0 &&
     (innerHtml.replace(/\s+/g, '').length > 5 || studentWords.length > 0 || studentTagsCount >= 2);
 
+  const targetCssNoComments = (targetCss || '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
+  const starterCssMatchesTarget =
+    isBugHunt &&
+    starterCssNoComments.length > 0 &&
+    starterCssNoComments.replace(/\s+/g, '') === targetCssNoComments.replace(/\s+/g, '');
+
   const isStarterCssUnchanged =
+    !starterCssMatchesTarget &&
     starterCssNoComments.length > 0 &&
     cssNoComments.replace(/\s+/g, '') === starterCssNoComments.replace(/\s+/g, '');
   const hasMeaningfulCss = !isStarterCssUnchanged && cssNoComments.replace(/\s+/g, '').length > 15;
+
+  const isStarterJsUnchanged =
+    isBugHunt &&
+    starterJsNoComments.length > 0 &&
+    jsNoComments.replace(/\s+/g, '') === starterJsNoComments.replace(/\s+/g, '');
 
   const results: WebGraphTestResult[] = [];
 
@@ -441,14 +465,16 @@ export function evaluateWebCoordinateGraph(
       }
     }
 
-    const jsPassed = hasJsCode && hasEventListeners && matchesTargetBehavior;
+    const jsPassed = !isStarterJsUnchanged && hasJsCode && hasEventListeners && matchesTargetBehavior;
 
     results.push({
       testName: 'JavaScript DOM Interactivity & Event Handlers',
       passed: jsPassed,
-      message: jsPassed
-        ? 'Passed: Dynamic DOM event handling and interactive script logic verified.'
-        : 'Failed: JavaScript interaction incomplete. Attach DOM event handlers (e.g. click, input) to update the component.',
+      message: isStarterJsUnchanged
+        ? 'Failed: Starter JavaScript bug has not been modified yet. Diagnose and fix the JS bug.'
+        : jsPassed
+          ? 'Passed: Dynamic DOM event handling and interactive script logic verified.'
+          : 'Failed: JavaScript interaction incomplete. Attach DOM event handlers (e.g. click, input) to update the component.',
     });
   }
 
