@@ -133,8 +133,34 @@ export function BrandLogo({
         >
           {isKollabrixBrand ? (
             <span className="flex items-center tracking-[0.15em] font-extrabold select-none uppercase">
-              <span className="text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
-                KOLL<span className="inline-block scale-y-[0.98] mx-[0.5px]">Λ</span>BRIX
+              <span className="inline-flex items-baseline drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)]">
+                <span
+                  className={
+                    wordmarkColor === 'dark'
+                      ? 'text-slate-800'
+                      : 'bg-gradient-to-b from-white via-slate-200 to-slate-400 bg-clip-text text-transparent'
+                  }
+                >
+                  KOLL
+                </span>
+                <span
+                  className={`inline-block scale-y-[0.98] mx-[0.5px] ${
+                    wordmarkColor === 'dark'
+                      ? 'text-zinc-500'
+                      : 'bg-gradient-to-b from-zinc-400 via-zinc-600 to-zinc-800 bg-clip-text text-transparent drop-shadow-[0_0_6px_rgba(148,163,184,0.2)]'
+                  }`}
+                >
+                  Λ
+                </span>
+                <span
+                  className={
+                    wordmarkColor === 'dark'
+                      ? 'text-slate-800'
+                      : 'bg-gradient-to-b from-white via-slate-200 to-slate-400 bg-clip-text text-transparent'
+                  }
+                >
+                  BRIX
+                </span>
               </span>
               <span className="text-[0.45em] font-bold text-slate-400 self-start relative -top-0.5 ml-1 select-none">
                 ™

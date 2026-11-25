@@ -87,6 +87,7 @@ export function Footer() {
             <Link href="/" className="inline-block focus-visible:outline-none">
               <BrandLogo
                 size="sm"
+                showWordmark={false}
                 wordmarkColor={isFooterDark ? 'light' : 'dark'}
                 title="Kollabrix"
               />
@@ -236,13 +237,35 @@ export function Footer() {
           }
         >
           <div
-            className={`font-black uppercase text-center leading-[0.82] tracking-[0.04em] whitespace-nowrap text-[14vw] sm:text-[13.2vw] xl:text-[184px] ${
-              isFooterDark
-                ? 'bg-gradient-to-b from-white/[0.17] via-slate-300/[0.08] to-transparent bg-clip-text text-transparent'
-                : 'bg-gradient-to-b from-stone-900/[0.10] via-stone-700/[0.04] to-transparent bg-clip-text text-transparent'
-            }`}
+            className="font-black uppercase text-center leading-[0.82] tracking-[0.04em] whitespace-nowrap text-[14vw] sm:text-[13.2vw] xl:text-[184px]"
           >
-            KOLLABRIX
+            <span
+              className={
+                isFooterDark
+                  ? 'bg-gradient-to-b from-white/[0.19] via-slate-300/[0.08] to-transparent bg-clip-text text-transparent'
+                  : 'bg-gradient-to-b from-stone-900/[0.10] via-stone-700/[0.04] to-transparent bg-clip-text text-transparent'
+              }
+            >
+              KOLL
+            </span>
+            <span
+              className={`inline-block scale-y-[0.98] mx-[0.015em] ${
+                isFooterDark
+                  ? 'bg-gradient-to-b from-zinc-400/[0.12] via-zinc-600/[0.06] to-transparent bg-clip-text text-transparent'
+                  : 'bg-gradient-to-b from-stone-700/[0.07] via-stone-500/[0.03] to-transparent bg-clip-text text-transparent'
+              }`}
+            >
+              Λ
+            </span>
+            <span
+              className={
+                isFooterDark
+                  ? 'bg-gradient-to-b from-white/[0.19] via-slate-300/[0.08] to-transparent bg-clip-text text-transparent'
+                  : 'bg-gradient-to-b from-stone-900/[0.10] via-stone-700/[0.04] to-transparent bg-clip-text text-transparent'
+              }
+            >
+              BRIX
+            </span>
           </div>
         </div>
 
