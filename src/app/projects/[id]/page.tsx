@@ -436,6 +436,12 @@ export default function ProjectDetailsPage() {
   }
 
   const isOwner = Boolean(user && user.id === project.owner_id);
+  const isConfirmedProjectMember = Boolean(
+    user &&
+      (isOwner ||
+        isMember ||
+        teamMembers.some((m) => m.user_id === user.id))
+  );
   const creatorName = project.owner?.display_name || 'Student Creator';
   const creatorUsername = project.owner?.username;
   const isTeamFull = project.current_team_size >= project.desired_team_size;
@@ -470,26 +476,29 @@ export default function ProjectDetailsPage() {
             Invite Squad
           </Button>
 
-          {/* Verifiable Project Certificate (Feature 3) */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsCertificateModalOpen(true)}
-            leftIcon={<Award className="w-3.5 h-3.5 text-amber-400" />}
-          >
-            Certificate
-          </Button>
+          {/* Certificate & LinkedIn Sharing — Strictly limited to project lead & confirmed teammates */}
+          {isConfirmedProjectMember && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCertificateModalOpen(true)}
+                leftIcon={<Award className="w-3.5 h-3.5 text-zinc-200" />}
+              >
+                Certificate
+              </Button>
 
-          {/* Post to LinkedIn with AI */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsLinkedInShareOpen(true)}
-            className="border-[#0A66C2]/40 text-[#0A66C2] hover:bg-[#0A66C2]/10 font-bold"
-            leftIcon={<Linkedin className="w-3.5 h-3.5 fill-[#0A66C2] text-[#0A66C2]" />}
-          >
-            Post to LinkedIn
-          </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsLinkedInShareOpen(true)}
+                className="border-[#0A66C2]/40 text-[#0A66C2] hover:bg-[#0A66C2]/10 font-bold"
+                leftIcon={<Linkedin className="w-3.5 h-3.5 fill-[#0A66C2] text-[#0A66C2]" />}
+              >
+                Post to LinkedIn
+              </Button>
+            </>
+          )}
 
           {isOwner && (
             <>
@@ -1105,15 +1114,17 @@ export default function ProjectDetailsPage() {
                   </Button>
                 </Link>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsLinkedInShareOpen(true)}
-                className="w-full justify-center border-[#0A66C2]/35 text-[#0A66C2] hover:bg-[#0A66C2]/10 text-xs font-bold"
-                leftIcon={<Linkedin className="w-3.5 h-3.5 fill-[#0A66C2] text-[#0A66C2]" />}
-              >
-                Post on LinkedIn with AI
-              </Button>
+              {isConfirmedProjectMember && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsLinkedInShareOpen(true)}
+                  className="w-full justify-center border-[#0A66C2]/35 text-[#0A66C2] hover:bg-[#0A66C2]/10 text-xs font-bold"
+                  leftIcon={<Linkedin className="w-3.5 h-3.5 fill-[#0A66C2] text-[#0A66C2]" />}
+                >
+                  Post on LinkedIn with AI
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1301,25 +1312,28 @@ export default function ProjectDetailsPage() {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         project={project}
-        onOpenLinkedIn={() => setIsLinkedInShareOpen(true)}
+        onOpenLinkedIn={isConfirmedProjectMember ? () => setIsLinkedInShareOpen(true) : undefined}
       />
 
-      {/* LinkedIn AI Project Poster Modal */}
-      <LinkedInProjectShareModal
-        isOpen={isLinkedInShareOpen}
-        onClose={() => setIsLinkedInShareOpen(false)}
-        project={project}
-      />
+      {/* LinkedIn AI Project Poster & Verified Certificate — Only for Lead & Confirmed Teammates */}
+      {isConfirmedProjectMember && (
+        <>
+          <LinkedInProjectShareModal
+            isOpen={isLinkedInShareOpen}
+            onClose={() => setIsLinkedInShareOpen(false)}
+            project={project}
+          />
 
-      {/* Exportable Verified Collegiate Project Certificate (Feature 3) */}
-      <ProjectCertificateModal
-        isOpen={isCertificateModalOpen}
-        onClose={() => setIsCertificateModalOpen(false)}
-        project={project}
-        profile={profile}
-        teamMembers={teamMembers}
-        roleTitle={memberRole || (isOwner ? 'Project Lead & Architect' : 'Core Squad Member')}
-      />
+          <ProjectCertificateModal
+            isOpen={isCertificateModalOpen}
+            onClose={() => setIsCertificateModalOpen(false)}
+            project={project}
+            profile={profile}
+            teamMembers={teamMembers}
+            roleTitle={memberRole || (isOwner ? 'Project Lead & Architect' : 'Core Squad Member')}
+          />
+        </>
+      )}
     </div>
   );
 }

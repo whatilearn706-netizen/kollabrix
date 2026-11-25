@@ -95,8 +95,15 @@ export function ProjectCertificateModal({
       }
     }
 
-    // 3. If viewer is a contributor with roleTitle
-    if (profile && profile.user_id && !seen.has(profile.user_id) && roleTitle) {
+    // Only verified team members and the project owner belong on certificates (never arbitrary page viewers).
+    if (
+      profile &&
+      profile.user_id &&
+      !seen.has(profile.user_id) &&
+      (profile.user_id === project.owner_id ||
+        teamMembers.some((m) => m.user_id === profile.user_id))
+    ) {
+      const resolvedRole = roleTitle || 'Core Squad Member';
       list.push({
         userId: profile.user_id,
         name: profile.display_name || 'Student Contributor',
@@ -104,14 +111,21 @@ export function ProjectCertificateModal({
         course: profile.course,
         academicYear: profile.academic_year,
         avatarUrl: profile.avatar_url,
-        role: roleTitle,
-        isLead: false,
-        deliverables: getRoleDeliverables(roleTitle, project.category, project.title),
+        role: resolvedRole,
+        isLead: profile.user_id === project.owner_id,
+        deliverables: getRoleDeliverables(resolvedRole, project.category, project.title),
       });
     }
 
     return list;
   }, [project, teamMembers, profile, roleTitle]);
+
+  // Only permit rendering for project lead or confirmed squad members
+  const isAuthorizedRecipient = Boolean(
+    profile?.user_id &&
+      (profile.user_id === project.owner_id ||
+        teamMembers.some((m) => m.user_id === profile.user_id))
+  );
 
   // Determine initial selection: if current logged-in user is in recipients, select them. Otherwise select the Project Lead.
   const [selectedUserId, setSelectedUserId] = useState<string>(() => {
@@ -121,7 +135,7 @@ export function ProjectCertificateModal({
     return recipients[0]?.userId || '';
   });
 
-  if (!isOpen) return null;
+  if (!isOpen || !isAuthorizedRecipient) return null;
 
   const currentRecipient =
     recipients.find((r) => r.userId === selectedUserId) || recipients[0];
