@@ -86,8 +86,9 @@ export function StudioLightRig({
             duration: lightState === 'flicker' ? 0.45 : 0.6,
             ease: [0.16, 1, 0.3, 1],
           }}
-          className="relative z-20 w-[240px] xs:w-[280px] sm:w-[340px] md:w-[420px] h-[5px] sm:h-[6px] rounded-full bg-white"
+          className="relative z-20 w-[240px] xs:w-[280px] sm:w-[340px] md:w-[420px] h-[5px] sm:h-[6px] rounded-full"
           style={{
+            backgroundColor: '#ffffff',
             boxShadow: isLightActive
               ? '0 0 8px #ffffff, 0 0 20px rgba(255, 255, 255, 0.9), 0 0 45px rgba(255, 255, 255, 0.6), 0 0 90px rgba(255, 255, 255, 0.3)'
               : 'none',
