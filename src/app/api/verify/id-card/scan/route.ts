@@ -451,7 +451,7 @@ Return ONLY a valid JSON object matching this schema:
 // ── 2. High-Accuracy Local Fallback Parser (When API Key is Absent or Vision Timed Out) ──
 function parseCollegiateData(rawText: string, _userDisplayName?: string, existingCollege?: string) {
   const uiNoiseRegex =
-    /kollabrix|step\s*\d+\s*of\s*\d+|apple\s*face\s*id|continuous\s*optical|analyzing\s*frames|hold\s*physical|scan\s*now|save\s*[&l]\s*finish|review\s*&\s*lock|skip\s*verification|remaining|captured|faculty/i;
+    /kollabrix|step\s*[a-z0-9]+\s*of\s*[a-z0-9]+|apple\s*face|diometric|biometric|continuous\s*optical|analyzing\s*fra|hold\s*(?:ph|ca|old)|scan\s*now|save\s*[&l]\s*finish|review\s*&\s*lock|skip\s*verification|for\s*now|remaining|captured|^\s*faculty\s*$|^de\s+faculty$|^verification$/i;
 
   const lines = rawText
     .split(/\r?\n/)
@@ -538,7 +538,11 @@ function parseCollegiateData(rawText: string, _userDisplayName?: string, existin
   }
   if (!college) {
     for (const line of lines) {
-      if (line.length > 5 && !/student|identity|card|name|roll|valid|signature|holder|phone|temporary|authoris/i.test(line)) {
+      if (
+        line.length > 5 &&
+        /\b(university|college|institute|academy|school|polytechnic|iit|nit|bits|vit|srm|dtu|nsut|svyasa|s-vyasa)\b/i.test(line) &&
+        !/student\s*id|identity\s*card|name|roll|valid|signature|holder|phone|temporary|authoris/i.test(line)
+      ) {
         college = line;
         break;
       }
@@ -603,7 +607,7 @@ function parseCollegiateData(rawText: string, _userDisplayName?: string, existin
   // 5. Student Name Extraction from Raw OCR (Supports initials like "VIKAS N" or "R K SHARMA")
   let cardStudentName = '';
   const nonNameWordsRegex =
-    /\b(college|university|institute|department|student|identity|engineering|technology|card|valid|till|temporary|deemed|authorized|authorised|signatory|branch|course|program|campus|hostel|library|january|february|march|april|may|june|july|august|september|october|november|december|b\.?tech|cse|aiml|ai|ml|signature|holder|phone|address|blood|dob|father|mother|issue|what\s*i\s*learn|kollabrix|svyasa|s-vyasa)\b/i;
+    /\b(college|university|institute|department|student|identity|engineering|technology|card|valid|till|temporary|deemed|authorized|authorised|signatory|branch|course|program|campus|hostel|library|january|february|march|april|may|june|july|august|september|october|november|december|b\.?tech|cse|aiml|ai|ml|signature|holder|phone|address|blood|dob|father|mother|issue|what\s*i\s*learn|kollabrix|svyasa|s-vyasa|for\s*now|scan\s*now|review|lock|finish|back|step|verification|diometric|biometric|faculty)\b/i;
 
   const nameLabelMatch = fullText.match(
     /(?:name\s*(?:of\s*(?:student|holder|candidate))?|student\s*name)\s*[:\-]?\s*([A-Za-z][A-Za-z\s.]{2,35})/i
