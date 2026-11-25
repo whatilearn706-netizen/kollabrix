@@ -297,13 +297,14 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
   const [hoveredItem, setHoveredItem] = useState<CapabilityItem>(CAPABILITY_ITEMS[0]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openedByHoverAtRef = useRef<number>(0);
 
   const isRouteActive = CAPABILITY_ITEMS.some((item) => pathname.startsWith(item.href));
 
   const syncMenuTop = () => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      setMenuTop(Math.round(rect.bottom + 6));
+      setMenuTop(Math.round(rect.bottom + 8));
     }
   };
 
@@ -336,6 +337,9 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
+    if (!isOpen) {
+      openedByHoverAtRef.current = Date.now();
+    }
     syncMenuTop();
     setIsOpen(true);
   };
@@ -344,6 +348,16 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
     closeTimeoutRef.current = setTimeout(() => {
       setIsOpen(false);
     }, 150);
+  };
+
+  const handleTriggerClick = () => {
+    syncMenuTop();
+    if (isOpen && Date.now() - openedByHoverAtRef.current < 400) {
+      // Hover just opened the menu right before click landed; keep it open cleanly
+      openedByHoverAtRef.current = 0;
+      return;
+    }
+    setIsOpen((prev) => !prev);
   };
 
   const competeItems = CAPABILITY_ITEMS.filter((i) => i.group === 'compete');
@@ -359,10 +373,7 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
       {/* Center Capsule Pill Trigger */}
       <button
         type="button"
-        onClick={() => {
-          syncMenuTop();
-          setIsOpen((prev) => !prev);
-        }}
+        onClick={handleTriggerClick}
         aria-expanded={isOpen}
         aria-haspopup="true"
         className={clsx(
@@ -392,15 +403,15 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
         />
       </button>
 
-      {/* Split "Live Preview" Frosted-Glass Mega Menu */}
+      {/* Split "Live Preview" Frosted-Glass Mega Menu (Dead-center under navbar capsule via inset-x-0 mx-auto) */}
       {isOpen && (
         <div
           role="dialog"
           aria-label="Platform Capabilities Menu"
           style={{ top: `${menuTop}px` }}
-          className="fixed left-1/2 -translate-x-1/2 z-[9999] w-[740px] max-w-[calc(100vw-2rem)] pt-3 -mt-2 animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150 select-none"
+          className="fixed inset-x-0 mx-auto z-[9999] w-[740px] max-w-[calc(100vw-2rem)] pt-3 -mt-2 select-none"
         >
-          <div className="relative rounded-2xl bg-[#090b10]/95 backdrop-blur-2xl backdrop-saturate-150 border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.2)] overflow-hidden">
+          <div className="relative rounded-2xl bg-[#090b10]/95 backdrop-blur-2xl backdrop-saturate-150 border border-white/15 shadow-[0_32px_90px_rgba(0,0,0,0.92),inset_0_1px_0_rgba(255,255,255,0.2)] overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150">
             {/* Subtle top hairline glow */}
             <div className="pointer-events-none absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/35 to-transparent" />
 
