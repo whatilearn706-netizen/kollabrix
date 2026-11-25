@@ -23,7 +23,7 @@ export function BrandLogo({
 
   const textSizes = {
     sm: 'text-[15px] sm:text-base tracking-[0.15em]',
-    md: 'text-[19px] sm:text-[21px] tracking-[0.16em]',
+    md: 'text-[17px] sm:text-[19px] tracking-[0.17em]',
     lg: 'text-2xl sm:text-[28px] tracking-[0.18em]',
   };
 
