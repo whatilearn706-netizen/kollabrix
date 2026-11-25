@@ -53,6 +53,7 @@ import {
 import QRCode from 'qrcode';
 import { extractSponsoredMeta, CustomTimelineStage } from '@/lib/hackathons/sponsoredMeta';
 import { openProfileEditModal } from '@/components/profile/modal/ProfileEditModal';
+import { HackathonDetailRightRail } from '@/components/hackathons/HackathonDetailRightRail';
 
 /**
  * Formats date and time in a crisp, localized, 12-hour format with AM/PM
@@ -1020,10 +1021,10 @@ export default function HackathonDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center space-y-4 px-4 py-24">
-        <div className="w-10 h-10 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
-        <p className="text-xs text-slate-400 font-mono tracking-widest uppercase">
-          Loading Hackathon Protocol & Details...
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center space-y-4 px-4 py-24">
+        <div className="w-9 h-9 rounded-full border-2 border-white/70 border-t-transparent animate-spin" />
+        <p className="text-xs text-zinc-400 font-mono tracking-widest uppercase">
+          Loading Hackathon Details...
         </p>
       </div>
     );
@@ -1031,14 +1032,14 @@ export default function HackathonDetailPage() {
 
   if (error || !hackathon) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-4 py-24">
-        <div className="w-full max-w-md p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 text-center space-y-5 shadow-2xl">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4 py-24">
+        <div className="w-full max-w-md p-8 rounded-3xl bg-[#090C12] border border-white/10 text-center space-y-5 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-zinc-200 mx-auto">
             <AlertCircle className="w-7 h-7" />
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-black text-white tracking-tight">Hackathon Not Found</h2>
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs text-zinc-400 leading-relaxed">
               {error || 'The requested hackathon could not be found or has concluded.'}
             </p>
           </div>
@@ -1054,617 +1055,399 @@ export default function HackathonDetailPage() {
     );
   }
 
+  const timelineEndDate = getHackathonTimelineEndDate(hackathon);
+  const timelineRangeText = `${formatShortDate(hackathon.start_date)} – ${
+    timelineEndDate
+      ? new Date(timelineEndDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      : 'TBA'
+  }`;
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white pb-20">
-      {/* Top Floating Navigation */}
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 pt-5 pb-3 flex items-center justify-between">
-        <Link
-          href="/hackathons"
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-charcoal-900/90 border border-charcoal-700 text-xs font-semibold text-slate-300 hover:text-white hover:border-charcoal-600 transition-all shadow-md"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>All Hackathons</span>
-        </Link>
+    <div className="min-h-screen bg-black text-white pb-24 relative overflow-x-clip">
+      {/* Ambient Obsidian Top-Left Silver Rim Glow */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[440px] bg-[radial-gradient(ellipse_at_top_left,_rgba(255,255,255,0.065),_transparent_58%)]" />
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggleSave}
-            className={`p-2 rounded-full border transition-all ${
-              isSaved
-                ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                : 'bg-charcoal-900/90 border-charcoal-700 text-slate-300 hover:text-white hover:border-charcoal-600'
-            }`}
-            title={isSaved ? 'Remove from Saved' : 'Save Hackathon'}
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 space-y-6">
+        {/* Top Minimalist Breadcrumb Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            href="/hackathons"
+            className="inline-flex items-center gap-2 text-xs font-medium text-zinc-400 hover:text-white transition-colors group"
           >
-            {isSaved ? <BookmarkCheck className="w-4 h-4 fill-current" /> : <Bookmark className="w-4 h-4" />}
-          </button>
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Hackathons</span>
+            <span className="text-zinc-600">/</span>
+            <span className="text-zinc-200 truncate max-w-[220px] sm:max-w-[380px]">
+              {hackathon.title}
+            </span>
+          </Link>
 
-          <button
-            onClick={handleCopyLink}
-            className="p-2 rounded-full bg-charcoal-900/90 border border-charcoal-700 text-slate-300 hover:text-white hover:border-charcoal-600 transition-all"
-            title="Share Link"
-          >
-            {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* UNSTOP-STYLE STANDALONE BILLBOARD BANNER CARD (Zero Text Overlap)         */}
-      {/* ========================================================================= */}
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 space-y-4">
-        {!heroBanner && sponsoredMeta.isSponsored ? (
-          <div className="w-full rounded-3xl overflow-hidden border border-cyan-500/30 bg-[#040711] shadow-[0_0_50px_-12px_rgba(6,182,212,0.25)] relative p-6 sm:p-8 lg:p-10 transition-all">
-            {/* 3D Wave Volumetric Lighting SVG */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <svg
-                className="absolute w-full h-full inset-0 opacity-80"
-                viewBox="0 0 1440 450"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                preserveAspectRatio="none"
+          <div className="flex items-center gap-2 text-zinc-400">
+            {hackathon.website_url && !hackathon.website_url.includes('/h/') && (
+              <a
+                href={
+                  /^https?:\/\//i.test(hackathon.website_url.trim())
+                    ? hackathon.website_url.trim()
+                    : `https://${hackathon.website_url.trim()}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-[#090C12] border border-white/10 hover:border-white/25 text-zinc-300 hover:text-white transition-all"
+                title="Official Event Website"
               >
-                <defs>
-                  <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.45" />
-                    <stop offset="45%" stopColor="#3b82f6" stopOpacity="0.25" />
-                    <stop offset="80%" stopColor="#06b6d4" stopOpacity="0.6" />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.1" />
-                  </linearGradient>
-                  <filter id="waveBlur" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="35" />
-                  </filter>
-                </defs>
-                <path
-                  d="M-50 400 C 350 420, 600 250, 950 350 C 1200 420, 1380 200, 1500 260 L 1500 500 L -50 500 Z"
-                  fill="url(#waveGrad)"
-                  filter="url(#waveBlur)"
-                />
-                <path
-                  d="M-50 360 C 400 380, 700 220, 1050 300 C 1280 360, 1400 240, 1500 280"
-                  stroke="rgba(6, 182, 212, 0.45)"
-                  strokeWidth="2.5"
-                  fill="none"
-                />
-                <path
-                  d="M-50 375 C 380 400, 720 235, 1030 315 C 1260 375, 1380 255, 1500 295"
-                  stroke="rgba(59, 130, 246, 0.3)"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </svg>
-              {/* Radial center ambient highlight */}
-              <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-            </div>
-
-            {/* Giant 3D Translucent Watermark Logo (Right Background) */}
-            {sponsoredMeta.sponsorLogoUrl && (
-              <div className="absolute -right-8 -bottom-12 w-80 h-80 sm:w-96 sm:h-96 md:w-[440px] md:h-[440px] opacity-[0.14] pointer-events-none select-none flex items-center justify-center">
-                <img
-                  src={sponsoredMeta.sponsorLogoUrl}
-                  alt=""
-                  className="w-full h-full object-contain filter drop-shadow-[0_0_40px_rgba(6,182,212,0.4)]"
-                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                />
-              </div>
+                <Globe className="w-3.5 h-3.5" />
+              </a>
             )}
+            <button
+              type="button"
+              onClick={handleToggleSave}
+              className={`p-2 rounded-full border transition-all cursor-pointer ${
+                isSaved
+                  ? 'bg-white text-zinc-950 border-white'
+                  : 'bg-[#090C12] border-white/10 text-zinc-300 hover:text-white hover:border-white/25'
+              }`}
+              title={isSaved ? 'Remove from Saved' : 'Save Hackathon'}
+            >
+              {isSaved ? (
+                <BookmarkCheck className="w-3.5 h-3.5 fill-current" />
+              ) : (
+                <Bookmark className="w-3.5 h-3.5" />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="p-2 rounded-full bg-[#090C12] border border-white/10 hover:border-white/25 text-zinc-300 hover:text-white transition-all cursor-pointer"
+              title="Share Link"
+            >
+              {copiedLink ? (
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              ) : (
+                <Share2 className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+        </div>
 
-            {/* Main Keynote Content: 3 Zone Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative z-10">
-              
-              {/* ZONE 1 (Left 5 Cols): Title, Sponsor Badge, Tagline, Quick Chips */}
-              <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 shadow-sm w-fit">
-                    <span className="text-cyan-400">☆</span>
-                    <span>Sponsored Event</span>
-                  </div>
-
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
-                    {hackathon.title}
-                  </h1>
-
-                  <div className="flex items-center gap-3 pt-1 flex-wrap">
-                    <span className="text-xs sm:text-sm font-semibold text-slate-400">Powered by</span>
-                    <div className="flex items-center gap-2">
-                      {sponsoredMeta.sponsorLogoUrl && (
-                        <div className="h-6 max-w-[120px] flex items-center shrink-0">
-                          <img
-                            src={sponsoredMeta.sponsorLogoUrl}
-                            alt={sponsoredMeta.companyName || 'Sponsor'}
-                            className="h-full w-auto object-contain max-h-6"
-                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                          />
-                        </div>
-                      )}
-                      <span className="text-sm sm:text-base font-extrabold text-white">
-                        {sponsoredMeta.companyName || hackathon.organizer}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs sm:text-sm font-semibold text-cyan-400 font-mono tracking-wide">
-                    {sponsoredMeta.tagline || 'Build. Innovate. Grow. —'}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5 pt-2 text-[11px] sm:text-xs text-slate-300 font-medium">
-                  <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
-                    <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>
-                      {formatShortDate(hackathon.start_date)} - {formatShortDate(hackathon.end_date)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
-                    <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="truncate max-w-[180px]">{hackathon.location || 'Global Virtual / Discord Hub'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-slate-900/80 border border-white/10 px-3 py-1.5 rounded-xl backdrop-blur-md shadow-sm">
-                    <Users className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* ZONE 2 (Center 4 Cols): About the Sponsor Card */}
-              <div className="lg:col-span-4 rounded-2xl p-5 sm:p-6 bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 block">
-                    About the Sponsor
+        {/* Main 2-Column Editorial Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          {/* LEFT 8 COLUMNS: Unboxed Obsidian Editorial Header + Metric Strip + Underline Tabs */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Editorial Title Block (no container-inside-container border clutter) */}
+            <div className="space-y-4">
+              {/* Status Chips & Hashtags */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`text-[11px] font-mono font-semibold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                    hackathon.mode === 'Online'
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                      : 'bg-[#090C12] text-zinc-200 border-white/15'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      hackathon.mode === 'Online'
+                        ? 'bg-emerald-400 animate-pulse'
+                        : 'bg-zinc-300'
+                    }`}
+                  />
+                  <span>
+                    {hackathon.mode === 'In-Person'
+                      ? `In-Person${hackathon.location ? ` · ${hackathon.location}` : ''}`
+                      : 'Online Virtual'}
                   </span>
-
-                  <div className="flex items-center gap-3">
-                    {sponsoredMeta.sponsorLogoUrl ? (
-                      <div className="w-10 h-10 rounded-xl bg-white/10 p-1.5 flex items-center justify-center shrink-0 border border-white/15 shadow-inner">
-                        <img
-                          src={sponsoredMeta.sponsorLogoUrl}
-                          alt={sponsoredMeta.companyName || 'Sponsor'}
-                          className="w-full h-full object-contain"
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-bold shrink-0">
-                        ⚡
-                      </div>
-                    )}
-                    <span className="text-base sm:text-lg font-black text-white leading-tight">
-                      {sponsoredMeta.companyName || 'Official Sponsor'}
-                    </span>
-                  </div>
-
-                  <h4 className="text-xs sm:text-sm font-bold text-white leading-snug">
-                    {sponsoredMeta.aboutSponsorHeadline || "Accelerating what's next."}
-                  </h4>
-
-                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-4">
-                    {sponsoredMeta.aboutSponsorDescription ||
-                      `${sponsoredMeta.companyName || 'Our sponsor'} empowers developers, students and innovators to build for what's next.`}
-                  </p>
-                </div>
-
-                <div>
-                  <a
-                    href={
-                      sponsoredMeta.sponsorWebsiteUrl
-                        ? (/^https?:\/\//i.test(sponsoredMeta.sponsorWebsiteUrl)
-                            ? sponsoredMeta.sponsorWebsiteUrl
-                            : `https://${sponsoredMeta.sponsorWebsiteUrl}`)
-                        : (hackathon.website_url || '#')
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-white transition-all w-fit shadow-sm"
-                  >
-                    <span>Learn More</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-                  </a>
-                </div>
-              </div>
-
-              {/* ZONE 3 (Right 3 Cols): Event Benefits Card */}
-              <div className="lg:col-span-3 rounded-2xl p-5 sm:p-6 bg-slate-900/60 border border-white/10 backdrop-blur-md shadow-xl flex flex-col space-y-3.5 justify-start">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 block">
-                  Event Benefits
                 </span>
 
-                <ul className="space-y-2.5">
-                  {(
-                    (sponsoredMeta.eventBenefits && sponsoredMeta.eventBenefits.length > 0)
-                      ? sponsoredMeta.eventBenefits
-                      : [
-                          `Exclusive ${sponsoredMeta.companyName || 'Sponsor'} Credits (up to $500)`,
-                          'Top Performers Get Internships & Swags',
-                          `Mentorship from ${sponsoredMeta.companyName ? sponsoredMeta.companyName + ' Experts' : 'Industry Experts'}`,
-                          `Priority Access to ${sponsoredMeta.companyName || 'Developer'} Tools`,
-                        ]
-                  ).map((benefit, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-xs text-slate-200">
-                      <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                      <span className="leading-snug">{benefit}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                {hackathon.is_verified && (
+                  <span className="text-[11px] font-mono font-medium px-3 py-1 rounded-full bg-[#090C12] text-zinc-200 border border-white/15 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-zinc-300" />
+                    <span>Verified Collegiate</span>
+                  </span>
+                )}
 
-            </div>
-          </div>
-        ) : (
-          <div className={`w-full rounded-3xl overflow-hidden shadow-2xl relative transition-all ${
-            sponsoredMeta.isSponsored
-              ? 'border-2 border-amber-500/40 shadow-[0_0_50px_-12px_rgba(245,158,11,0.25)] bg-[#040711]'
-              : 'border border-charcoal-750 bg-[#060813]'
-          }`}>
-            {heroBanner ? (
-              <div className="relative w-full aspect-[16/9] max-h-[520px] overflow-hidden bg-black flex items-center justify-center">
-                {/* Ambient glow backdrop */}
-                <img
-                  src={heroBanner}
-                  alt=""
-                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-105 pointer-events-none"
-                  aria-hidden="true"
-                />
-                <img
-                  src={heroBanner}
-                  alt={hackathon.title}
-                  className="w-full h-full object-contain object-center relative z-10"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#060813]/60 via-transparent to-black/20 pointer-events-none z-10" />
-
-                {/* Sponsored Floating Badge if sponsored */}
                 {sponsoredMeta.isSponsored && (
-                  <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-bold bg-slate-950/85 text-amber-300 border border-amber-400/40 shadow-xl backdrop-blur-md">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-                      <span>⚡ Sponsored by {sponsoredMeta.companyName || 'Official Partner'}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-500/15 via-violet-600/10 to-transparent" />
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:32px_32px] opacity-20" />
-                <div className="relative z-10 space-y-2">
-                  <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    Collegiate Hackathon Series &bull; 2026
+                  <span className="text-[11px] font-mono font-semibold px-3 py-1 rounded-full bg-white/10 text-zinc-100 border border-white/20 flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3" />
+                    <span>Sponsored · {sponsoredMeta.companyName || 'Partner'}</span>
                   </span>
-                  <h2 className="text-2xl sm:text-4xl font-black text-white tracking-wider uppercase font-mono drop-shadow-md">
-                    {hackathon.title}
-                  </h2>
-                  <p className="text-xs text-slate-400 font-mono">
-                    Organized by {hackathon.organizer}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* If sponsored and has an image banner, display a sleek Sponsor Info & Benefits strip right below the banner */}
-        {heroBanner && sponsoredMeta.isSponsored && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div className="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-charcoal-900/90 border border-amber-500/30 shadow-lg flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                {sponsoredMeta.sponsorLogoUrl ? (
-                  <div className="w-10 h-10 rounded-xl bg-white/10 p-1.5 flex items-center justify-center shrink-0 border border-white/15">
-                    <img src={sponsoredMeta.sponsorLogoUrl} alt="" className="w-full h-full object-contain" />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold shrink-0">
-                    ⚡
-                  </div>
                 )}
-                <div className="min-w-0">
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400 block">About Sponsor</span>
-                  <p className="text-xs text-white font-bold truncate">{sponsoredMeta.companyName || 'Title Sponsor'}</p>
-                  <p className="text-[11px] text-slate-400 line-clamp-1">{sponsoredMeta.aboutSponsorHeadline || "Empowering collegiate student innovators."}</p>
-                </div>
-              </div>
-              {sponsoredMeta.sponsorWebsiteUrl && (
-                <a
-                  href={sponsoredMeta.sponsorWebsiteUrl.startsWith('http') ? sponsoredMeta.sponsorWebsiteUrl : `https://${sponsoredMeta.sponsorWebsiteUrl}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-bold text-white shrink-0 flex items-center gap-1.5"
-                >
-                  <span>Learn More</span>
-                  <ExternalLink className="w-3 h-3 text-amber-400" />
-                </a>
-              )}
-            </div>
 
-            <div className="lg:col-span-6 p-4 sm:p-5 rounded-2xl bg-charcoal-900/90 border border-amber-500/30 shadow-lg flex items-center">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full text-xs text-slate-300">
-                {(sponsoredMeta.eventBenefits || [
-                  '₹1,000 Equity-Free Winner Grant',
-                  'Verified Certificate of Merit',
-                  'Portfolio Showcase on Kollabrix',
-                  'Direct Faculty Review'
-                ]).slice(0, 4).map((b, i) => (
-                  <div key={i} className="flex items-center gap-1.5 truncate">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                    <span className="truncate text-[11px] text-slate-200">{b}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ========================================================================= */}
-      {/* UNSTOP-STYLE INSTITUTIONAL HEADER & METADATA GRID                        */}
-      {/* ========================================================================= */}
-      <div className="w-full max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 2xl:px-16 pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* LEFT 8 COLUMNS: Event Details, Badges & Tabs */}
-          <div className="lg:col-span-8 space-y-6">
-
-            {/* Header Block with Title & College Emblem */}
-            
-            <div className="p-6 rounded-3xl bg-charcoal-900/90 border border-charcoal-800 space-y-4 shadow-xl">
-              {/* Header Status Row with Offline/Online and Unstop Action Icons */}
-              <div className="flex items-center justify-between gap-4 flex-wrap pb-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border flex items-center gap-1.5 ${
-                      hackathon.mode === 'Online'
-                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                        : hackathon.mode === 'In-Person'
-                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                        : 'bg-violet-500/15 text-violet-300 border-violet-500/30'
-                    }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${hackathon.mode === 'Online' ? 'bg-emerald-400' : 'bg-rose-500'} animate-pulse`} />
-                    <span>{hackathon.mode === 'In-Person' ? '📍 Offline' : '🌐 Online Virtual'}</span>
-                  </span>
-
-                  {hackathon.is_verified && (
-                    <span className="text-[11px] font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Verified Collegiate</span>
-                    </span>
-                  )}
-                </div>
-
-                {/* Unstop-Style Action Icons (Globe, Calendar, Bookmark, Share) */}
-                <div className="flex items-center gap-2 text-slate-400">
-                  {hackathon.website_url && (
-                    <a
-                      href={
-                        /^https?:\/\//i.test(hackathon.website_url.trim())
-                          ? hackathon.website_url.trim()
-                          : `https://${hackathon.website_url.trim()}`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-xl bg-charcoal-950 hover:bg-cyan-500/20 border border-charcoal-800 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 transition-all cursor-pointer group"
-                      title={
-                        hackathon.website_url.includes('/h/')
-                          ? 'Event Portal'
-                          : `Visit Official Website (${hackathon.website_url})`
-                      }
+                {hackathon.themes &&
+                  hackathon.themes.slice(0, 3).map((th) => (
+                    <span
+                      key={th}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-mono bg-[#090C12] text-zinc-400 border border-white/10"
                     >
-                      <Globe className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    </a>
-                  )}
-                  <div
-                    className="p-2 rounded-xl bg-charcoal-950 border border-charcoal-800 text-slate-300 transition-all cursor-default"
-                    title={`Schedule: ${new Date(hackathon.start_date).toLocaleDateString()}`}
-                  >
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <button
-                    onClick={handleToggleSave}
-                    className={`p-2 rounded-xl border transition-all cursor-pointer ${
-                      isSaved
-                        ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-                        : 'bg-charcoal-950 border-charcoal-800 text-slate-300 hover:text-white hover:bg-charcoal-800'
-                    }`}
-                    title={isSaved ? 'Saved' : 'Save Hackathon'}
-                  >
-                    <Heart className={`w-4 h-4 ${isSaved ? 'fill-current text-rose-500' : ''}`} />
-                  </button>
-                  <button
-                    onClick={handleCopyLink}
-                    className="p-2 rounded-xl bg-charcoal-950 hover:bg-charcoal-800 border border-charcoal-800 text-slate-300 hover:text-white transition-all cursor-pointer"
-                    title="Share Link"
-                  >
-                    {copiedLink ? <Check className="w-4 h-4 text-emerald-400" /> : <Share2 className="w-4 h-4" />}
-                  </button>
-                </div>
+                      #{th}
+                    </span>
+                  ))}
               </div>
 
-              {/* Title & Square Logo Row (Brown Marked Item Parity) */}
-              <div className="flex items-start justify-between gap-4 pt-1">
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                    {hackathon.title}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-300 font-medium flex items-center gap-2">
-                    <span className="text-slate-400">Organized by</span>
-                    <strong className="text-cyan-400 font-bold">{hackathon.organizer}</strong>
-                  </p>
-                </div>
+              {/* Titanium Gradient Headline */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.12] bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+                {hackathon.title}
+              </h1>
 
-                {/* Event / College Logo Badge (Brown Marked Item) */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-charcoal-950 border border-charcoal-750 p-1.5 shrink-0 overflow-hidden shadow-lg flex items-center justify-center">
-                  {eventLogo ? (
+              {/* Clean Inline Organizer & Partner Credit */}
+              <div className="flex items-center gap-3 flex-wrap text-xs sm:text-sm text-zinc-400">
+                <span>
+                  Organized by{' '}
+                  <strong className="text-zinc-100 font-semibold">
+                    {hackathon.organizer}
+                  </strong>
+                </span>
+                {eventLogo && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#090C12] border border-white/12">
                     <img
                       src={eventLogo}
                       alt={hackathon.organizer || hackathon.title}
-                      className="w-full h-full object-contain rounded-xl p-0.5"
+                      className="h-4 w-auto max-w-[68px] object-contain rounded-sm"
                     />
-                  ) : heroBanner ? (
-                    <img
-                      src={heroBanner}
-                      alt={hackathon.title}
-                      className="w-full h-full object-contain rounded-xl"
-                    />
-                  ) : (
-                    <div className="w-full h-full rounded-xl bg-gradient-to-br from-cyan-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-2xl shadow-inner">
-                      {hackathon.title.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              {/* Unstop-Style Metadata Chips Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 sm:gap-4 pt-4 border-t border-charcoal-800/80">
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
-                    📍 Venue / Mode
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold text-slate-200 block truncate">
-                    {hackathon.location || 'Campus Tech Lab'}
-                  </span>
+              {/* Unified 4-Cell Hairline Metric Strip (Replaces duplicated 4-box grid) */}
+              <div className="rounded-2xl bg-[#090C12] border border-white/12 grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/10 overflow-hidden shadow-lg">
+                <div className="px-4 py-3.5 text-center sm:text-left">
+                  <div className="text-sm sm:text-base font-black text-white tracking-tight truncate">
+                    {hackathon.prize_pool ||
+                      (sponsoredMeta.isSponsored
+                        ? `₹1,50,000 + ${sponsoredMeta.companyName || 'Partner'} Credits`
+                        : '₹50,000 + Incubation')}
+                  </div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-zinc-400 mt-1">
+                    Prize Pool
+                  </div>
                 </div>
 
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
-                    👥 Team Size
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold text-slate-200 block truncate">
-                    {hackathon.min_team_size || 1} – {hackathon.max_team_size || 4} Builders
-                  </span>
+                <div className="px-4 py-3.5 text-center sm:text-left">
+                  <div className="text-sm sm:text-base font-black text-white tracking-tight">
+                    {hackathon.min_team_size || 1}–{hackathon.max_team_size || 4} Builders
+                  </div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-zinc-400 mt-1">
+                    Squad Size
+                  </div>
                 </div>
 
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
-                    📅 Schedule
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold text-slate-200 block truncate">
-                    {new Date(hackathon.start_date).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                    })}{' '}
-                    –{' '}
-                    {(() => {
-                      const finalDate = getHackathonTimelineEndDate(hackathon);
-                      return finalDate
-                        ? new Date(finalDate).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })
-                        : 'TBA';
-                    })()}
-                  </span>
+                <div className="px-4 py-3.5 text-center sm:text-left">
+                  <div className="text-sm sm:text-base font-black text-white tracking-tight truncate">
+                    {timelineRangeText}
+                  </div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-zinc-400 mt-1">
+                    Timeline
+                  </div>
                 </div>
 
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-charcoal-950/80 border border-charcoal-800 space-y-1.5 shadow-sm">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
-                    🏆 Total Prize Pool
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold text-white block truncate">
-                    {hackathon.prize_pool || '₹50,000 + Mentorship'}
-                  </span>
+                <div className="px-4 py-3.5 text-center sm:text-left">
+                  <div className="text-sm sm:text-base font-black text-white tracking-tight truncate">
+                    {hackathon.themes && hackathon.themes.length > 0
+                      ? `${hackathon.themes.length} Track${hackathon.themes.length > 1 ? 's' : ''}`
+                      : hackathon.location || 'Virtual Hub'}
+                  </div>
+                  <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-zinc-400 mt-1">
+                    {hackathon.themes && hackathon.themes.length > 0 ? 'Tracks' : 'Format'}
+                  </div>
                 </div>
               </div>
-
-              {/* Category Pills */}
-              {hackathon.themes && hackathon.themes.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap pt-2">
-                  {hackathon.themes.slice(0, 5).map((theme) => (
-                    <span
-                      key={theme}
-                      className="px-3 py-1 rounded-xl text-xs font-mono font-medium bg-charcoal-950 text-cyan-400/90 border border-charcoal-800 shadow-xs"
-                    >
-                      #{theme}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {/* Navigation Tabs with Clean Generous Spacing */}
-            <div className="flex items-center gap-3 border-b border-charcoal-800 pb-3 pt-2">
+            {/* Linear-Style Underline Navigation Tabs */}
+            <div className="flex items-center gap-6 border-b border-white/10 overflow-x-auto scrollbar-none">
               <button
+                type="button"
                 onClick={() => setActiveTab('overview')}
-                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`pb-3 text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 -mb-px cursor-pointer ${
                   activeTab === 'overview'
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
+                    ? 'border-white text-white font-semibold'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 font-medium'
                 }`}
               >
                 Overview
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('themes')}
-                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`pb-3 text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 -mb-px cursor-pointer ${
                   activeTab === 'themes'
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
+                    ? 'border-white text-white font-semibold'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 font-medium'
                 }`}
               >
-                Themes & Tracks ({hackathon.themes?.length || 0})
+                Themes &amp; Tracks ({hackathon.themes?.length || 0})
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('schedule')}
-                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`pb-3 text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 -mb-px cursor-pointer ${
                   activeTab === 'schedule'
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
+                    ? 'border-white text-white font-semibold'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 font-medium'
                 }`}
               >
-                Schedule & Milestones
+                Schedule &amp; Milestones
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('rules')}
-                className={`px-5 py-2.5 text-xs sm:text-sm rounded-xl transition-all cursor-pointer ${
+                className={`pb-3 text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 -mb-px cursor-pointer ${
                   activeTab === 'rules'
-                    ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-charcoal-800/60 font-medium'
+                    ? 'border-white text-white font-semibold'
+                    : 'border-transparent text-zinc-400 hover:text-zinc-200 font-medium'
                 }`}
               >
-                Rules & Eligibility
+                Rules &amp; Eligibility
               </button>
             </div>
 
             {/* Tab Contents */}
             {activeTab === 'overview' && (
-              <div className="space-y-8">
-                {/* Unstop-Style Eligibility Section */}
-                <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-3.5 shadow-xl">
-                  <div className="flex items-center gap-2.5 text-base sm:text-lg font-bold text-white">
-                    <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
-                    <span>Eligibility</span>
+              <div className="space-y-6">
+                {/* Scannable 2-Column Eligibility & Access Highlight Card */}
+                <div className="p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/10 space-y-5 shadow-xl">
+                  <div>
+                    <h2 className="text-lg font-bold text-white tracking-tight">
+                      Eligibility &amp; Overview
+                    </h2>
+                    <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+                      Review access requirements and competition rules before assembling your squad.
+                    </p>
                   </div>
-                  <p className="text-[14.5px] text-slate-300 font-normal leading-relaxed whitespace-pre-line">
-                    {hackathon.eligibility || 'Undergraduate & Postgraduate Students (Engineering / CS / Technology). Inter-college teams permitted.'}
-                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div className="p-4 rounded-2xl bg-black/55 border border-white/10 space-y-1.5">
+                      <div className="text-xs font-bold text-white flex items-center gap-2">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>
+                          {hackathon.allowed_college
+                            ? `Exclusive · ${hackathon.allowed_college}`
+                            : 'Open Collegiate & Builder Access'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed whitespace-pre-line">
+                        {hackathon.eligibility ||
+                          'Undergraduate & Postgraduate Students across Engineering & Technology. Cross-disciplinary collaboration encouraged.'}
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-black/55 border border-white/10 space-y-1.5">
+                      <div className="text-xs font-bold text-white flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
+                        <span>
+                          Team Size: {hackathon.min_team_size || 1}–{hackathon.max_team_size || 4} Members ·{' '}
+                          {hackathon.mode}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed">
+                        Collaborate within your campus or find vetted developers, designers, and AI engineers directly on Kollabrix.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-4 shadow-xl">
-                  <div className="flex items-center gap-2.5 text-base sm:text-lg font-bold text-white">
-                    <span className="w-1.5 h-5 bg-cyan-400 rounded-full" />
-                    <span>All that you need to know about {hackathon.title}</span>
-                  </div>
-                  <div className="text-[14.5px] text-slate-300 font-normal leading-relaxed whitespace-pre-line space-y-3.5">
+                {/* Competition Brief */}
+                <div className="p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/10 space-y-4 shadow-xl">
+                  <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                    About {hackathon.title}
+                  </h3>
+                  <div className="text-xs sm:text-[14px] text-zinc-300 font-normal leading-relaxed whitespace-pre-line space-y-3">
                     <p>{hackathon.description}</p>
                   </div>
+
+                  {hackathon.themes && hackathon.themes.length > 0 && (
+                    <div className="pt-3 border-t border-white/10 flex items-center gap-2 flex-wrap">
+                      {hackathon.themes.map((th) => (
+                        <span
+                          key={th}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-black/55 text-zinc-300 border border-white/10"
+                        >
+                          #{th}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Team Formation Highlight */}
-                <div className="p-6 rounded-3xl bg-gradient-to-r from-violet-950/60 to-charcoal-900 border border-violet-800/40 space-y-3 shadow-xl">
-                  <div className="flex items-center gap-2.5 text-violet-300">
-                    <Users className="w-5 h-5 text-violet-400" />
-                    <h4 className="text-sm font-bold text-white">Assemble Your Dream Team on Kollabrix</h4>
+                {/* Partner Benefits Strip (if sponsored) */}
+                {sponsoredMeta.isSponsored && (
+                  <div className="p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/12 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                          Partner Benefits
+                        </span>
+                        <h4 className="text-sm sm:text-base font-bold text-white">
+                          {sponsoredMeta.companyName || hackathon.organizer} Perks &amp; Rewards
+                        </h4>
+                      </div>
+                      {sponsoredMeta.sponsorWebsiteUrl && (
+                        <a
+                          href={
+                            /^https?:\/\//i.test(sponsoredMeta.sponsorWebsiteUrl)
+                              ? sponsoredMeta.sponsorWebsiteUrl
+                              : `https://${sponsoredMeta.sponsorWebsiteUrl}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs font-semibold text-white inline-flex items-center gap-1.5"
+                        >
+                          <span>Partner Portal</span>
+                          <ExternalLink className="w-3 h-3 text-zinc-300" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-zinc-300">
+                      {(
+                        sponsoredMeta.eventBenefits || [
+                          `Exclusive ${sponsoredMeta.companyName || 'Partner'} Credits`,
+                          'Verified Certificate of Merit',
+                          'Portfolio Showcase on Kollabrix',
+                          'Direct Jury & Mentor Review',
+                        ]
+                      )
+                        .slice(0, 4)
+                        .map((b, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center gap-2 p-2.5 rounded-xl bg-black/45 border border-white/10"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span className="truncate">{b}</span>
+                          </div>
+                        ))}
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Looking for a frontend designer, smart-contract developer, or AI engineer to team up with for {hackathon.title}? Connect with vetted collegiate builders on our matchmaking roster.
-                  </p>
-                  <div className="pt-1 flex items-center gap-3">
+                )}
+
+                {/* Team Matchmaking Banner */}
+                <div className="p-6 rounded-3xl bg-[#090C12] border border-white/12 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-white font-bold text-sm">
+                      <Users className="w-4 h-4 text-zinc-200" />
+                      <span>Assemble Your Squad on Kollabrix</span>
+                    </div>
+                    <p className="text-xs text-zinc-400 max-w-xl leading-relaxed">
+                      Looking for a frontend designer, ML engineer, or systems architect for {hackathon.title}? Match with vetted builders now.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5 shrink-0">
                     <Link href={`/teammates?hackathon=${encodeURIComponent(hackathon.title)}`}>
-                      <Button variant="secondary" size="sm" leftIcon={<UserPlus className="w-4 h-4 text-violet-400" />}>
-                        Find Teammates
-                      </Button>
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-xl bg-gradient-to-b from-white to-zinc-200 text-zinc-950 font-bold text-xs border border-white/60 hover:opacity-95 transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>Find Teammates</span>
+                      </button>
                     </Link>
                     <Link href="/projects/new">
-                      <Button variant="outline" size="sm" leftIcon={<Layers className="w-4 h-4" />}>
-                        Post Squad Request
-                      </Button>
+                      <button
+                        type="button"
+                        className="px-4 py-2 rounded-xl bg-black/60 hover:bg-white/[0.08] border border-white/15 text-zinc-200 font-semibold text-xs inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>Post Squad</span>
+                      </button>
                     </Link>
                   </div>
                 </div>
@@ -1672,143 +1455,125 @@ export default function HackathonDetailPage() {
             )}
 
             {activeTab === 'themes' && (
-              <div className="space-y-4">
-                <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-6">
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                      <Layers className="w-5 h-5 text-brand-400" />
-                      <span>Official Tracks & Innovation Themes</span>
-                    </h3>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Projects submitted must address one or more of the following challenge themes.
-                    </p>
-                  </div>
+              <div className="p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/10 space-y-5 shadow-xl">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-zinc-200" />
+                    <span>Official Tracks &amp; Innovation Themes</span>
+                  </h3>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Projects submitted must address one or more of these competition tracks.
+                  </p>
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(hackathon.themes || ['Open Innovation', 'AI & Automation', 'Collegiate Web']).map(
-                      (theme, idx) => (
-                        <div
-                          key={idx}
-                          className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 flex items-start gap-3 hover:border-charcoal-700 transition-all"
-                        >
-                          <div className="w-8 h-8 rounded-xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-brand-400 shrink-0 mt-0.5">
-                            <Code2 className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-bold text-white">{theme}</h4>
-                            <p className="text-[11px] text-slate-400 mt-0.5">
-                              Solve critical problems and ship high-impact collegiate solutions in this track.
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    )}
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(hackathon.themes && hackathon.themes.length > 0
+                    ? hackathon.themes
+                    : ['Open Innovation', 'AI & Automation', 'Collegiate Web']
+                  ).map((th, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-2xl bg-black/55 border border-white/10 hover:border-white/25 flex items-start gap-3 transition-all"
+                    >
+                      <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/15 flex items-center justify-center text-zinc-200 shrink-0 mt-0.5">
+                        <Code2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white">{th}</h4>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">
+                          Build and ship high-impact engineering deliverables in this track.
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {activeTab === 'schedule' && (
-              <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-6">
-                <div className="flex items-center justify-between gap-4 flex-wrap border-b border-charcoal-800/80 pb-4">
+              <div className="p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/10 space-y-6 shadow-xl">
+                <div className="flex items-center justify-between gap-4 flex-wrap border-b border-white/10 pb-4">
                   <div>
                     <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-cyan-400" />
+                      <Clock className="w-4 h-4 text-zinc-200" />
                       <span>Official Timeline &amp; Milestones</span>
                     </h3>
-                    <p className="text-xs text-slate-300 font-medium mt-1">
-                      Key submission cut-offs, mentor reviews, and jury evaluations organized by phase.
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Submission cut-offs, mentor checkpoints, and finale evaluations by stage.
                     </p>
                   </div>
-                  <span className="text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950/70 border border-cyan-800/60 px-3 py-1 rounded-xl">
-                    {timelineStages.length} Stages • Verified Schedule
+                  <span className="text-[11px] font-mono font-semibold text-zinc-200 bg-white/[0.06] border border-white/15 px-3 py-1 rounded-xl">
+                    {timelineStages.length} Stages
                   </span>
                 </div>
 
-                <div className="space-y-4 sm:space-y-5 relative before:absolute before:inset-0 before:left-4 sm:before:left-5 before:w-0.5 before:bg-gradient-to-b before:from-cyan-500/50 before:via-purple-500/30 before:to-transparent">
+                <div className="space-y-4 relative before:absolute before:inset-y-2 before:left-4 sm:before:left-5 before:w-px before:bg-white/15">
                   {timelineStages.map((stage, idx) => {
-                    const colorStyle = milestoneColorClasses[idx % milestoneColorClasses.length];
                     const parsedDate = parseCustomOrIsoDate(stage.date);
                     const formattedDate = formatMilestoneDate(stage.date);
                     const isPassed = parsedDate ? parsedDate.getTime() < Date.now() : false;
                     const isNextUpcoming =
                       !isPassed &&
                       (idx === 0 ||
-                        (parseCustomOrIsoDate(timelineStages[idx - 1]?.date)?.getTime() || 0) < Date.now());
+                        (parseCustomOrIsoDate(timelineStages[idx - 1]?.date)?.getTime() || 0) <
+                          Date.now());
 
                     return (
-                      <div key={idx} className="relative flex items-start gap-3.5 sm:gap-5 group">
-                        {/* Step Number Orb */}
+                      <div key={idx} className="relative flex items-start gap-4 sm:gap-5">
                         <div className="relative shrink-0">
                           <div
-                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl ${colorStyle.orb} flex items-center justify-center text-xs sm:text-sm font-black z-10`}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-black z-10 border ${
+                              isNextUpcoming
+                                ? 'bg-white text-zinc-950 border-white shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                : isPassed
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                                : 'bg-black text-zinc-300 border-white/15'
+                            }`}
                           >
                             {idx + 1}
                           </div>
                         </div>
 
-                        {/* Milestone Card */}
-                        <div
-                          className={`flex-1 p-4 sm:p-5 rounded-2xl bg-charcoal-950/90 border ${colorStyle.cardBorder} transition-all space-y-3 shadow-md hover:shadow-lg`}
-                        >
-                          {/* Row 1: Stage Tag, Status badge, Date & Time badge */}
-                          <div className="flex items-center justify-between gap-2.5 flex-wrap border-b border-charcoal-850/80 pb-2.5">
+                        <div className="flex-1 p-4 sm:p-5 rounded-2xl bg-black/55 border border-white/10 space-y-2.5">
+                          <div className="flex items-center justify-between gap-2.5 flex-wrap border-b border-white/10 pb-2.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className={`text-[10px] uppercase font-mono font-bold px-2.5 py-0.5 rounded-md border ${colorStyle.badge}`}
-                              >
+                              <span className="text-[10px] uppercase font-mono font-bold px-2.5 py-0.5 rounded-md bg-white/[0.06] text-zinc-300 border border-white/10">
                                 Stage {idx + 1}
                               </span>
-
                               {isPassed && (
                                 <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold">
                                   <CheckCircle2 className="w-3 h-3" />
                                   <span>Concluded</span>
                                 </span>
                               )}
-
                               {isNextUpcoming && (
-                                <span className="text-[10px] font-mono text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 font-bold shadow-sm shadow-amber-500/20">
-                                  <Clock className="w-3 h-3 text-amber-400" />
-                                  <span>Active Stage</span>
+                                <span className="text-[10px] font-mono text-zinc-950 bg-white px-2.5 py-0.5 rounded-full font-bold">
+                                  Active Stage
                                 </span>
                               )}
-
                               {!isPassed && !isNextUpcoming && (
-                                <span className="text-[10px] font-mono text-slate-400 bg-charcoal-900 border border-charcoal-800 px-2 py-0.5 rounded-full">
+                                <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.04] border border-white/10 px-2 py-0.5 rounded-full">
                                   Upcoming
                                 </span>
                               )}
                             </div>
 
-                            {/* Date Badge */}
                             {formattedDate && (
-                              <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-slate-200 bg-charcoal-900/90 px-3 py-1 rounded-xl border border-charcoal-800">
-                                <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-xs font-mono font-semibold text-zinc-200 bg-[#090C12] px-3 py-1 rounded-xl border border-white/10">
+                                <Calendar className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                                 <span>{formattedDate}</span>
                               </div>
                             )}
                           </div>
 
-                          {/* Row 2: Milestone Title */}
-                          <div>
-                            <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                              {stage.title}
-                            </h4>
-                          </div>
+                          <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                            {stage.title}
+                          </h4>
 
-                          {/* Row 3: Description / Instructions */}
                           {stage.description && (
-                            <div className="p-3 sm:p-3.5 rounded-xl bg-charcoal-900/60 border border-charcoal-850/80">
-                              <div className="flex items-start gap-2">
-                                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider shrink-0 mt-0.5">
-                                  Instructions:
-                                </span>
-                                <p className="text-xs sm:text-[13px] text-slate-300 font-normal leading-relaxed">
-                                  {stage.description}
-                                </p>
-                              </div>
-                            </div>
+                            <p className="text-xs sm:text-[13px] text-zinc-400 font-normal leading-relaxed">
+                              {stage.description}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -1819,88 +1584,86 @@ export default function HackathonDetailPage() {
             )}
 
             {activeTab === 'rules' && (
-              <div className="p-6 sm:p-8 rounded-3xl bg-charcoal-900 border border-charcoal-800 space-y-6">
+              <div className="p-6 sm:p-7 rounded-3xl bg-[#090C12] border border-white/10 space-y-5 shadow-xl">
                 <div>
                   <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                    <span>Rules & Eligibility Requirements</span>
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Rules &amp; Eligibility Requirements</span>
                   </h3>
-                  <p className="text-xs text-slate-300 font-medium mt-1">
-                    Compliance criteria required for official collegiate credential verification.
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Compliance criteria required for verified collegiate submission.
                   </p>
                 </div>
 
-                <div className="space-y-4 text-xs text-slate-200">
-                  <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+                <div className="space-y-3.5 text-xs text-zinc-300">
+                  <div className="p-4 rounded-2xl bg-black/55 border border-white/10 space-y-1.5">
                     <h4 className="font-bold text-white flex items-center gap-2">
-                      <Award className="w-4 h-4 text-amber-400" />
+                      <Award className="w-4 h-4 text-zinc-300" />
                       <span>Eligibility</span>
                     </h4>
-                    <p className="text-slate-200 text-xs leading-relaxed font-medium">
-                      {hackathon.eligibility || 'Open to all enrolled university and college students with valid institutional credentials.'}
+                    <p className="text-zinc-300 leading-relaxed whitespace-pre-line">
+                      {hackathon.eligibility ||
+                        'Open to all enrolled university and college students with valid institutional credentials.'}
                     </p>
                   </div>
 
-                  {/* Allowed College Restriction Banner */}
                   {hackathon.allowed_college && (
-                    <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/40 space-y-2">
-                      <h4 className="font-bold text-amber-300 flex items-center gap-2 text-xs">
-                        <GraduationCap className="w-4 h-4 text-amber-400" />
+                    <div className="p-4 rounded-2xl bg-white/[0.05] border border-white/25 space-y-1.5">
+                      <h4 className="font-bold text-white flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-zinc-200" />
                         <span>Allowed Collegiate Institution</span>
                       </h4>
-                      <p className="text-amber-200 font-extrabold text-sm">
+                      <p className="text-white font-extrabold text-sm">
                         {hackathon.allowed_college}
                       </p>
-                      <p className="text-slate-200 text-xs leading-relaxed">
-                        Institutional Access Locked: Only enrolled and verified students from {hackathon.allowed_college} are eligible to participate and submit deliverables.
+                      <p className="text-zinc-300 leading-relaxed">
+                        Institutional Access Locked: Only verified students from {hackathon.allowed_college} are eligible to participate.
                       </p>
                     </div>
                   )}
 
-                  {/* Help Desk & Faculty Support Banner */}
                   {hackathon.contact_info && (
-                    <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/40 space-y-2.5">
+                    <div className="p-4 rounded-2xl bg-black/55 border border-white/15 space-y-2">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-white flex items-center gap-2 text-xs">
-                          <Headphones className="w-4 h-4 text-cyan-400" />
+                        <h4 className="font-bold text-white flex items-center gap-2">
+                          <Headphones className="w-4 h-4 text-zinc-300" />
                           <span>Faculty Help Desk &amp; Organizer Contact</span>
                         </h4>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-300 bg-white/[0.06] px-2 py-0.5 rounded border border-white/15">
                           Support Active
                         </span>
                       </div>
-                      <p className="text-slate-200 text-xs leading-relaxed">
-                        If you face any issue during registration, card verification, or team building, reach out directly to the faculty coordinator:
-                      </p>
-                      <div className="pt-1">
-                        <a
-                          href={hackathon.contact_info.includes('@') ? `mailto:${hackathon.contact_info}` : `tel:${hackathon.contact_info}`}
-                          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 text-cyan-200 border border-cyan-400/50 font-mono text-xs font-bold transition-colors"
-                        >
-                          <Mail className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>{hackathon.contact_info}</span>
-                        </a>
-                      </div>
+                      <a
+                        href={
+                          hackathon.contact_info.includes('@')
+                            ? `mailto:${hackathon.contact_info}`
+                            : `tel:${hackathon.contact_info}`
+                        }
+                        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#090C12] hover:bg-white/[0.08] text-zinc-200 border border-white/15 font-mono text-xs font-semibold transition-colors"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-zinc-400" />
+                        <span>{hackathon.contact_info}</span>
+                      </a>
                     </div>
                   )}
 
-                  <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+                  <div className="p-4 rounded-2xl bg-black/55 border border-white/10 space-y-1.5">
                     <h4 className="font-bold text-white flex items-center gap-2">
-                      <Code2 className="w-4 h-4 text-brand-400" />
-                      <span>Code Originality & Plagiarism Policy</span>
+                      <Code2 className="w-4 h-4 text-zinc-300" />
+                      <span>Code Originality &amp; Plagiarism Policy</span>
                     </h4>
-                    <p className="text-slate-200 text-xs leading-relaxed">
-                      All core project code must be developed during the hackathon period. Pre-existing libraries and public APIs are permitted provided they are documented in your README and architecture breakdown.
+                    <p className="text-zinc-300 leading-relaxed">
+                      All core project code must be developed during the hackathon period. Public APIs and open-source libraries are permitted if documented cleanly.
                     </p>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-charcoal-950 border border-charcoal-800 space-y-2">
+                  <div className="p-4 rounded-2xl bg-black/55 border border-white/10 space-y-1.5">
                     <h4 className="font-bold text-white flex items-center gap-2">
-                      <Users className="w-4 h-4 text-violet-400" />
+                      <Users className="w-4 h-4 text-zinc-300" />
                       <span>Team Composition</span>
                     </h4>
-                    <p className="text-slate-200 text-xs leading-relaxed">
-                      Teams must consist of {hackathon.min_team_size || 1} to {hackathon.max_team_size || 4} verified students. Cross-disciplinary teams (engineers + product designers) are strongly encouraged.
+                    <p className="text-zinc-300 leading-relaxed">
+                      Teams must consist of {hackathon.min_team_size || 1} to {hackathon.max_team_size || 4} verified builders.
                     </p>
                   </div>
                 </div>
@@ -1908,459 +1671,50 @@ export default function HackathonDetailPage() {
             )}
           </div>
 
-          {/* Right Sidebar: Unstop-Style Sticky Action Card */}
-          <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
-            
-            {/* Optional VIP Candidate Access Pass (Hidden by default unless explicitly enabled) */}
-            {sponsoredMeta.isSponsored && Boolean(sponsoredMeta.enableRecruiterQrPass) && (
-              <div className="p-5 rounded-3xl bg-gradient-to-b from-slate-900 via-charcoal-900 to-black border border-white/20 shadow-2xl space-y-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
-                <div className="text-center space-y-1 relative z-10">
-                  <span className="text-[10px] font-mono font-bold tracking-widest text-slate-400 uppercase block">
-                    {sponsoredMeta.candidatePassTitle || 'VERIFIED CANDIDATE ACCESS PASS'}
-                  </span>
-                  <div className="inline-block px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono font-black tracking-wider">
-                    {sponsoredMeta.candidatePassRank || 'TIER-1 ARCHITECT'}
-                  </div>
-                </div>
-
-                {/* Scannable High-Contrast Recruiter Pass QR */}
-                <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-black/60 border border-white/10 relative z-10 space-y-2">
-                  <div className="w-40 h-40 rounded-xl bg-white p-2.5 shadow-xl flex items-center justify-center">
-                    {qrCodeUrl ? (
-                      <img src={qrCodeUrl} alt="Candidate Recruiter Verification QR" className="w-full h-full object-contain" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs font-mono text-slate-500">
-                        Generating QR...
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider text-center">
-                    Scan for Recruiter Verification
-                  </span>
-                </div>
-
-                {/* Candidate Metadata Breakdown */}
-                <div className="space-y-1.5 text-xs font-mono relative z-10 border-t border-white/10 pt-3">
-                  <div className="flex justify-between items-center text-slate-400">
-                    <span>Candidate:</span>
-                    <strong className="text-white font-mono truncate max-w-[170px]">
-                      {user?.user_metadata?.username || profile?.username || (user?.email ? user.email.split('@')[0] : 'goyalmayank142')}
-                    </strong>
-                  </div>
-                  <div className="flex justify-between items-center text-slate-400">
-                    <span>PPI Track:</span>
-                    <strong className="text-amber-300 font-bold">Active Fast-Track</strong>
-                  </div>
-                </div>
-
-                {/* Enlist CTA */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const regBtn = document.getElementById('enrollment-primary-action-btn');
-                    if (regBtn) {
-                      regBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      regBtn.focus();
-                      regBtn.classList.add('ring-4', 'ring-amber-400');
-                      setTimeout(() => regBtn.classList.remove('ring-4', 'ring-amber-400'), 1500);
-                    }
-                  }}
-                  className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black font-mono font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition-all transform active:scale-95 cursor-pointer relative z-10"
-                >
-                  <Sparkles className="w-4 h-4 fill-black" />
-                  <span>{sponsoredMeta.customCtaText || 'ENLIST FOR PPI TRIALS'} &gt;</span>
-                </button>
-              </div>
-            )}
-
-            {/* Main Action Box Container with Relative Positioning for Protruding Pill */}
-            <div className="relative pt-3">
-              
-              {/* Floating Pill on Top-Left of Card (Unstop Signature Match) */}
-              <div className="absolute top-0 left-5 z-20 px-3.5 py-1 rounded-full bg-black text-white text-[11px] font-mono font-black border border-charcoal-700 shadow-xl flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{countdown.isClosed ? 'Registration Closed' : countdown.formatted}</span>
-              </div>
-
-              {/* Floating Registered Counter on Top-Right (Shown ONLY for internal platform-managed hackathons) */}
-              {!isExternalRegistration ? (
-                <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-charcoal-950 text-cyan-300 text-[11px] font-mono font-bold border border-charcoal-750 shadow-xl flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>{displayRegisteredCount} Registered</span>
-                </div>
-              ) : (
-                <div className="absolute top-0 right-5 z-20 px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-300 text-[11px] font-mono font-bold border border-cyan-500/40 shadow-xl flex items-center gap-1.5">
-                  <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Official Portal</span>
-                </div>
-              )}
-
-              <div className="p-6 sm:p-7 rounded-3xl bg-charcoal-900/95 border border-charcoal-750 shadow-2xl space-y-5 pt-7">
-                
-                {/* Eligibility Status Header */}
-                {isEnrolled ? (
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Registered &amp; Confirmed Participant</span>
-                  </div>
-                ) : eligibilityEvaluation.isEligible ? (
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs pt-1">
-                    <Sparkles className="w-4 h-4 text-emerald-400 fill-emerald-400/20" />
-                    <span>You&apos;re eligible</span>
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs space-y-1">
-                    <div className="flex items-center gap-1.5 text-rose-400 font-bold">
-                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                      <span>You are not eligible</span>
-                    </div>
-                    <p className="text-[11px] text-rose-200/80 leading-relaxed pl-5">
-                      {eligibilityEvaluation.reason}
-                    </p>
-                    {eligibilityEvaluation.reason?.includes('verified') && (
-                      <div className="pt-2 pl-5">
-                        <button
-                          type="button"
-                          onClick={() => openProfileEditModal(4)}
-                          className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-emerald-500/20 hover:scale-105 transition-all cursor-pointer"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Verify with Apple Face ID (30s)</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Private Passcode Input for campus events */}
-                {hackathon.access_type === 'private' && !isEnrolled && eligibilityEvaluation.isEligible && (
-                  <div className="p-3.5 rounded-2xl bg-charcoal-950 border border-amber-500/30 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-amber-300 font-bold flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Private Event Passcode</span>
-                      </span>
-                      <span className="text-[10px] text-amber-400/80 uppercase tracking-wider font-semibold">
-                        Required
-                      </span>
-                    </div>
-                    <input
-                      type="password"
-                      value={passcode}
-                      onChange={(e) => {
-                        setPasscode(e.target.value);
-                        setPasscodeError(null);
-                      }}
-                      placeholder="Enter event passcode"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-charcoal-900 border border-charcoal-700 text-white placeholder-slate-500 text-xs font-mono focus:outline-none focus:border-amber-400 transition-colors"
-                    />
-                    {passcodeError && (
-                      <p className="text-[11px] text-rose-400 font-medium">{passcodeError}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Header Registration Status & Count for Sponsored / Modern View */}
-                {sponsoredMeta.isSponsored && (
-                  <div className="flex items-center justify-between pb-1">
-                    <span className={`flex items-center gap-1.5 text-xs font-mono font-bold px-2.5 py-1 rounded-full border ${
-                      countdown.isClosed
-                        ? 'text-rose-400 bg-rose-500/10 border-rose-500/20'
-                        : 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-                    }`}>
-                      <span className={`w-2 h-2 rounded-full ${countdown.isClosed ? 'bg-rose-400' : 'bg-emerald-400 animate-pulse'}`} />
-                      <span>{countdown.isClosed ? 'Registration Closed' : 'Registration Open'}</span>
-                    </span>
-                    {!isExternalRegistration && (
-                      <span className="text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{displayRegisteredCount} Registered</span>
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Gift Callout Card for Sponsored Events */}
-                {sponsoredMeta.isSponsored && (
-                  <div className="p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/70 via-slate-900/80 to-slate-950 border border-cyan-500/40 flex items-center justify-between gap-3 shadow-lg group hover:border-cyan-400/60 transition-all cursor-pointer">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shrink-0 text-base shadow-sm">
-                        🎁
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-400 block truncate">
-                          Sponsored by {sponsoredMeta.companyName || 'Corporate Partner'}
-                        </span>
-                        <p className="text-xs font-bold text-white truncate">
-                          {sponsoredMeta.giftCalloutText || `Get up to $500 in ${sponsoredMeta.companyName || 'Sponsor'} Credits!`}
-                        </p>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-cyan-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                )}
-
-                {/* Primary Action Button */}
-                <div className="pt-1">
-                  {(() => {
-                    const externalRegisterUrl = externalRegistrationUrl;
-
-                    if (externalRegisterUrl) {
-                      return (
-                        <div className="space-y-2">
-                          <a
-                            id="enrollment-primary-action-btn"
-                            href={
-                              /^https?:\/\//i.test(externalRegisterUrl.trim())
-                                ? externalRegisterUrl.trim()
-                                : `https://${externalRegisterUrl.trim()}`
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
-                              countdown.isClosed
-                                ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
-                                : sponsoredMeta.isSponsored
-                                ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-cyan-500/25 ring-1 ring-cyan-300/40'
-                                : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30'
-                            }`}
-                          >
-                            {countdown.isClosed ? (
-                              <span>Registration Closed</span>
-                            ) : (
-                              <span className="flex items-center gap-2 font-black">
-                                {sponsoredMeta.customCtaText || 'Register on Official Site'}
-                                <ExternalLink className="w-4 h-4" />
-                              </span>
-                            )}
-                          </a>
-                          {!countdown.isClosed && (
-                            <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 pt-0.5 font-medium">
-                              <ExternalLink className="w-3 h-3 text-cyan-400 shrink-0" />
-                              <span>Direct link to official registration portal (opens in new tab)</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-
-                    return isEnrolled ? (
-                      isStarted ? (
-                        <Link href={`/hackathons/${hackathon.id}/workspace`} className="block">
-                          <button className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm tracking-wide shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]">
-                            <span>Enter Hackathon</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </Link>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="w-full py-3.5 px-6 rounded-2xl bg-charcoal-800 border border-charcoal-700 text-slate-300 font-bold text-sm tracking-wide shadow-lg flex items-center justify-center gap-2 cursor-not-allowed select-none">
-                            <Lock className="w-4 h-4 text-amber-400" />
-                            <span>Registered • Workspace Opens at Start Date</span>
-                          </div>
-                          <p className="text-[11px] text-center text-slate-400 font-medium leading-relaxed">
-                            Hackathon officially begins on {formatEventDateTime(hackathon.start_date)}. Workspace unlocks at launch!
-                          </p>
-                        </div>
-                      )
-                    ) : (
-                      <button
-                        id="enrollment-primary-action-btn"
-                        onClick={handleRegister}
-                        disabled={isRegistering || countdown.isClosed || !eligibilityEvaluation.isEligible}
-                        className={`w-full py-3.5 px-6 rounded-2xl font-black text-sm tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
-                          countdown.isClosed || !eligibilityEvaluation.isEligible
-                            ? 'bg-charcoal-800 text-slate-500 border border-charcoal-700 cursor-not-allowed shadow-none'
-                            : sponsoredMeta.isSponsored
-                            ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 hover:from-cyan-300 hover:to-teal-300 text-slate-950 shadow-cyan-500/25 ring-1 ring-cyan-300/40 cursor-pointer active:scale-[0.98]'
-                            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30 cursor-pointer active:scale-[0.98]'
-                        }`}
-                      >
-                        {isRegistering ? (
-                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                        ) : countdown.isClosed ? (
-                          <span>Registration Closed</span>
-                        ) : !eligibilityEvaluation.isEligible ? (
-                          <span>Not Eligible to Register</span>
-                        ) : hackathon.access_type === 'private' ? (
-                          <span>Enter Passcode &amp; Register</span>
-                        ) : sponsoredMeta.isSponsored ? (
-                          <span className="flex items-center gap-1.5 font-black">
-                            {sponsoredMeta.customCtaText || 'Register Now'} <ArrowRight className="w-4 h-4" />
-                          </span>
-                        ) : (
-                          <span>Register</span>
-                        )}
-                      </button>
-                    );
-                  })()}
-                </div>
-
-                {/* Registration Closes Indicator Card */}
-                <div className="p-3.5 rounded-2xl bg-charcoal-950/90 border border-charcoal-800 hover:border-charcoal-700 transition-all flex items-center justify-between gap-3 shadow-inner">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${countdown.isClosed ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
-                      <Clock className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-medium">
-                        Registration Closes
-                      </span>
-                      <span className="text-xs font-semibold text-white font-mono block truncate">
-                        {formatEventDateTime(hackathon.registration_deadline)}
-                      </span>
-                    </div>
-                  </div>
-                  <span className={`text-[10px] font-mono font-medium px-2.5 py-1 rounded-full border shrink-0 ${
-                    countdown.isClosed
-                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                      : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                  }`}>
-                    {countdown.isClosed ? 'Closed' : countdown.formatted}
-                  </span>
-                </div>
-
-                {/* Registered Counter: ONLY shown for platform-managed internal hackathons */}
-                {!isExternalRegistration && (
-                  <div className="flex items-center justify-center gap-2 text-xs text-slate-300 font-medium pt-1">
-                    <Users className="w-4 h-4 text-cyan-400" />
-                    <span>
-                      Registered:{' '}
-                      <strong className="text-white font-mono font-bold">
-                        {displayRegisteredCount}
-                      </strong>
-                    </span>
-                  </div>
-                )}
-
-                {/* Prize Pool & Timeline Mini Summary */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-950/90 border border-charcoal-800 space-y-3.5 shadow-sm">
-                  <div className="flex items-center justify-between text-xs sm:text-[13px] gap-2 py-0.5">
-                    <span className="text-slate-400 font-medium shrink-0">Total Prize Pool</span>
-                    <strong className="text-amber-300 font-semibold text-xs sm:text-[13px] text-right truncate">
-                      {hackathon.prize_pool || (sponsoredMeta.isSponsored ? `₹1,50,000 + ${sponsoredMeta.companyName || 'Sponsor'} Credits` : '₹50,000 + Incubation')}
-                    </strong>
-                  </div>
-                  <div className="flex items-center justify-between text-xs sm:text-[13px] gap-2 py-0.5">
-                    <span className="text-slate-400 font-medium shrink-0">Team Size</span>
-                    <strong className="text-slate-200 font-semibold text-xs sm:text-[13px] text-right">{hackathon.min_team_size || 1} - {hackathon.max_team_size || 4} Builders</strong>
-                  </div>
-                  <div className="flex items-center justify-between text-xs sm:text-[13px] border-t border-charcoal-850 pt-2.5 gap-2">
-                    <span className="text-slate-400 font-medium shrink-0">Submission Cut-off</span>
-                    <span className="text-slate-200 font-medium font-mono text-xs sm:text-[13px] text-right">
-                      {sponsoredMeta.submissionCutoff || formatEventDateTime(hackathon.submission_deadline || (hackathon as any).submissionDeadline || hackathon.end_date)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs sm:text-[13px] border-t border-charcoal-850 pt-2.5 gap-2">
-                    <span className="text-slate-400 font-medium shrink-0">Result Announcement</span>
-                    <span className="text-slate-200 font-medium font-mono text-xs sm:text-[13px] text-right">
-                      {sponsoredMeta.resultAnnouncement || formatEventDateTime(hackathon.results_date || (hackathon as any).resultsDate || hackathon.end_date)}
-                    </span>
-                  </div>
-                </div>
-
-                {(sponsoredMeta.guidelinesUrl || (hackathon.website_url && !hackathon.website_url.includes('/h/'))) && (
-                  <a
-                    href={
-                      sponsoredMeta.guidelinesUrl
-                        ? (/^https?:\/\//i.test(sponsoredMeta.guidelinesUrl.trim())
-                            ? sponsoredMeta.guidelinesUrl.trim()
-                            : `https://${sponsoredMeta.guidelinesUrl.trim()}`)
-                        : (/^https?:\/\//i.test(hackathon.website_url.trim())
-                            ? hackathon.website_url.trim()
-                            : `https://${hackathon.website_url.trim()}`)
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block pt-1.5"
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-center text-xs sm:text-sm font-semibold text-slate-200 hover:text-white bg-slate-900/60 border-slate-700 hover:border-cyan-500/50 py-2.5"
-                      rightIcon={<ExternalLink className="w-3.5 h-3.5 text-cyan-400" />}
-                    >
-                      Official Guidelines &amp; Portal
-                    </Button>
-                  </a>
-                )}
-
-                {/* Verified Trust Guarantees */}
-                <div className="pt-4 border-t border-charcoal-800 space-y-2.5 text-xs text-slate-300 font-normal">
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>Verified Collegiate Credentials &amp; Proof of Work</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <span>Real-Time Team Workspace &amp; Closer Pitch Deck Kit</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span>Jury Evaluation &amp; Digital Certificate on Completion</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Unstop-Style "Share with Friends" Card (Exact Match) */}
-            <div className="mt-5 sm:mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-charcoal-900 border border-blue-500/30 flex items-center justify-between gap-3 shadow-lg">
-              <div>
-                <div className="text-xs font-black text-white">Share with Friends</div>
-                <div className="text-[11px] text-slate-300 font-medium">Invite classmates &amp; teammates</div>
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>{copiedLink ? 'Copied!' : 'Refer now'}</span>
-              </button>
-            </div>
-
-            {/* Faculty Help Desk & Support Contact Card */}
-            {hackathon.contact_info && (
-              <div className="p-4 rounded-2xl bg-charcoal-900/95 border border-cyan-500/30 space-y-2 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Headphones className="w-4 h-4 text-cyan-400" />
-                    <span className="text-xs font-bold text-white">Help Desk &amp; Support</span>
-                  </div>
-                  <span className="text-[9px] font-mono text-cyan-400 font-bold uppercase bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                    Coordinator
-                  </span>
-                </div>
-                <p className="text-xs text-slate-200 leading-relaxed">
-                  Have questions or need assistance during the event? Contact the faculty desk:
-                </p>
-                <a
-                  href={hackathon.contact_info.includes('@') ? `mailto:${hackathon.contact_info}` : `tel:${hackathon.contact_info}`}
-                  className="flex items-center gap-2 text-xs font-mono text-cyan-300 hover:text-cyan-200 bg-charcoal-950 px-3 py-2.5 rounded-xl border border-charcoal-800 break-all transition-colors"
-                >
-                  <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                  <span className="truncate">{hackathon.contact_info}</span>
-                </a>
-              </div>
-            )}
-          </div>
+          {/* RIGHT 4 COLUMNS: Sticky Uncropped 16:9 Cinema Poster + Registration Dock */}
+          <HackathonDetailRightRail
+            hackathon={hackathon}
+            heroBanner={heroBanner}
+            sponsoredMeta={sponsoredMeta}
+            countdown={countdown}
+            eligibilityEvaluation={eligibilityEvaluation}
+            isEnrolled={isEnrolled}
+            isStarted={isStarted}
+            isRegistering={isRegistering}
+            isExternalRegistration={isExternalRegistration}
+            externalRegistrationUrl={externalRegistrationUrl}
+            displayRegisteredCount={displayRegisteredCount}
+            passcode={passcode}
+            setPasscode={setPasscode}
+            passcodeError={passcodeError}
+            setPasscodeError={setPasscodeError}
+            copiedLink={copiedLink}
+            qrCodeUrl={qrCodeUrl}
+            onRegister={handleRegister}
+            onCopyLink={handleCopyLink}
+            formatEventDateTime={formatEventDateTime}
+            formatShortDate={formatShortDate}
+          />
         </div>
 
-        {/* More Curated Hackathons Section */}
+        {/* More Upcoming Hackathons */}
         {relatedHackathons.length > 0 && (
-          <div className="pt-16 space-y-6">
+          <div className="pt-14 space-y-5 border-t border-white/10">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-white">More Upcoming Hackathons</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  More Upcoming Hackathons
+                </h3>
+                <p className="text-xs text-zinc-400">
                   Explore other high-caliber national and collegiate challenges.
                 </p>
               </div>
-              <Link href="/hackathons">
-                <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                  View All
-                </Button>
+              <Link
+                href="/hackathons"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-white transition-colors"
+              >
+                <span>View All</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
@@ -2369,23 +1723,33 @@ export default function HackathonDetailPage() {
                 <Link
                   key={h.id}
                   href={`/hackathons/${h.id}`}
-                  className="p-5 rounded-2xl bg-charcoal-900 border border-charcoal-800 hover:border-charcoal-700 transition-all space-y-3 group"
+                  className="p-5 rounded-2xl bg-[#090C12] border border-white/10 hover:border-white/25 transition-all space-y-3 group"
                 >
                   <div className="flex items-center justify-between text-[11px] font-mono">
-                    <span className="text-amber-400 font-bold">{h.mode}</span>
-                    <span className="text-slate-400 truncate max-w-[120px]">{h.organizer}</span>
+                    <span
+                      className={
+                        h.mode === 'Online'
+                          ? 'text-emerald-400 font-semibold'
+                          : 'text-zinc-300 font-semibold'
+                      }
+                    >
+                      {h.mode}
+                    </span>
+                    <span className="text-zinc-400 truncate max-w-[140px]">
+                      {h.organizer}
+                    </span>
                   </div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-colors line-clamp-1">
+                  <h4 className="text-sm font-bold text-white group-hover:text-zinc-200 transition-colors line-clamp-1">
                     {h.title}
                   </h4>
-                  <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                  <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
                     {h.description}
                   </p>
-                  <div className="pt-2 flex items-center justify-between text-xs border-t border-charcoal-800 text-slate-300">
-                    <span className="font-mono text-amber-400 font-bold truncate max-w-[140px]">
+                  <div className="pt-2.5 flex items-center justify-between text-xs border-t border-white/10 text-zinc-300">
+                    <span className="font-mono text-zinc-100 font-bold truncate max-w-[160px]">
                       {h.prize_pool || 'Prizes'}
                     </span>
-                    <span className="text-[11px] text-slate-400 group-hover:text-white flex items-center gap-1">
+                    <span className="text-[11px] text-zinc-400 group-hover:text-white flex items-center gap-1">
                       <span>View</span>
                       <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                     </span>
