@@ -130,7 +130,7 @@ Return ONLY a valid JSON object matching this schema:
   "confidence": 99.4
 }`;
 
-  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+  const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -192,8 +192,7 @@ Return ONLY a valid JSON object matching this schema:
         };
       }
 
-      // ── Pass 2: Forensic Cross-Verification & Consensus ──
-      // Verify the extracted student legal name, college, and roll number against the visual card
+      // ── Pass 2: Conditional Forensic Cross-Verification (only when key fields are incomplete) ──
       let verifiedStudentName = (parsed1.studentName || '').trim();
       let verifiedCollege = (parsed1.college || '').trim();
       let verifiedRollNo = (parsed1.studentRollNo || '').trim();
@@ -201,8 +200,15 @@ Return ONLY a valid JSON object matching this schema:
       let verifiedYear = (parsed1.academicYear || '').trim();
       let verifiedPortraitBox = parsed1.portraitBox || null;
 
-      try {
-        const promptPass2 = `You are the chief collegiate identity auditor verifying OCR extraction.
+      const needsPass2 =
+        !verifiedStudentName ||
+        verifiedStudentName.length < 2 ||
+        !verifiedRollNo ||
+        !verifiedCollege;
+
+      if (needsPass2) {
+        try {
+          const promptPass2 = `You are the chief collegiate identity auditor verifying OCR extraction.
 Review this student ID card snapshot and double-check these extracted fields:
 - Proposed Student Name: "${verifiedStudentName}"
 - Proposed College Name: "${verifiedCollege}"
@@ -226,63 +232,64 @@ Return JSON:
   "confidence": 99.8
 }`;
 
-        const resPass2 = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            signal: AbortSignal.timeout(7500),
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: promptPass2 },
-                    {
-                      inline_data: {
-                        mime_type: mimeType,
-                        data: cleanBase64,
+          const resPass2 = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              signal: AbortSignal.timeout(4500),
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: promptPass2 },
+                      {
+                        inline_data: {
+                          mime_type: mimeType,
+                          data: cleanBase64,
+                        },
                       },
-                    },
-                  ],
+                    ],
+                  },
+                ],
+                generationConfig: {
+                  temperature: 0.05,
+                  response_mime_type: 'application/json',
                 },
-              ],
-              generationConfig: {
-                temperature: 0.05,
-                response_mime_type: 'application/json',
-              },
-            }),
-          }
-        );
+              }),
+            }
+          );
 
-        if (resPass2.ok) {
-          const jsonPass2 = await resPass2.json();
-          const textOutput2 = jsonPass2.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (textOutput2) {
-            const cleanJson2 = textOutput2.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-            const parsed2 = JSON.parse(cleanJson2);
-            if (parsed2.verifiedStudentName && parsed2.verifiedStudentName.trim().length >= 2) {
-              verifiedStudentName = parsed2.verifiedStudentName.trim();
-            }
-            if (parsed2.verifiedCollege && parsed2.verifiedCollege.trim().length >= 3) {
-              verifiedCollege = parsed2.verifiedCollege.trim();
-            }
-            if (parsed2.verifiedRollNo && parsed2.verifiedRollNo.trim().length >= 2) {
-              verifiedRollNo = parsed2.verifiedRollNo.trim();
-            }
-            if (parsed2.verifiedCourse && parsed2.verifiedCourse.trim().length >= 2) {
-              verifiedCourse = parsed2.verifiedCourse.trim();
-            }
-            if (parsed2.verifiedAcademicYear) {
-              verifiedYear = parsed2.verifiedAcademicYear.trim();
-            }
-            if (parsed2.portraitBox && typeof parsed2.portraitBox.ymin === 'number') {
-              verifiedPortraitBox = parsed2.portraitBox;
+          if (resPass2.ok) {
+            const jsonPass2 = await resPass2.json();
+            const textOutput2 = jsonPass2.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textOutput2) {
+              const cleanJson2 = textOutput2.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
+              const parsed2 = JSON.parse(cleanJson2);
+              if (parsed2.verifiedStudentName && parsed2.verifiedStudentName.trim().length >= 2) {
+                verifiedStudentName = parsed2.verifiedStudentName.trim();
+              }
+              if (parsed2.verifiedCollege && parsed2.verifiedCollege.trim().length >= 3) {
+                verifiedCollege = parsed2.verifiedCollege.trim();
+              }
+              if (parsed2.verifiedRollNo && parsed2.verifiedRollNo.trim().length >= 2) {
+                verifiedRollNo = parsed2.verifiedRollNo.trim();
+              }
+              if (parsed2.verifiedCourse && parsed2.verifiedCourse.trim().length >= 2) {
+                verifiedCourse = parsed2.verifiedCourse.trim();
+              }
+              if (parsed2.verifiedAcademicYear) {
+                verifiedYear = parsed2.verifiedAcademicYear.trim();
+              }
+              if (parsed2.portraitBox && typeof parsed2.portraitBox.ymin === 'number') {
+                verifiedPortraitBox = parsed2.portraitBox;
+              }
             }
           }
+        } catch (pass2Err) {
+          // Fall back gracefully to Pass 1 results if Pass 2 times out
+          console.warn('Pass 2 cross-verification note:', pass2Err);
         }
-      } catch (pass2Err) {
-        // Fall back gracefully to Pass 1 results if Pass 2 times out
-        console.warn('Pass 2 cross-verification note:', pass2Err);
       }
 
       // Check whether extracted student name is genuine and not generic placeholder or channel handle

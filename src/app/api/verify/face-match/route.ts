@@ -44,7 +44,7 @@ async function verifyBiometricWithGemini(
   const keys = getGeminiApiKeys();
   if (keys.length === 0) return null;
 
-  const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
+  const models = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
   const prompt = `You are a bank-grade biometric forensics and facial landmark identity verification AI.
 Examine and compare these two facial images:
 - Image 1: Live camera selfie captured in real time.

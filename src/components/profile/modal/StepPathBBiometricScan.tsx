@@ -165,6 +165,14 @@ async function cropPassportPhotoFromCard(
           let ymax = box.ymax;
           let xmax = box.xmax;
 
+          // Normalize 0..1000 Gemini box coordinates if returned outside [0, 1]
+          if (Math.max(ymin, xmin, ymax, xmax) > 1.05) {
+            ymin /= 1000;
+            xmin /= 1000;
+            ymax /= 1000;
+            xmax /= 1000;
+          }
+
           // Add 6% margin around the portrait box
           const padY = (ymax - ymin) * 0.06;
           const padX = (xmax - xmin) * 0.06;
@@ -177,6 +185,10 @@ async function cropPassportPhotoFromCard(
           const sy = Math.floor(ymin * nh);
           const sw = Math.floor((xmax - xmin) * nw);
           const sh = Math.floor((ymax - ymin) * nh);
+
+          if (sw <= 4 || sh <= 4) {
+            return resolve(null);
+          }
 
           ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 240, 240);
           resolve(canvas.toDataURL('image/jpeg', 0.90));
@@ -569,6 +581,7 @@ export function StepPathBBiometricScan({
         const res = await fetch('/api/verify/id-card/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(14000),
           body: JSON.stringify({
             cardImage: frameBase64,
             displayName,
@@ -577,7 +590,14 @@ export function StepPathBBiometricScan({
           }),
         });
 
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok && res.status !== 409) {
+          if (!isCardDetectedRef.current) {
+            setLastLiveDetection(data?.error || 'Scanner busy — retrying next frame...');
+          }
+          return;
+        }
 
         // ── 1 CARD = 1 USER FRAUD SHIELD ──
         if (res.status === 409 || data.isDuplicateCard) {
@@ -624,8 +644,14 @@ export function StepPathBBiometricScan({
             setLastLiveDetection(data.reason || 'Hold physical college student ID card inside the frame...');
           }
         }
-      } catch (err) {
-        // Continue scanning silently
+      } catch (err: any) {
+        if (!isCardDetectedRef.current) {
+          setLastLiveDetection(
+            err?.name === 'TimeoutError'
+              ? 'Scan timed out — keep card steady and well-lit, retrying...'
+              : 'Scanning frame — keep your ID card steady inside the box...'
+          );
+        }
       } finally {
         isBackendScanningRef.current = false;
         setIsBackendScanning(false);
@@ -678,9 +704,9 @@ export function StepPathBBiometricScan({
         });
       }, 1000);
 
-      // 2. Periodic Continuous Frame Sampling (Every 1.6s)
+      // 2. Periodic Continuous Frame Sampling (Every 1.6s, cropped to card guide box to isolate card & speed up upload)
       frameIntervalRef.current = setInterval(() => {
-        const frame = captureCurrentFrame();
+        const frame = captureCardCropFrame() || captureCurrentFrame();
         if (frame) {
           setScanFramesCount((c) => c + 1);
           sendFrameToBackend(frame);
@@ -693,7 +719,7 @@ export function StepPathBBiometricScan({
       if (continuousScanTimerRef.current) clearInterval(continuousScanTimerRef.current);
       if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
     };
-  }, [stage, startCamera, captureCurrentFrame, sendFrameToBackend, finalizeCardScan]);
+  }, [stage, startCamera, captureCardCropFrame, captureCurrentFrame, sendFrameToBackend, finalizeCardScan]);
 
   // ── Face Continuous Camera Initializer ──
   useEffect(() => {
@@ -707,6 +733,11 @@ export function StepPathBBiometricScan({
     if (!idCardSnapshot) {
       setStage('card_continuous');
       return;
+    }
+
+    if (faceIntervalRef.current) {
+      clearInterval(faceIntervalRef.current);
+      faceIntervalRef.current = null;
     }
 
     setStage('face_continuous');
@@ -838,7 +869,7 @@ export function StepPathBBiometricScan({
             const matchRes = await fetch('/api/verify/face-match', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              signal: AbortSignal.timeout(8000),
+              signal: AbortSignal.timeout(20000),
               body: JSON.stringify({
                 liveFaceImage: liveFace,
                 idCardImage: idCardSnapshot,
@@ -848,16 +879,17 @@ export function StepPathBBiometricScan({
             const matchData = await matchRes.json().catch(() => ({}));
             setIsFaceBackendMatching(false);
 
-            if (matchData.success && matchData.isMatched && matchData.hasFace !== false) {
+            if (matchRes.ok && matchData.success && matchData.isMatched && matchData.hasFace !== false) {
               const confirmedScore = Number(matchData.matchScore) || 95.0;
               setFaceMismatchError(null);
               await completeMatchSuccess(confirmedScore, liveFace);
               return;
             } else {
-              // Real-Time Anti-Impersonation: Refuse friend's card or non-matching face
+              // Real-Time Anti-Impersonation or Backend Error
               playSound('warning');
               const rejectReason =
                 matchData.reason ||
+                matchData.error ||
                 'Biometric Mismatch: Live face does not match the student photo printed on this ID card.';
               setFaceMismatchError(rejectReason);
               setFaceStatusText(rejectReason);
