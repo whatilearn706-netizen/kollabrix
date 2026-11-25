@@ -167,7 +167,7 @@ type CategoryId = (typeof CATEGORIES)[number]['id'];
  * Anchored translucent frosted-glass command dropdown attached directly
  * below the top-right navbar trigger button (zero full-screen backdrop).
  */
-export function KollabrixQuickDock() {
+export function KollabrixQuickDock({ hideTrigger = false }: { hideTrigger?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -324,25 +324,27 @@ export function KollabrixQuickDock() {
   }
 
   return (
-    <div ref={containerRef} className="relative inline-flex items-center">
+    <div ref={containerRef} className={hideTrigger && !isOpen ? 'hidden' : 'relative inline-flex items-center'}>
       {/* Top-Right Navbar Trigger Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-        aria-label="Open Kollabrix Apps Menu (⌘K)"
-        title="Platform Apps (⌘K)"
-        className={`inline-flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 rounded-full border transition-all active:scale-95 cursor-pointer shadow-sm focus:outline-none focus-visible:outline-none ${
-          isOpen
-            ? 'bg-white/15 border-white/35 text-white'
-            : 'bg-white/[0.04] hover:bg-white/[0.09] border-white/15 hover:border-white/30 text-zinc-300 hover:text-white'
-        }`}
-      >
-        <LayoutGrid className="w-3.5 h-3.5 text-zinc-200" />
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono font-semibold text-zinc-400 bg-white/[0.06] border border-white/10 px-1.5 py-0.5 rounded-md leading-none">
-          ⌘K
-        </kbd>
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          aria-expanded={isOpen}
+          aria-label="Open Kollabrix Apps Menu (⌘K)"
+          title="Platform Apps (⌘K)"
+          className={`inline-flex items-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 rounded-full border transition-all active:scale-95 cursor-pointer shadow-sm focus:outline-none focus-visible:outline-none ${
+            isOpen
+              ? 'bg-white/15 border-white/35 text-white'
+              : 'bg-white/[0.04] hover:bg-white/[0.09] border-white/15 hover:border-white/30 text-zinc-300 hover:text-white'
+          }`}
+        >
+          <LayoutGrid className="w-3.5 h-3.5 text-zinc-200" />
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono font-semibold text-zinc-400 bg-white/[0.06] border border-white/10 px-1.5 py-0.5 rounded-md leading-none">
+            ⌘K
+          </kbd>
+        </button>
+      )}
 
       {/* Anchored Translucent Frosted-Glass Dropdown (directly below button) */}
       {isOpen && (

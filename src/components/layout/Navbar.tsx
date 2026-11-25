@@ -45,6 +45,7 @@ import {
 import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
+import { CapabilitiesMegaMenu } from '@/components/navigation/CapabilitiesMegaMenu';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -187,7 +188,7 @@ export function Navbar() {
         >
           <nav
             className={clsx(
-              'grid grid-cols-3 items-center p-1 rounded-full backdrop-blur-xl',
+              'flex items-center gap-0.5 p-1 rounded-full backdrop-blur-xl',
               isNavbarDark
                 ? 'bg-[#090b10]/85 shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),inset_0_-1px_2px_rgba(255,255,255,0.25),inset_0_0_12px_rgba(0,0,0,0.5)]'
                 : 'bg-white/80 shadow-inner'
@@ -212,7 +213,7 @@ export function Navbar() {
                   onMouseEnter={handleWarmup}
                   onTouchStart={handleWarmup}
                   className={clsx(
-                    'px-4 sm:px-5 py-1.5 rounded-full text-xs font-bold tracking-[-0.01em] transition-all duration-200 inline-flex items-center justify-center gap-1.5 select-none active:scale-[0.97]',
+                    'px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold tracking-[-0.01em] transition-all duration-200 inline-flex items-center justify-center gap-1.5 select-none active:scale-[0.97] whitespace-nowrap',
                     isActive
                       ? isNavbarDark
                         ? 'bg-gradient-to-b from-zinc-800/90 via-zinc-900/95 to-black/95 text-white ring-1 ring-white/20 shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.35),inset_0_-1px_1px_rgba(255,255,255,0.12),0_2px_8px_rgba(0,0,0,0.65)]'
@@ -238,6 +239,8 @@ export function Navbar() {
                 </Link>
               );
             })}
+
+            <CapabilitiesMegaMenu isNavbarDark={isNavbarDark} />
           </nav>
         </div>
 
@@ -444,8 +447,8 @@ export function Navbar() {
                 )}
               </div>
 
-              {/* Quick Launcher (⌘K Liquid-Glass Trigger) */}
-              <KollabrixQuickDock />
+              {/* Keyboard-only ⌘K Quick Launcher (trigger hidden to keep top-right bar minimal) */}
+              <KollabrixQuickDock hideTrigger />
             </div>
           ) : (
             <div className="flex items-center gap-2">
@@ -456,7 +459,7 @@ export function Navbar() {
               >
                 Join Free
               </button>
-              <KollabrixQuickDock />
+              <KollabrixQuickDock hideTrigger />
             </div>
           )}
         </div>
@@ -545,14 +548,60 @@ export function Navbar() {
               <span>Hackathons</span>
             </Link>
 
+            <div className="pt-2 pb-1">
+              <p className="text-[11px] font-mono uppercase tracking-wider opacity-60 px-3 font-bold">
+                Capabilities
+              </p>
+            </div>
+
+            <Link
+              href="/arena"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Swords className="w-4 h-4 text-emerald-400" />
+              <span>1v1 Battle Arena</span>
+            </Link>
+
+            <Link
+              href="/war"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Swords className="w-4 h-4 text-rose-400" />
+              <span>Campus War</span>
+            </Link>
+
+            <Link
+              href="/icpc"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <BookOpen className="w-4 h-4 text-cyan-400" />
+              <span>Practice IDE</span>
+            </Link>
+
+            <Link
+              href="/planner"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Bot className="w-4 h-4 text-sky-400" />
+              <span>AI Project Planner</span>
+            </Link>
+
             <Link
               href="/problems"
               prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 active:scale-[0.98] transition-all"
             >
               <Lightbulb className="w-4 h-4 text-blue-500" />
-              <span>Problems</span>
+              <span>Faculty Problems</span>
             </Link>
 
             <Link
