@@ -136,11 +136,8 @@ Return ONLY a valid JSON object matching this schema:
 }`;
 
   const modelsToTry = [
-    'gemini-3.6-flash',
     'gemini-3.5-flash-lite',
     'gemini-3.5-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-flash-latest',
   ];
   let lastError: any = null;
 
@@ -152,7 +149,7 @@ Return ONLY a valid JSON object matching this schema:
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(5500),
+          signal: AbortSignal.timeout(4500),
           body: JSON.stringify({
             contents: [
               {
@@ -597,8 +594,8 @@ function parseCollegiateData(rawText: string, userDisplayName?: string, existing
   if (!cardStudentName) {
     for (const line of lines) {
       if (
-        /^[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3}$/.test(line) &&
-        !/college|university|institute|department|student|identity|engineering|technology|card|valid/i.test(line)
+        /^[A-Za-z]{2,}(?:\s+[A-Za-z]{2,}){1,3}$/.test(line) &&
+        !/college|university|institute|department|student|identity|engineering|technology|card|valid|temporary|deemed|authorized|signatory|branch|course|program|campus/i.test(line)
       ) {
         cardStudentName = line.trim();
         break;
@@ -664,17 +661,32 @@ async function extractWithAwsRekognition(
     return null;
   }
 
-  const lineDetections = (textSettled.value.TextDetections || [])
-    .filter((t) => t.Type === 'LINE' && (t.Confidence || 0) >= 68 && t.DetectedText)
+  const allDetections = textSettled.value.TextDetections || [];
+  let lineDetections = allDetections
+    .filter((t) => t.Type === 'LINE' && (t.Confidence || 0) >= 55 && t.DetectedText)
     .map((t) => t.DetectedText!.trim());
 
+  if (lineDetections.length < 2) {
+    lineDetections = allDetections
+      .filter((t) => (t.Confidence || 0) >= 55 && t.DetectedText)
+      .map((t) => t.DetectedText!.trim());
+  }
+
   const recognizedText = lineDetections.join('\n');
+  console.info('AWS Rekognition OCR lines:', lineDetections);
   const parsed = parseCollegiateData(recognizedText, userDisplayName, existingCollege);
 
   let portraitBox: { ymin: number; xmin: number; ymax: number; xmax: number } | null = null;
   if (facesSettled.status === 'fulfilled') {
-    const face = (facesSettled.value.FaceDetails || [])[0];
-    const bb = face?.BoundingBox;
+    const faces = facesSettled.value.FaceDetails || [];
+    // When multiple faces are present (user behind card + portrait on card), select the smaller ID card photo
+    const sortedFaces = [...faces].sort((a, b) => {
+      const areaA = (a.BoundingBox?.Width || 1) * (a.BoundingBox?.Height || 1);
+      const areaB = (b.BoundingBox?.Width || 1) * (b.BoundingBox?.Height || 1);
+      return areaA - areaB;
+    });
+    const cardFace = sortedFaces.find((f) => (f.BoundingBox?.Width || 0) < 0.35) || sortedFaces[0];
+    const bb = cardFace?.BoundingBox;
     if (
       bb &&
       typeof bb.Top === 'number' &&
@@ -712,21 +724,36 @@ export async function POST(request: NextRequest) {
 
     let extractedData: any = null;
 
-    // 1. Primary: Round-robin across the Gemini Key Pool
-    for (let attempt = 0; attempt < geminiKeys.length; attempt++) {
-      const currentGeminiKey = geminiKeys[(geminiPoolIndex + attempt) % geminiKeys.length];
+    // 1. Primary + Zero-Quota AWS OCR in Parallel: Fast Gemini attempt (1 key) + AWS Rekognition (<500ms)
+    const awsPromise = extractWithAwsRekognition(cardImage, displayName, existingCollege).catch((awsErr: any) => {
+      console.warn('AWS Rekognition OCR note:', awsErr?.message);
+      return null;
+    });
+
+    const geminiPromise = (async () => {
+      if (geminiKeys.length === 0) return null;
+      const currentGeminiKey = geminiKeys[geminiPoolIndex % geminiKeys.length];
       try {
-        extractedData = await extractWithGeminiFlash(cardImage, currentGeminiKey, displayName, existingCollege);
-        if (extractedData) {
-          geminiPoolIndex = (geminiPoolIndex + attempt + 1) % geminiKeys.length;
-          break;
-        }
+        const res = await extractWithGeminiFlash(cardImage, currentGeminiKey, displayName, existingCollege);
+        geminiPoolIndex = (geminiPoolIndex + 1) % geminiKeys.length;
+        return res;
       } catch (geminiErr: any) {
-        console.warn(`Gemini key #${attempt + 1} note:`, geminiErr?.message);
+        console.warn('Gemini fast pass note:', geminiErr?.message);
+        return null;
       }
+    })();
+
+    const [geminiRes, awsRes] = await Promise.all([geminiPromise, awsPromise]);
+
+    if (geminiRes && geminiRes.isCardDetected) {
+      extractedData = geminiRes;
+    } else if (awsRes && awsRes.isCardDetected) {
+      extractedData = awsRes;
+    } else {
+      extractedData = geminiRes || awsRes;
     }
 
-    // 2. Secondary: Ultra-fast Groq Qwen Vision Multi-Engine Fallback
+    // 2. Secondary: Ultra-fast Groq Qwen Vision Multi-Engine Fallback (only if both above missed)
     if (!extractedData) {
       for (let attempt = 0; attempt < groqKeys.length; attempt++) {
         const currentGroqKey = groqKeys[(groqPoolIndex + attempt) % groqKeys.length];
@@ -742,16 +769,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Zero-Quota AWS Rekognition OCR + Portrait Detection Fallback (Works 100% in Next.js standalone)
-    if (!extractedData) {
-      try {
-        extractedData = await extractWithAwsRekognition(cardImage, displayName, existingCollege);
-      } catch (awsErr: any) {
-        console.warn('AWS Rekognition OCR note:', awsErr?.message);
-      }
-    }
-
-    // 4. Last-Resort Tesseract Optical OCR Fallback
+    // 3. Last-Resort Tesseract Optical OCR Fallback
     if (!extractedData) {
       let recognizedText = '';
       try {
