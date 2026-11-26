@@ -2,7 +2,12 @@ import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { SparkModelSettings } from '@/app/api/spark/settings/route';
 
 const FAST_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
-const DEEP_GEMINI_MODELS = ['gemini-3-flash-preview', 'gemini-4-hydrogen', 'gemini-3.1-pro-preview', 'gemini-3.5-flash-lite'];
+const DEEP_GEMINI_MODELS = [
+  'gemini-4-hydrogen',
+  'gemini-3.1-pro-preview',
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash-lite',
+];
 
 export type SparkModelTier = 'fast' | 'deep';
 
@@ -94,10 +99,10 @@ function isValidGeminiApiKey(key?: string): key is string {
 
 function resolveValidGeminiKeys(settingsKey?: string): string[] {
   const candidates = [
+    settingsKey || '',
     process.env.GEMINI_API_KEY || '',
     ...(process.env.GEMINI_API_KEYS || '').split(','),
     process.env.GOOGLE_API_KEY || '',
-    settingsKey || '',
   ]
     .map((k) => k.trim())
     .filter((k) => isValidGeminiApiKey(k));
@@ -153,7 +158,8 @@ export async function callSparkLLM(opts: CallSparkLLMOptions): Promise<{ text: s
       for (const apiKey of geminiKeys) {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), model.includes('4-') ? 35000 : timeoutMs);
+          const isDeep = model.includes('4-') || model.includes('pro');
+          const timer = setTimeout(() => controller.abort(), isDeep ? 45000 : timeoutMs);
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
           const generationConfig: Record<string, any> = { temperature: temp };
@@ -285,7 +291,8 @@ export async function streamSparkLLM(opts: CallSparkLLMOptions): Promise<{
     for (const apiKey of geminiKeys) {
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 12000);
+        const isDeep = model.includes('4-') || model.includes('pro');
+        const timer = setTimeout(() => controller.abort(), isDeep ? 35000 : 15000);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
         const generationConfig: Record<string, any> = { temperature: temp };

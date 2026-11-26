@@ -69,12 +69,12 @@ export interface SparkBlueprintResponse {
   matchScore?: number;
 }
 
-// Active models to try in order of speed, quota availability and capability
+// Active models to try in order of capability: Hydrogen 4 & 3.1 Pro first, fallback to Flash
 const GEMINI_MODELS = [
-  'gemini-3-flash-preview',
-  'gemini-3.5-flash-lite',
   'gemini-4-hydrogen',
   'gemini-3.1-pro-preview',
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash-lite',
 ];
 
 function toTitleCase(str: string): string {
@@ -502,10 +502,10 @@ export async function POST(request: NextRequest) {
         ? sparkSettings.geminiApiKey.trim()
         : '';
     const geminiKey =
+      validSettingsGeminiKey ||
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
-      (process.env.GEMINI_API_KEYS || '').split(',').map((k) => k.trim()).find((k) => isValidGeminiKey(k)) ||
-      validSettingsGeminiKey;
+      (process.env.GEMINI_API_KEYS || '').split(',').map((k) => k.trim()).find((k) => isValidGeminiKey(k));
     const openaiKey = sparkSettings.openaiApiKey || process.env.OPENAI_API_KEY;
     const preferredEngine = sparkSettings.engine || 'auto';
 
