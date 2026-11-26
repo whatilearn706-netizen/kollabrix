@@ -786,28 +786,40 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     return () => clearInterval(iv);
   }, [stage, userTestsPassed, rivalTestsPassed]);
 
-  // Live PvP leave/disconnect protection: tab close, Back, refresh, or unmount auto-forfeits so opponent wins immediately
+  // Ref snapshot for safe unmount / pagehide leave-forfeit without false triggers on stage transitions or re-renders
+  const livePvpRef = useRef({
+    active: false,
+    roomCode: '',
+    isHost: true,
+    myPlayerId: '',
+    rivalName: '',
+    sendEvent: (_ev: string, _p: Record<string, any>) => {},
+  });
+  livePvpRef.current = {
+    active: !isGhostDuel && Boolean(roomCode) && stage === 'battle' && !matchEndedRef.current,
+    roomCode,
+    isHost,
+    myPlayerId,
+    rivalName: rivalProfile.name,
+    sendEvent,
+  };
+
+  // Tab close / refresh / Next.js route unmount auto-forfeit ONLY when truly leaving an active PvP battle
   useEffect(() => {
-    const inLivePvp =
-      !isGhostDuel &&
-      Boolean(roomCode) &&
-      (stage === 'battle' || (stage === 'faceoff' && faceOffStatus === 'countdown'));
-    if (!inLivePvp) return;
-
-    const oppTeam = isHost ? 'Team Omega' : 'Team Alpha';
     let sentLeave = false;
-
     const notifyLeaveForfeit = () => {
-      if (sentLeave || matchEndedRef.current) return;
+      const snap = livePvpRef.current;
+      if (!snap.active || sentLeave || matchEndedRef.current) return;
       sentLeave = true;
+      const oppTeam = snap.isHost ? 'Team Omega' : 'Team Alpha';
       const body = JSON.stringify({
-        code: roomCode,
+        code: snap.roomCode,
         action: 'match_won',
-        playerId: myPlayerId,
+        playerId: snap.myPlayerId,
         payload: { forfeit: true, winnerTeam: oppTeam },
       });
       try {
-        sendEvent('match_won', { winnerName: rivalProfile.name, winnerTeam: oppTeam });
+        snap.sendEvent('match_won', { winnerName: snap.rivalName, winnerTeam: oppTeam });
       } catch {}
       try {
         if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
@@ -823,6 +835,18 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       }).catch(() => {});
     };
 
+    window.addEventListener('pagehide', notifyLeaveForfeit);
+    window.addEventListener('beforeunload', notifyLeaveForfeit);
+    return () => {
+      window.removeEventListener('pagehide', notifyLeaveForfeit);
+      window.removeEventListener('beforeunload', notifyLeaveForfeit);
+      notifyLeaveForfeit();
+    };
+  }, []);
+
+  // Periodic PvP heartbeat during active battle to detect silent opponent disconnects
+  useEffect(() => {
+    if (stage !== 'battle' || isGhostDuel || !roomCode) return;
     const hb = setInterval(() => {
       if (matchEndedRef.current || stageRef.current !== 'battle') return;
       fetch('/api/arena/rooms/sync', {
@@ -840,19 +864,8 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         })
         .catch(() => {});
     }, 5000);
-
-    window.addEventListener('pagehide', notifyLeaveForfeit);
-    window.addEventListener('beforeunload', notifyLeaveForfeit);
-    return () => {
-      clearInterval(hb);
-      window.removeEventListener('pagehide', notifyLeaveForfeit);
-      window.removeEventListener('beforeunload', notifyLeaveForfeit);
-      // If leaving active PvP before match naturally finished, award opponent win
-      if (!matchEndedRef.current) {
-        notifyLeaveForfeit();
-      }
-    };
-  }, [stage, faceOffStatus, isGhostDuel, roomCode, isHost, myPlayerId, rivalProfile.name, sendEvent, finalizeMatchResult]);
+    return () => clearInterval(hb);
+  }, [stage, isGhostDuel, roomCode, isHost, myPlayerId, finalizeMatchResult]);
 
   // Typing cadence tracker
   const handleCodeChange = (nextCode: string, setter: (v: string) => void) => {
