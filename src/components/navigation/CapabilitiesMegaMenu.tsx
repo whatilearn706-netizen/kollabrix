@@ -42,11 +42,11 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
     label: '1v1 Battle Arena',
     group: 'compete',
     href: '/arena',
-    badge: 'LIVE DUELS',
+    badge: 'LIVE DUELS · 14 ACTIVE',
     live: true,
     dotColor: 'bg-emerald-400 shadow-[0_0_8px_#34d399]',
     badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/35',
-    description: 'Race coders head-to-head in real-time 3-minute ELO speed duels.',
+    description: 'Beat real coders live. Steal ELO in 3-minute speed duels.',
     ctaLabel: 'Enter Arena',
     icon: Swords,
   },
@@ -95,10 +95,10 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
     label: 'Practice IDE',
     group: 'build',
     href: '/icpc',
-    badge: 'OA & ICPC',
+    badge: 'OA & ICPC PROCTORED LAB',
     dotColor: 'bg-blue-400 shadow-[0_0_8px_#60a5fa]',
     badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/35',
-    description: 'Timed placement OA simulations & proctored DSA lab rounds.',
+    description: 'Company OA rounds, proctored mocks & instant KΛ Bug Coach fixes.',
     ctaLabel: 'Launch IDE',
     icon: Terminal,
   },
@@ -107,10 +107,10 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
     label: 'KΛ ΛI',
     group: 'build',
     href: '/spark',
-    badge: 'KΛ-1 · KΛ-PRO',
+    badge: 'KΛ-1 · KΛ-PRO ENGINE',
     dotColor: 'bg-violet-400 shadow-[0_0_8px_#a78bfa]',
     badgeClass: 'bg-violet-500/15 text-violet-300 border-violet-500/35',
-    description: 'Brainstorm winning hackathon concepts, specs & architecture stacks.',
+    description: 'Audit your repo, export winning slides & pass screening rounds.',
     ctaLabel: 'Open KΛ ΛI',
     icon: Sparkles,
   },
@@ -156,22 +156,65 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
 function PreviewVisual({ item }: { item: CapabilityItem }) {
   if (item.id === 'arena') {
     return (
-      <div className="rounded-xl bg-[#05070c] border border-white/10 p-3 space-y-2 shadow-inner">
-        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-white/[0.06] pb-1.5">
-          <span className="text-emerald-300 font-bold">PY</span>
-          <span className="text-slate-200 font-semibold">Py vs C++ &bull; 3-min ELO</span>
-          <span className="text-purple-300 font-bold">C++</span>
+      <div className="rounded-xl bg-[#05070c] border border-emerald-500/25 p-3 space-y-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        {/* Top live match stakes & timer bar */}
+        <div className="flex items-center justify-between text-[9.5px] font-mono border-b border-white/[0.06] pb-1.5">
+          <span className="inline-flex items-center gap-1 text-emerald-300 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            01:42 LEFT
+          </span>
+          <span className="px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 font-bold text-[8.5px]">
+            +28 ELO STAKE
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 font-mono text-[9px] leading-relaxed">
-          <div className="p-2 rounded-lg bg-white/[0.02] border border-cyan-500/20 text-cyan-200/90 space-y-0.5">
-            <div className="text-pink-400">def solve(v, t):</div>
-            <div className="pl-2 text-slate-300">seen = &#123;&#125;</div>
-            <div className="pl-2 text-emerald-400">return &#91;i, j&#93;</div>
+
+        {/* Split-screen Player vs Rival HUD */}
+        <div className="relative grid grid-cols-2 gap-2 font-mono">
+          {/* Center VS bolt */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-[#090b10] border border-white/20 flex items-center justify-center text-[8.5px] font-black text-white shadow-lg">
+            VS
           </div>
-          <div className="p-2 rounded-lg bg-white/[0.02] border border-purple-500/20 text-purple-200/90 space-y-0.5">
-            <div className="text-pink-400">int main() &#123;</div>
-            <div className="pl-2 text-slate-300">unordered_map m;</div>
-            <div className="pl-2 text-emerald-400">return 0; &#125;</div>
+
+          {/* Player A (You) */}
+          <div className="p-2 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/30 space-y-1.5">
+            <div className="flex items-center justify-between text-[9px]">
+              <span className="font-bold text-white">YOU</span>
+              <span className="text-emerald-300 font-bold">1540 ELO</span>
+            </div>
+            <div className="text-[8.5px] text-zinc-400 flex items-center justify-between">
+              <span className="text-cyan-300">Python</span>
+              <span>128 WPM</span>
+            </div>
+            <div className="grid grid-cols-5 gap-0.5 pt-0.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div
+                  key={n}
+                  className={`h-1 rounded-full ${n <= 4 ? 'bg-emerald-400' : 'bg-white/10'}`}
+                />
+              ))}
+            </div>
+            <div className="text-[8px] text-emerald-300 font-semibold">4/5 tests passed</div>
+          </div>
+
+          {/* Player B (Rival) */}
+          <div className="p-2 rounded-lg bg-rose-500/[0.05] border border-rose-500/25 space-y-1.5 text-right">
+            <div className="flex items-center justify-between text-[9px]">
+              <span className="text-rose-300 font-bold">1582 ELO</span>
+              <span className="font-bold text-white">RIVAL</span>
+            </div>
+            <div className="text-[8.5px] text-zinc-400 flex items-center justify-between">
+              <span>119 WPM</span>
+              <span className="text-violet-300">C++</span>
+            </div>
+            <div className="grid grid-cols-5 gap-0.5 pt-0.5">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div
+                  key={n}
+                  className={`h-1 rounded-full ${n <= 3 ? 'bg-rose-400' : 'bg-white/10'}`}
+                />
+              ))}
+            </div>
+            <div className="text-[8px] text-rose-300 font-semibold">3/5 tests passed</div>
           </div>
         </div>
       </div>
@@ -236,26 +279,92 @@ function PreviewVisual({ item }: { item: CapabilityItem }) {
 
   if (item.id === 'icpc') {
     return (
-      <div className="rounded-xl bg-[#05070c] border border-white/10 p-3 space-y-2 font-mono text-[10px]">
-        <div className="flex items-center justify-between text-slate-400">
-          <span>Round: Placement OA #4</span>
-          <span className="text-emerald-400 flex items-center gap-1 font-bold">
-            <CheckCircle2 className="w-3 h-3" /> 3/3 Passed
+      <div className="rounded-xl bg-[#05070c] border border-blue-500/25 p-3 space-y-2 font-mono text-[9.5px] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        {/* Mini IDE Top Bar */}
+        <div className="flex items-center justify-between text-[9px] border-b border-white/[0.06] pb-1.5">
+          <span className="text-zinc-300 font-semibold">solution.cpp &middot; OA #4</span>
+          <span className="px-1.5 py-0.5 rounded bg-blue-500/15 border border-blue-400/30 text-cyan-300 font-bold text-[8px]">
+            O(N log N)
           </span>
         </div>
-        <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.06] text-slate-300 text-[9px]">
-          Runtime: <span className="text-cyan-300 font-bold">0.03s</span> &bull; Memory: <span className="text-slate-200">14.2 MB</span>
+
+        {/* Code Lines with L14 highlight */}
+        <div className="rounded-lg bg-black/60 border border-white/[0.06] p-2 space-y-0.5 text-[8.5px]">
+          <div className="text-zinc-400">
+            <span className="text-zinc-600 mr-2">13</span>
+            <span className="text-blue-300">for</span> (int i = 0; i &lt; n; i++) &#123;
+          </div>
+          <div className="px-1 -mx-1 rounded bg-amber-500/10 border-l-2 border-amber-400 text-amber-200">
+            <span className="text-amber-400/70 mr-1.5">14</span>
+            dp[i] = max(dp[i-1], pref[i]);
+          </div>
+        </div>
+
+        {/* Glowing Test Matrix */}
+        <div className="grid grid-cols-3 gap-1.5 text-[8px] font-bold text-center">
+          {['TC #1 · 4ms', 'TC #2 · 6ms', 'TC #3 · 12ms'].map((tc) => (
+            <div
+              key={tc}
+              className="py-1 px-1 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"
+            >
+              ✓ {tc}
+            </div>
+          ))}
+        </div>
+
+        {/* AI Bug Coach Pill */}
+        <div className="px-2 py-1 rounded-md bg-amber-500/10 border border-amber-400/25 text-[8.5px] text-amber-200 flex items-center justify-between">
+          <span className="font-semibold">✨ KΛ Bug Coach</span>
+          <span className="text-amber-300/90">Fix TLE on L14</span>
         </div>
       </div>
     );
   }
 
-  if (item.id === 'spark' || item.id === 'planner') {
+  if (item.id === 'spark') {
+    return (
+      <div className="rounded-xl bg-[#05070c] border border-violet-500/25 p-3 space-y-2 font-mono text-[9.5px] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        {/* Live Judge Score Meter + Repo Status */}
+        <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-400/35 text-amber-300 font-black text-[11px]">
+              91/100
+            </span>
+            <span className="text-[8.5px] text-zinc-300 font-semibold">Judge Score</span>
+          </div>
+          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold text-[8px]">
+            +19 pts
+          </span>
+        </div>
+
+        {/* Three War-Room Asset Chips */}
+        <div className="grid grid-cols-3 gap-1.5 text-[8px] font-bold text-center">
+          <div className="p-1.5 rounded-lg bg-amber-500/10 border border-amber-400/25 text-amber-200">
+            7-Slide .pptx
+          </div>
+          <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-400/25 text-cyan-200">
+            2m Demo + Q&amp;A
+          </div>
+          <div className="p-1.5 rounded-lg bg-violet-500/10 border border-violet-400/25 text-violet-200">
+            README + SQL
+          </div>
+        </div>
+
+        {/* Live Scan Verification Pill */}
+        <div className="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 text-[8.5px] text-emerald-300 flex items-center justify-between">
+          <span>✓ Scanned GitHub &amp; Live Demo</span>
+          <span className="text-cyan-300 font-bold">200 OK</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (item.id === 'planner') {
     return (
       <div className="rounded-xl bg-[#05070c] border border-white/10 p-3 space-y-2 font-mono text-[9.5px]">
-        <div className="text-violet-300 flex items-center gap-1.5">
+        <div className="text-sky-300 flex items-center gap-1.5">
           <Sparkles className="w-3 h-3" />
-          <span>{item.id === 'spark' ? 'Prompt: Campus EV Router' : 'Sprint Plan Generated'}</span>
+          <span>Sprint Plan Generated</span>
         </div>
         <div className="space-y-1 text-slate-300">
           <div className="px-2 py-1 rounded bg-white/[0.03] border border-white/[0.05]">
