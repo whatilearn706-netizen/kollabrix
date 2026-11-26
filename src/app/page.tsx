@@ -1,6 +1,7 @@
 import { LandingHero } from '@/components/landing/Hero';
 import { FloatingProjectRibbon } from '@/components/landing/FloatingProjectRibbon';
 import { HangingHackathonPasses } from '@/components/landing/HangingHackathonPasses';
+import { PlatformShowcaseSection } from '@/components/landing/PlatformShowcaseSection';
 import { LandingFeatures } from '@/components/landing/FeaturesBento';
 import { LandingStats } from '@/components/landing/StatsSection';
 import { LandingCTA } from '@/components/landing/CTASection';
@@ -11,6 +12,7 @@ export default function HomePage() {
       <LandingHero />
       <FloatingProjectRibbon />
       <HangingHackathonPasses />
+      <PlatformShowcaseSection />
       <LandingFeatures />
       <LandingStats />
       <LandingCTA />
