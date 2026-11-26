@@ -115,6 +115,10 @@ export function formatClock(seconds: number): string {
 }
 
 export function computeExpectedQuestionTests(q: DuelQuestion): number {
+  const ruleCount = Array.isArray(q.validationCriteria)
+    ? q.validationCriteria.filter((c) => c.startsWith('rule::') || c.startsWith('ruleJson::')).length
+    : 0;
+  if (ruleCount > 0) return ruleCount;
   if (Array.isArray(q.testCases) && q.testCases.length > 0) {
     return q.testCases.length;
   }
@@ -147,6 +151,27 @@ export function enrichQuestion(q: DuelQuestion | null | undefined): DuelQuestion
         ? q.targetComponentJs
         : match?.targetComponentJs || '',
   };
+}
+
+/**
+ * Returns ONLY the web editor tabs allowed for this specific challenge.
+ * e.g. HTML-only -> ['html'], HTML+CSS -> ['html','css'], HTML+JS -> ['html','js'], HTML+CSS+JS -> ['html','css','js'].
+ */
+export function getVisibleWebTabs(q: DuelQuestion): Array<'html' | 'css' | 'js'> {
+  const rawTags = (q.tags || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+  const hasExplicitWebTags = rawTags.some((t) => ['html', 'css', 'js', 'javascript'].includes(t));
+
+  if (hasExplicitWebTags) {
+    const tabs: Array<'html' | 'css' | 'js'> = ['html'];
+    if (rawTags.includes('css')) tabs.push('css');
+    if (rawTags.includes('javascript') || rawTags.includes('js')) tabs.push('js');
+    return tabs;
+  }
+
+  const tabs: Array<'html' | 'css' | 'js'> = ['html'];
+  if ((q.targetComponentCss || q.starterCss || '').trim().length > 0) tabs.push('css');
+  if ((q.targetComponentJs || q.starterJs || '').trim().length > 0) tabs.push('js');
+  return tabs;
 }
 
 /**

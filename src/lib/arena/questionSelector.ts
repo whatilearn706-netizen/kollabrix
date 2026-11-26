@@ -66,7 +66,7 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
       (targetTags.length === 0 || (targetTags.length === 1 && targetTags[0] === 'web'));
 
     if (isWildcardWebBug) {
-      // Any Web Bug Hunt challenge matches cleanly regardless of HTML/CSS/JS subset
+      // Any Web Bug Hunt challenge matches cleanly across HTML, HTML+CSS, HTML+JS, and HTML+CSS+JS
       score += 400;
     } else {
       const wantsJs = targetTags.includes('javascript') || targetTags.includes('js');
@@ -75,10 +75,10 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
       const hasJsTag = qTags.includes('javascript') || qTags.includes('js') || Boolean(q.targetComponentJs);
       const hasCssTag = qTags.includes('css') || Boolean(q.targetComponentCss);
 
-      if (!wantsJs && hasJsTag && criteria.arena === 'web_dev') return -10000;
-      if (wantsJs && !hasJsTag && criteria.arena === 'web_dev') return -10000;
-      if (!wantsCss && hasCssTag && criteria.arena === 'web_dev') return -10000;
-      if (wantsCss && !hasCssTag && criteria.arena === 'web_dev') return -10000;
+      if (!wantsJs && hasJsTag) return -10000;
+      if (wantsJs && !hasJsTag) return -10000;
+      if (!wantsCss && hasCssTag) return -10000;
+      if (wantsCss && !hasCssTag) return -10000;
 
       if (wantsJs && hasJsTag) score += 500;
       if (wantsCss && hasCssTag) score += 300;
@@ -86,8 +86,13 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
     }
   }
 
-  // 5. Difficulty matching (Hard requirement preference)
-  if (criteria.difficulty) {
+  // 5. Difficulty matching (skipped for random Web UI Bug Hunt so Easy/Med/Hard all mix equally)
+  const isRandomWebBug =
+    criteria.arena === 'bug_hunt' &&
+    criteria.bugDomain === 'web' &&
+    (targetTags.length === 0 || (targetTags.length === 1 && targetTags[0] === 'web'));
+
+  if (criteria.difficulty && !isRandomWebBug) {
     const targetDiff = criteria.difficulty.toLowerCase();
     const qDiff = (q.difficulty || 'medium').toLowerCase();
     if (qDiff === targetDiff) {
@@ -243,13 +248,15 @@ export function filterAndRankQuestions(
 
   const arenaPool = list.filter((q) => {
     if (criteria.arena && q.arena !== criteria.arena) return false;
-    if (criteria.arena === 'bug_hunt' && criteria.bugDomain && q.bugDomain) {
-      return q.bugDomain === criteria.bugDomain;
+    if (criteria.arena === 'bug_hunt' && criteria.bugDomain) {
+      const qIsWeb = q.bugDomain === 'web' || Boolean(q.targetComponentHtml);
+      return criteria.bugDomain === 'web' ? qIsWeb : !qIsWeb;
     }
     return true;
   });
 
-  const pool = arenaPool.length > 0 ? arenaPool : list;
+  if (arenaPool.length === 0) return [];
+  const pool = arenaPool;
 
   const seenSet = new Set(
     (criteria.seenQuestionIds || []).map((id) => String(id).toLowerCase().trim())

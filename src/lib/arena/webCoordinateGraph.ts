@@ -194,6 +194,106 @@ export function verifyWordSpellingAndContent(
   };
 }
 
+/**
+ * Evaluates validation rules embedded in DuelQuestion.validationCriteria.
+ * Supports `ruleJson::<json>` (collision-safe) and legacy `rule::<Label>::<scope>::<req>::<forbid>`.
+ */
+function evaluateStructuredCriteria(
+  criteria: string[],
+  htmlNoComments: string,
+  cssNoComments: string,
+  jsNoComments: string,
+  isStarterUnchanged: { html: boolean; css: boolean; js: boolean }
+): WebGraphTestResult[] {
+  const customResults: WebGraphTestResult[] = [];
+  for (const rawRule of criteria) {
+    let label = 'Web Requirement Check';
+    let scope = 'any';
+    let reqRaw = '';
+    let forbidRaw = '';
+
+    if (rawRule.startsWith('ruleJson::')) {
+      try {
+        const parsed = JSON.parse(rawRule.slice('ruleJson::'.length));
+        label = String(parsed.label || label);
+        scope = String(parsed.scope || 'any').toLowerCase();
+        reqRaw = String(parsed.req || '');
+        forbidRaw = String(parsed.forbid || '');
+      } catch {
+        continue;
+      }
+    } else if (rawRule.startsWith('rule::')) {
+      const parts = rawRule.split('::');
+      if (parts.length < 5) continue;
+      label = parts[1] || label;
+      scope = (parts[2] || 'any').toLowerCase();
+      reqRaw = parts[3] || '';
+      forbidRaw = parts[4] || '';
+    } else {
+      continue;
+    }
+
+    const targetText =
+      scope === 'html'
+        ? htmlNoComments
+        : scope === 'css'
+          ? cssNoComments
+          : scope === 'js'
+            ? jsNoComments
+            : `${htmlNoComments}\n${cssNoComments}\n${jsNoComments}`;
+
+    const unchangedCheck =
+      (scope === 'html' && isStarterUnchanged.html) ||
+      (scope === 'css' && isStarterUnchanged.css) ||
+      (scope === 'js' && isStarterUnchanged.js);
+
+    const reqPatterns = (reqRaw || '')
+      .split('&&')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const forbidPatterns = (forbidRaw || '')
+      .split('&&')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    let ok = !unchangedCheck && targetText.length > 0;
+    let failureReason = unchangedCheck ? 'Fix not applied yet in this file.' : '';
+
+    if (ok) {
+      for (const pat of reqPatterns) {
+        try {
+          const re = new RegExp(pat, 'is');
+          if (!re.test(targetText)) {
+            ok = false;
+            failureReason = `Missing or incomplete fix for: ${label}`;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    if (ok) {
+      for (const pat of forbidPatterns) {
+        try {
+          const re = new RegExp(pat, 'is');
+          if (re.test(targetText)) {
+            ok = false;
+            failureReason = `Bug still present for: ${label}`;
+            break;
+          }
+        } catch {}
+      }
+    }
+
+    customResults.push({
+      testName: label || 'Web Requirement Check',
+      passed: ok,
+      message: ok ? `Passed: ${label}` : `Failed: ${failureReason || label}`,
+    });
+  }
+  return customResults;
+}
+
 export function evaluateWebCoordinateGraph(
   questionId: string,
   htmlCode: string,
@@ -208,6 +308,7 @@ export function evaluateWebCoordinateGraph(
     starterCss?: string;
     starterJs?: string;
     isBugHunt?: boolean;
+    validationCriteria?: string[];
   }
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
@@ -478,9 +579,26 @@ export function evaluateWebCoordinateGraph(
     });
   }
 
+  // Explicit structured bug/feature verification rules (if defined on question)
+  const structuredResults = Array.isArray(options?.validationCriteria) && options.validationCriteria.length > 0
+    ? evaluateStructuredCriteria(
+        options.validationCriteria,
+        htmlNoComments,
+        cssNoComments,
+        jsNoComments,
+        {
+          html: isStarterHtmlUnchanged,
+          css: isStarterCssUnchanged,
+          js: isStarterJsUnchanged,
+        }
+      )
+    : [];
+
+  const finalResults = structuredResults.length > 0 ? structuredResults : results;
+
   // Fallback: Ensure at least one test case is present
-  if (results.length === 0) {
-    results.push({
+  if (finalResults.length === 0) {
+    finalResults.push({
       testName: 'HTML Structure & Content / Word Spelling Alignment',
       passed: Boolean(hasMeaningfulHtml),
       message: hasMeaningfulHtml
@@ -489,8 +607,8 @@ export function evaluateWebCoordinateGraph(
     });
   }
 
-  const testsPassed = results.filter((r) => r.passed).length;
-  const totalTests = results.length;
+  const testsPassed = finalResults.filter((r) => r.passed).length;
+  const totalTests = finalResults.length;
   const score = totalTests > 0 ? Math.round((testsPassed / totalTests) * 100) : 100;
 
   return {
@@ -498,7 +616,7 @@ export function evaluateWebCoordinateGraph(
     testsPassed,
     totalTests,
     score,
-    results,
+    results: finalResults,
   };
 }
 

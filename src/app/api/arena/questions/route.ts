@@ -13,9 +13,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const listAll = searchParams.get('all') === 'true';
+    const isSummary = searchParams.get('summary') === 'true';
     const arena = searchParams.get('arena') || undefined;
     const bugDomain = (searchParams.get('bugDomain') as 'web' | 'logic') || undefined;
-    const difficulty = (searchParams.get('difficulty') as 'easy' | 'medium' | 'hard') || undefined;
+    const difficultyParam = searchParams.get('difficulty');
+    const difficulty =
+      difficultyParam && difficultyParam !== 'random'
+        ? (difficultyParam as 'easy' | 'medium' | 'hard')
+        : undefined;
     const timeLimit = searchParams.get('timeLimit') ? Number(searchParams.get('timeLimit')) : undefined;
     const tagsParam = searchParams.get('tags');
     const requestedTags = tagsParam ? tagsParam.split(',').map((t) => t.trim().toLowerCase()) : [];
@@ -24,6 +29,22 @@ export async function GET(request: NextRequest) {
 
     const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>('arena_duel_questions', []);
     const combined: DuelQuestion[] = Array.isArray(storedQuestions) ? storedQuestions.filter((q) => Boolean(q && q.id)) : [];
+
+    if (isSummary) {
+      return NextResponse.json(
+        {
+          success: true,
+          questions: [],
+          total: combined.length,
+        },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            'CDN-Cache-Control': 'no-store',
+          },
+        }
+      );
+    }
 
     const outputList = listAll || !arena
       ? combined
@@ -34,7 +55,7 @@ export async function GET(request: NextRequest) {
           difficulty,
           timeLimit,
           seenQuestionIds,
-        });
+        }).slice(0, 40);
 
     const sanitized = outputList.map((q) => ({
       ...q,

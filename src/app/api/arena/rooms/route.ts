@@ -107,10 +107,11 @@ export async function POST(request: NextRequest) {
       const requestedLang = reqTags.find((t: string) => ['cpp', 'c++', 'java', 'python'].includes(t));
       const normLang = requestedLang === 'c++' ? 'cpp' : requestedLang;
 
+      const isRandomWebBug = arena === 'bug_hunt' && bugDomain === 'web';
       const isClientMatch =
         question &&
         question.arena === arena &&
-        (!difficulty || (question.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase()) &&
+        (isRandomWebBug || !difficulty || (question.difficulty || 'medium').toLowerCase() === difficulty.toLowerCase()) &&
         (arena !== 'algorithms' || !normLang || (normLang === 'cpp' ? (clientTags.includes('cpp') || clientTags.includes('c++')) : clientTags.includes(normLang)));
 
       if (isClientMatch) {
@@ -118,23 +119,20 @@ export async function POST(request: NextRequest) {
           ...question,
           timeLimitSeconds: matchDuration,
         };
-      } else {
+      } else if (combined.length > 0) {
         finalQuestion = selectBestQuestion(combined, {
           arena,
           bugDomain,
           selectedTags,
-          difficulty,
+          difficulty: isRandomWebBug ? undefined : difficulty,
           timeLimit: matchDuration,
           seenQuestionIds: Array.isArray(seenQuestionIds) ? seenQuestionIds : [],
         });
       }
     } catch {
-      finalQuestion = finalQuestion
-        ? { ...finalQuestion, timeLimitSeconds: matchDuration }
-        : {
-            ...DEFAULT_ARENA_QUESTIONS[0],
-            timeLimitSeconds: matchDuration,
-          };
+      if (finalQuestion) {
+        finalQuestion = { ...finalQuestion, timeLimitSeconds: matchDuration };
+      }
     }
 
     if (finalQuestion) {

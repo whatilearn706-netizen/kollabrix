@@ -274,7 +274,11 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                           <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-slate-400'}`} />
                           <span className="font-sans font-bold text-sm text-white">{card.title}</span>
                         </div>
-                        <p className="text-xs text-slate-400 leading-snug pr-5">{card.subtitle}</p>
+                        <p className="text-xs text-slate-400 leading-snug pr-5">
+                          {card.id === 'blitz' && engine.combatMode === 'blitz'
+                            ? `Ranked ${Math.round(engine.timeLimit / 60)}m Speed Duel · +24 / -14 ELO`
+                            : card.subtitle}
+                        </p>
                       </button>
                     );
                   })}
@@ -330,28 +334,37 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                     )}
                   </div>
 
-                  {/* Difficulty */}
+                  {/* Difficulty (or 100% Random Pool in 60s Bug Hunt Web) */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px] font-mono text-slate-400">Difficulty</span>
+                      <span className="text-[11px] font-mono text-slate-400">
+                        {isBugHunt && engine.algoLanguage === 'web' ? 'Stack & Level' : 'Difficulty'}
+                      </span>
                       {isBugHunt && (
                         <span className="text-[10px] font-mono font-bold text-red-400">⏱ 60s</span>
                       )}
                     </div>
-                    <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
-                      {(['easy', 'medium', 'hard'] as const).map((d) => (
-                        <button
-                          key={d}
-                          type="button"
-                          onClick={() => engine.selectDifficulty(d)}
-                          className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold capitalize cursor-pointer ${
-                            engine.difficulty === d ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
+                    {isBugHunt && engine.algoLanguage === 'web' ? (
+                      <div className="px-2.5 py-1.5 rounded-xl bg-[#05080F] border border-white/10 font-mono text-[10px] font-bold text-slate-200 flex items-center justify-between">
+                        <span>100% Random</span>
+                        <span className="text-slate-400">HTML/CSS/JS</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
+                        {(['easy', 'medium', 'hard'] as const).map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => engine.selectDifficulty(d)}
+                            className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold capitalize cursor-pointer ${
+                              engine.difficulty === d ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Duration (3m / 5m / 10m) — hidden in 60s Bug Hunt */}

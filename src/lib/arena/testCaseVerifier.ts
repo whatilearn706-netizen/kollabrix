@@ -61,15 +61,17 @@ export function verifyTestOutput(
     }
   }
 
-  // 3. Array elements match (e.g. [0, 1] vs [ 0 , 1 ])
-  const extractNums = (s: string) => {
-    const m = s.match(/-?\d+/g);
-    return m ? m.map(Number) : null;
-  };
-  const actArr = extractNums(actual);
-  const expArr = extractNums(expected);
-  if (actArr && expArr && actArr.length === expArr.length) {
-    if (actArr.every((v, i) => v === expArr[i])) return true;
+  // 3. Array elements match ONLY when expected output is purely numeric/list syntax
+  if (/^[\s\[\]\(\),\-\d.]+$/.test(expected) && /^[\s\[\]\(\),\-\d.]+$/.test(actual)) {
+    const extractNums = (s: string) => {
+      const m = s.match(/-?\d+/g);
+      return m ? m.map(Number) : null;
+    };
+    const actArr = extractNums(actual);
+    const expArr = extractNums(expected);
+    if (actArr && expArr && actArr.length === expArr.length) {
+      if (actArr.every((v, i) => v === expArr[i])) return true;
+    }
   }
 
   return false;

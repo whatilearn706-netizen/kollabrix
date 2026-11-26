@@ -43,6 +43,10 @@ export function AdminQuestionStudio({
   const [filterMode, setFilterMode] = useState<ArenaCategory | 'all'>('all');
   const [filterStack, setFilterStack] = useState<'all' | 'python' | 'cpp' | 'java' | 'web'>('all');
   const [filterDiff, setFilterDiff] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+  const [filterDur, setFilterDur] = useState<'all' | '60' | '180' | '300' | '600'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const PAGE_SIZE = 24;
 
   const [showComposer, setShowComposer] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,20 +84,38 @@ export function AdminQuestionStudio({
   const previewTargetDoc = useMemo(() => buildWebPreviewDoc(targetHtml, targetCss, targetJs), [targetHtml, targetCss, targetJs]);
 
   const filtered = useMemo(() => {
+    const qLower = searchQuery.trim().toLowerCase();
     return questions.filter((q) => {
       if (filterMode !== 'all' && q.arena !== filterMode) return false;
       if (filterDiff !== 'all' && (q.difficulty || 'medium').toLowerCase() !== filterDiff) return false;
+      if (filterDur !== 'all' && String(q.timeLimitSeconds || 300) !== filterDur) return false;
       if (filterStack !== 'all') {
         const qTags = (q.tags || []).map((t) => t.toLowerCase());
         const isWebQ = q.arena === 'web_dev' || q.bugDomain === 'web' || Boolean(q.targetComponentHtml);
-        if (filterStack === 'web') return isWebQ;
-        if (filterStack === 'cpp') return qTags.includes('cpp') || qTags.includes('c++') || Boolean(q.starterCpp);
-        if (filterStack === 'python') return qTags.includes('python') || Boolean(q.starterPython);
-        if (filterStack === 'java') return qTags.includes('java') || Boolean(q.starterJava);
+        if (filterStack === 'web') {
+          if (!isWebQ) return false;
+        } else if (filterStack === 'cpp') {
+          if (!(qTags.includes('cpp') || qTags.includes('c++') || Boolean(q.starterCpp))) return false;
+        } else if (filterStack === 'python') {
+          if (!(qTags.includes('python') || Boolean(q.starterPython))) return false;
+        } else if (filterStack === 'java') {
+          if (!(qTags.includes('java') || Boolean(q.starterJava))) return false;
+        }
+      }
+      if (qLower) {
+        const hay = `${q.title} ${q.description} ${(q.tags || []).join(' ')}`.toLowerCase();
+        if (!hay.includes(qLower)) return false;
       }
       return true;
     });
-  }, [questions, filterMode, filterStack, filterDiff]);
+  }, [questions, filterMode, filterStack, filterDiff, filterDur, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage]
+  );
 
   const toggleWebTag = (tag: string) => {
     if (tag === 'html') return;
@@ -232,8 +254,8 @@ export function AdminQuestionStudio({
           </div>
         </div>
 
-        {/* Aligned Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        {/* Aligned Filters + Search & Duration */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           <div>
             <span className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Mode</span>
             <div className="inline-flex flex-wrap gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
@@ -241,13 +263,13 @@ export function AdminQuestionStudio({
                 { id: 'all', label: 'All' },
                 { id: 'algorithms', label: 'Blitz' },
                 { id: 'bug_hunt', label: '60s Bug' },
-                { id: 'web_dev', label: 'Web Clash' },
+                { id: 'web_dev', label: 'Web' },
               ] as const).map((m) => (
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() => setFilterMode(m.id)}
-                  className={`flex-1 py-1 px-2 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
+                  onClick={() => { setFilterMode(m.id); setPage(1); }}
+                  className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
                     filterMode === m.id ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -264,8 +286,8 @@ export function AdminQuestionStudio({
                 <button
                   key={st}
                   type="button"
-                  onClick={() => setFilterStack(st)}
-                  className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
+                  onClick={() => { setFilterStack(st); setPage(1); }}
+                  className={`flex-1 py-1 px-1 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
                     filterStack === st ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -282,8 +304,8 @@ export function AdminQuestionStudio({
                 <button
                   key={d}
                   type="button"
-                  onClick={() => setFilterDiff(d)}
-                  className={`flex-1 py-1 px-1.5 rounded-lg font-mono text-[10px] font-bold capitalize cursor-pointer ${
+                  onClick={() => { setFilterDiff(d); setPage(1); }}
+                  className={`flex-1 py-1 px-1 rounded-lg font-mono text-[10px] font-bold capitalize cursor-pointer ${
                     filterDiff === d ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -291,6 +313,41 @@ export function AdminQuestionStudio({
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <span className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Duration</span>
+            <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
+              {([
+                { id: 'all', label: 'All' },
+                { id: '60', label: '60s' },
+                { id: '180', label: '3m' },
+                { id: '300', label: '5m' },
+                { id: '600', label: '10m' },
+              ] as const).map((du) => (
+                <button
+                  key={du.id}
+                  type="button"
+                  onClick={() => { setFilterDur(du.id); setPage(1); }}
+                  className={`flex-1 py-1 px-1 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
+                    filterDur === du.id ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {du.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Search ({filtered.length})</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              placeholder="Search title or tag..."
+              className="w-full px-3 py-1.5 rounded-xl bg-[#05080F] border border-white/10 font-mono text-[11px] text-white outline-none focus:border-white/30"
+            />
           </div>
         </div>
       </div>
@@ -612,50 +669,76 @@ export function AdminQuestionStudio({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filtered.map((q) => (
-            <div key={q.id} className="p-4 rounded-2xl bg-[#0A0E17] border border-white/10 flex flex-col justify-between gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="px-2 py-0.5 rounded bg-white/[0.06] border border-white/15 font-mono text-[10px] font-bold text-slate-200 uppercase">
-                    {q.arena === 'bug_hunt' ? '60s Bug Hunt' : q.arena === 'web_dev' ? 'Web Clash' : 'Quick Blitz'}
-                  </span>
-                  <span className="font-mono text-[10px] text-slate-400 uppercase">
-                    {q.difficulty} &bull; {q.arena === 'bug_hunt' ? '60s' : `${Math.round((q.timeLimitSeconds || 300) / 60)}m`}
-                  </span>
-                </div>
-                <h5 className="font-bold text-sm text-white line-clamp-1">{q.title}</h5>
-                <p className="text-xs text-slate-400 line-clamp-2">{q.description}</p>
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                <div className="flex flex-wrap gap-1">
-                  {(q.tags || []).slice(0, 4).map((t) => (
-                    <span key={t} className="px-2 py-0.5 rounded bg-[#05080F] border border-white/10 font-mono text-[10px] text-slate-300">
-                      #{t}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {paginated.map((q) => (
+              <div key={q.id} className="p-4 rounded-2xl bg-[#0A0E17] border border-white/10 flex flex-col justify-between gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="px-2 py-0.5 rounded bg-white/[0.06] border border-white/15 font-mono text-[10px] font-bold text-slate-200 uppercase">
+                      {q.arena === 'bug_hunt' ? '60s Bug Hunt' : q.arena === 'web_dev' ? 'Web Clash' : 'Quick Blitz'}
                     </span>
-                  ))}
+                    <span className="font-mono text-[10px] text-slate-400 uppercase">
+                      {q.difficulty} &bull; {`${Math.round((q.timeLimitSeconds || 300) / 60)}m`}
+                    </span>
+                  </div>
+                  <h5 className="font-bold text-sm text-white line-clamp-1">{q.title}</h5>
+                  <p className="text-xs text-slate-400 line-clamp-2">{q.description}</p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => onTestQuestion(q)}
-                    className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-mono text-[10px] font-black inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Test</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteOne(q.id)}
-                    title="Delete question"
-                    className="p-1.5 rounded-lg bg-red-950/50 border border-red-500/30 text-red-300 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
+                  <div className="flex flex-wrap gap-1">
+                    {(q.tags || []).slice(0, 4).map((t) => (
+                      <span key={t} className="px-2 py-0.5 rounded bg-[#05080F] border border-white/10 font-mono text-[10px] text-slate-300">
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => onTestQuestion(q)}
+                      className="px-2.5 py-1 rounded-lg bg-white text-slate-950 font-mono text-[10px] font-black inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>Test</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOne(q.id)}
+                      title="Delete question"
+                      className="p-1.5 rounded-lg bg-red-950/50 border border-red-500/30 text-red-300 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-[#0A0E17] border border-white/10 font-mono text-xs text-slate-300">
+              <button
+                type="button"
+                disabled={safePage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="px-3 py-1 rounded-lg bg-white/[0.06] border border-white/15 disabled:opacity-40 cursor-pointer"
+              >
+                Prev
+              </button>
+              <span>
+                Page {safePage} of {totalPages} ({filtered.length} matching)
+              </span>
+              <button
+                type="button"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                className="px-3 py-1 rounded-lg bg-white/[0.06] border border-white/15 disabled:opacity-40 cursor-pointer"
+              >
+                Next
+              </button>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>

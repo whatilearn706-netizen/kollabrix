@@ -35,6 +35,7 @@ import {
   enrichQuestion,
   getSmartDurationSeconds,
   getTierFromElo,
+  getVisibleWebTabs,
   isWebArenaQuestion,
   mapModeToConfig,
   sanitizeCallsign,
@@ -220,12 +221,11 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       })
       .catch(() => {});
 
-    fetch('/api/arena/questions?all=true', { cache: 'no-store' })
+    fetch('/api/arena/questions?summary=true', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (Array.isArray(d?.questions)) {
-          questionPoolRef.current = d.questions;
-          setAvailableQuestionsCount(d.questions.length);
+        if (typeof d?.total === 'number') {
+          setAvailableQuestionsCount(d.total);
         }
       })
       .catch(() => {});
@@ -282,13 +282,28 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       setShowCheatModal(false);
 
       if (webMode) {
+        const visibleTabs = getVisibleWebTabs(enriched);
+        const hasCss = visibleTabs.includes('css');
+        const hasJs = visibleTabs.includes('js');
+        if (!hasCss) setCssCode('');
+        if (!hasJs) setJsCode('');
+
         const htmlSame = Boolean(enriched.starterHtml && enriched.targetComponentHtml && enriched.starterHtml.replace(/\s+/g, '') === enriched.targetComponentHtml.replace(/\s+/g, ''));
-        const cssSame = !enriched.targetComponentCss || Boolean(enriched.starterCss && enriched.starterCss.replace(/\s+/g, '') === enriched.targetComponentCss.replace(/\s+/g, ''));
-        if (enriched.arena === 'bug_hunt' && htmlSame && !cssSame) setActiveTab('css');
-        else if (enriched.arena === 'bug_hunt' && htmlSame && cssSame && (enriched.starterJs || enriched.targetComponentJs)) setActiveTab('js');
+        const cssSame = !hasCss || !enriched.targetComponentCss || Boolean(enriched.starterCss && enriched.starterCss.replace(/\s+/g, '') === enriched.targetComponentCss.replace(/\s+/g, ''));
+        if (enriched.arena === 'bug_hunt' && htmlSame && !cssSame && hasCss) setActiveTab('css');
+        else if (enriched.arena === 'bug_hunt' && htmlSame && cssSame && hasJs) setActiveTab('js');
         else setActiveTab('html');
       } else {
-        setActiveTab((lang === 'web' ? 'python' : lang) as AlgoLanguage);
+        const qTags = (enriched.tags || []).map((t) => t.toLowerCase().trim());
+        const inferredLang: AlgoLanguage =
+          lang !== 'web'
+            ? lang
+            : qTags.includes('cpp') || qTags.includes('c++') || Boolean(enriched.starterCpp)
+              ? 'cpp'
+              : qTags.includes('java') || Boolean(enriched.starterJava)
+                ? 'java'
+                : 'python';
+        setActiveTab(inferredLang);
       }
     },
     []
@@ -299,12 +314,13 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     async (mode: CombatModeId, lang: StackLanguage, diff: 'easy' | 'medium' | 'hard', secs: number): Promise<DuelQuestion | null> => {
       if (initialQuestion) return enrichQuestion(initialQuestion);
       const { arena, bugDomain, tags } = mapModeToConfig(mode, lang, webTags);
+      const isRandomWebBug = arena === 'bug_hunt' && bugDomain === 'web';
       const seenIds = getStoredSeenQuestionIds();
       let chosen: DuelQuestion | null = null;
       try {
         const qs = new URLSearchParams({
           arena,
-          difficulty: diff,
+          difficulty: isRandomWebBug ? 'random' : diff,
           tags: tags.join(','),
           ...(mode !== 'bug_hunt' ? { timeLimit: String(secs) } : {}),
           seenIds: seenIds.join(','),
@@ -317,7 +333,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
             arena,
             bugDomain,
             selectedTags: tags,
-            difficulty: diff,
+            difficulty: isRandomWebBug ? undefined : diff,
             timeLimit: mode === 'bug_hunt' ? undefined : secs,
             seenQuestionIds: seenIds,
           });
@@ -773,20 +789,24 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
     const isWeb = isWebArenaQuestion(activeQuestion, combatMode);
     if (isWeb) {
+      const visibleTabs = getVisibleWebTabs(activeQuestion);
+      const allowCss = visibleTabs.includes('css');
+      const allowJs = visibleTabs.includes('js');
       const evalRes = evaluateWebCoordinateGraph(
         activeQuestion.id,
         htmlCode,
-        cssCode,
+        allowCss ? cssCode : '',
         activeQuestion.targetComponentHtml,
-        activeQuestion.targetComponentCss,
+        allowCss ? activeQuestion.targetComponentCss : '',
         {
           tags: activeQuestion.tags || webTags,
-          jsCode,
-          targetJs: activeQuestion.targetComponentJs,
+          jsCode: allowJs ? jsCode : '',
+          targetJs: allowJs ? activeQuestion.targetComponentJs : '',
           starterHtml: activeQuestion.starterHtml,
-          starterCss: activeQuestion.starterCss,
-          starterJs: activeQuestion.starterJs,
+          starterCss: allowCss ? activeQuestion.starterCss : '',
+          starterJs: allowJs ? activeQuestion.starterJs : '',
           isBugHunt: activeQuestion.arena === 'bug_hunt',
+          validationCriteria: activeQuestion.validationCriteria,
         }
       );
       setWebEvaluation(evalRes);

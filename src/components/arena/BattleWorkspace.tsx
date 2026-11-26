@@ -21,7 +21,7 @@ import {
   VolumeX,
   Zap,
 } from 'lucide-react';
-import { EditorTab, formatClock, isWebArenaQuestion } from './arenaTypes';
+import { EditorTab, formatClock, getVisibleWebTabs, isWebArenaQuestion } from './arenaTypes';
 import { buildWebPreviewDoc, FOG_SYNTAX_LINES } from './arenaHelpers';
 import { EditorHintItem, getEditorHints } from './editorSnippets';
 import { useArenaEngine } from './useArenaEngine';
@@ -47,6 +47,9 @@ const AUTO_CLOSE_PAIRS: Record<string, string> = {
 export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   const q = engine.activeQuestion;
   const isWeb = isWebArenaQuestion(q, engine.combatMode);
+  const visibleWebTabs = useMemo(() => (isWeb ? getVisibleWebTabs(q) : []), [q, isWeb]);
+  const hasCssTab = visibleWebTabs.includes('css');
+  const hasJsTab = visibleWebTabs.includes('js');
   const [specCollapsed, setSpecCollapsed] = useState(false);
   const [selectedCaseIdx, setSelectedCaseIdx] = useState<number | null>(null);
   const [pasteNotice, setPasteNotice] = useState<string>('');
@@ -137,17 +140,31 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   const rivalPct = Math.min(100, Math.round((engine.rivalTestsPassed / Math.max(1, engine.totalTests)) * 100));
 
   const targetDoc = useMemo(
-    () => buildWebPreviewDoc(q.targetComponentHtml || '', q.targetComponentCss || '', q.targetComponentJs || ''),
-    [q.targetComponentHtml, q.targetComponentCss, q.targetComponentJs]
+    () =>
+      buildWebPreviewDoc(
+        q.targetComponentHtml || '',
+        hasCssTab ? q.targetComponentCss || '' : '',
+        hasJsTab ? q.targetComponentJs || '' : ''
+      ),
+    [q.targetComponentHtml, q.targetComponentCss, q.targetComponentJs, hasCssTab, hasJsTab]
   );
   const userDoc = useMemo(
-    () => buildWebPreviewDoc(engine.htmlCode, engine.cssCode, engine.jsCode),
-    [engine.htmlCode, engine.cssCode, engine.jsCode]
+    () =>
+      buildWebPreviewDoc(
+        engine.htmlCode,
+        hasCssTab ? engine.cssCode : '',
+        hasJsTab ? engine.jsCode : ''
+      ),
+    [engine.htmlCode, engine.cssCode, engine.jsCode, hasCssTab, hasJsTab]
   );
 
   const visibleCases = isWeb
     ? engine.webEvaluation?.results ||
-      Array.from({ length: engine.totalTests }, (_, i) => ({ testName: `Check #${i + 1}`, passed: false, message: 'Pending run' }))
+      Array.from({ length: engine.totalTests }, (_, i) => ({
+        testName: q.testCases?.[i]?.description || `Check #${i + 1}`,
+        passed: false,
+        message: 'Pending run',
+      }))
     : q.testCases || [];
 
   const isDragging = split.draggingAxis !== null;
@@ -399,7 +416,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
           <div className="px-3 py-2 border-b border-white/10 flex items-center justify-between gap-2 bg-[#070A11]">
             <div className="flex items-center gap-1.5">
               {isWeb ? (
-                (['html', 'css', 'js'] as EditorTab[]).map((tab) => (
+                visibleWebTabs.map((tab) => (
                   <button
                     key={tab}
                     type="button"
