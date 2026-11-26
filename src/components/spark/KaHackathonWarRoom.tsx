@@ -30,6 +30,7 @@ interface Props {
   sessionId: string | null;
   onSessionId: (id: string) => void;
   onRequireUpgrade: (reason: string) => void;
+  onEntitlementsUpdate?: (entitlements: any) => void;
 }
 
 export function KaHackathonWarRoom({
@@ -38,6 +39,7 @@ export function KaHackathonWarRoom({
   sessionId,
   onSessionId,
   onRequireUpgrade,
+  onEntitlementsUpdate,
 }: Props) {
   const [activeTab, setActiveTab] = useState<WarRoomTab>('ppt_deck');
   const [hackathons, setHackathons] = useState<Array<{ id: string; title: string }>>([]);
@@ -57,6 +59,9 @@ export function KaHackathonWarRoom({
 
   // Judge Re-Audit loop + Share Squad state
   const [audit, setAudit] = useState<any>(blueprint?.warRoom?.audit || null);
+  const [scoreHistory, setScoreHistory] = useState<number[]>(
+    Array.isArray(blueprint?.warRoom?.scoreHistory) ? blueprint.warRoom.scoreHistory : []
+  );
   const [prevScore, setPrevScore] = useState<number | null>(blueprint?.warRoom?.prevScore ?? null);
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
   const [shareUrl, setShareUrl] = useState('');
@@ -93,6 +98,7 @@ export function KaHackathonWarRoom({
         }),
       });
       const data = await res.json();
+      if (data?.entitlements) onEntitlementsUpdate?.(data.entitlements);
       if (!res.ok) {
         if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
           onRequireUpgrade(data?.error || 'Unlock Hackathon Pass (₹49 / 7 days) to run Sprint Kit tools.');
@@ -129,6 +135,7 @@ export function KaHackathonWarRoom({
         }),
       });
       const data = await res.json();
+      if (data?.entitlements) onEntitlementsUpdate?.(data.entitlements);
       if (!res.ok) {
         if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
           onRequireUpgrade(data?.error || 'Unlock Hackathon Pass (₹49 / 7 days) to run Judge Audits.');
@@ -139,6 +146,9 @@ export function KaHackathonWarRoom({
       if (previous !== null) setPrevScore(previous);
       setScoreDelta(typeof data.scoreDelta === 'number' ? data.scoreDelta : null);
       if (data.repoScanned) setRepoMeta(data.repoScanned);
+      if (data.audit?.totalScore) {
+        setScoreHistory((prev) => [...prev, Number(data.audit.totalScore)].slice(-6));
+      }
       setAudit(data.audit);
     } catch {
       setErrorMsg('Network error running Judge Audit.');
@@ -165,7 +175,7 @@ export function KaHackathonWarRoom({
           track: 'hackathon',
           blueprint: {
             ...(blueprint || { title: deck?.deckTitle || 'Hackathon Sprint War-Room', summary: notesInput }),
-            warRoom: { repoUrl, audit, prevScore, deck, psAnalysis, demoQa, repoPack, repoMeta },
+            warRoom: { repoUrl, audit, prevScore, scoreHistory, deck, psAnalysis, demoQa, repoPack, repoMeta },
           },
           messages: [],
         }),
@@ -299,7 +309,15 @@ export function KaHackathonWarRoom({
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
             <span>{loading ? 'Analyzing Competition & Scope...' : 'Rank & Pick Best Problem Statement'}</span>
           </button>
-          {psAnalysis && <ProblemAnalyzerView analysis={psAnalysis} />}
+          {psAnalysis && (
+            <ProblemAnalyzerView
+              analysis={psAnalysis}
+              onUseWinner={(winnerText) => {
+                setNotesInput(winnerText);
+                setActiveTab('ppt_deck');
+              }}
+            />
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -387,6 +405,23 @@ export function KaHackathonWarRoom({
                   <div className="text-2xl font-black text-amber-300">{audit.totalScore}/100</div>
                 </div>
               </div>
+              {scoreHistory.length > 1 && (
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono text-zinc-300">
+                  <span className="text-zinc-500">Audit Progress:</span>
+                  {scoreHistory.map((sc, idx) => (
+                    <span
+                      key={idx}
+                      className={`px-2 py-0.5 rounded-md border ${
+                        idx === scoreHistory.length - 1
+                          ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300 font-bold'
+                          : 'bg-white/5 border-white/10 text-zinc-400'
+                      }`}
+                    >
+                      #{idx + 1}: {sc}
+                    </span>
+                  ))}
+                </div>
+              )}
               <p className="text-xs text-zinc-300 leading-relaxed">{audit.judgeVerdict}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {(audit.breakdown || []).map((b: any) => (

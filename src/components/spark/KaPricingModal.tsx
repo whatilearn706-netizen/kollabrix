@@ -185,20 +185,20 @@ export function KaPricingModal({
                 <span className="text-xs text-zinc-400">/ 7 days</span>
               </div>
               <p className="text-xs text-zinc-400">
-                Built for hackathon weekend — split ₹12/person across your 4-member squad.
+                Hackathon Studio pass — split ₹12/person across your 4-member squad.
               </p>
               <ul className="space-y-2 pt-2 text-xs text-zinc-200">
                 <li className="flex items-start gap-2">
                   <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>15 KΛ-Pro Deep Think + 25 KΛ-1 msgs/day</span>
+                  <span>10 KΛ-Pro + 10 KΛ-1 msgs/day (Hackathon Studio only)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>AI Judge Rubric Audit (score before submitting)</span>
+                  <span>Screening Deck (.pptx) + Pick Winning PS Cut-List</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>AI Squad Match + Blueprint-to-Workspace</span>
+                  <span>2-Min Demo Timer, Repo README/SQL &amp; Judge Re-Audit</span>
                 </li>
               </ul>
             </div>
@@ -306,7 +306,7 @@ export function KaPricingModal({
               <ul className="space-y-2 pt-1 text-xs text-zinc-200">
                 <li className="flex items-start gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                  <span>30 KΛ-1 + 10 KΛ-Pro Deep Think msgs/day</span>
+                  <span>30 KΛ-1 + 10 KΛ-Pro/day across Code, DSA, General &amp; Hackathons</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />

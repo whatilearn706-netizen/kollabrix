@@ -3,6 +3,8 @@ import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 import { SparkTemplateItem, DEFAULT_SPARK_TEMPLATES } from '@/types/communityFeatures';
 import { SparkModelSettings, SparkScoringWeights } from '@/app/api/spark/settings/route';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { consumeKaChatQuota, getKaEntitlements } from '@/lib/spark/plans';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -460,6 +462,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let userId: string | null = null;
+    try {
+      const serverClient = createServerSupabaseClient();
+      const { data: { user } } = await serverClient.auth.getUser();
+      userId = user?.id || null;
+    } catch {}
+
+    const preEnt = await getKaEntitlements(userId || ip, userId);
+    const tierToConsume: 'deep' | 'fast' = preEnt.deepRemaining > 0 ? 'deep' : 'fast';
+    const quota = await consumeKaChatQuota(userId || ip, tierToConsume, userId, 'hackathon');
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: quota.error || 'Daily KΛ ΛI quota reached.',
+          requireAuth: Boolean(quota.requireAuth),
+          upgradeRequired: Boolean(quota.upgradeRequired),
+          entitlements: quota.entitlements,
+        },
+        { status: quota.requireAuth ? 401 : quota.upgradeRequired ? 402 : 429 }
+      );
+    }
+
     // Check master spark settings for admin overrides
     const sparkSettings = await getMasterControlSubkey<SparkModelSettings>('sparkSettings', {
       engine: 'auto',
@@ -732,6 +756,7 @@ Return ONLY a valid JSON object matching this exact schema:
     return NextResponse.json({
       success: true,
       blueprint,
+      entitlements: quota.entitlements,
     });
   } catch (error: any) {
     return NextResponse.json(

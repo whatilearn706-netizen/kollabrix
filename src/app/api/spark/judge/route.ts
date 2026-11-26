@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { callSparkLLM } from '@/lib/spark/aiClient';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getKaEntitlements } from '@/lib/spark/plans';
+import { consumeKaChatQuota } from '@/lib/spark/plans';
 import { fetchDeepGitHubContext } from '@/lib/spark/githubScanner';
 
 export const dynamic = 'force-dynamic';
@@ -23,17 +23,20 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null;
     } catch {}
 
-    const entitlements = await getKaEntitlements(userId || ip, userId);
-    if (!entitlements.canJudgeAudit) {
+    const quota = await consumeKaChatQuota(userId || ip, 'deep', userId, 'hackathon');
+    if (!quota.allowed) {
       return NextResponse.json(
         {
-          error: userId
-            ? 'AI Judge Rubric Audit requires Hackathon Sprint Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
-            : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to run AI Judge Rubric Audits.',
-          requireAuth: !userId,
-          upgradeRequired: true,
+          error:
+            quota.error ||
+            (userId
+              ? 'Judge Audit requires Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
+              : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to run AI Judge Audits.'),
+          requireAuth: Boolean(quota.requireAuth),
+          upgradeRequired: Boolean(quota.upgradeRequired || !userId),
+          entitlements: quota.entitlements,
         },
-        { status: userId ? 402 : 401 }
+        { status: quota.requireAuth ? 401 : 402 }
       );
     }
 
@@ -99,6 +102,7 @@ ${blueprint ? `\nBlueprint Context: ${blueprint.title} — ${blueprint.summary}`
           audit: parsed,
           scoreDelta,
           repoScanned,
+          entitlements: quota.entitlements,
           engine: llmRes.engine,
           githubDetected: Boolean(githubContext),
         });
@@ -114,6 +118,7 @@ ${blueprint ? `\nBlueprint Context: ${blueprint.title} — ${blueprint.summary}`
       engine: 'Kollabrix Rubric Engine',
       githubDetected: Boolean(githubContext),
       repoScanned,
+      entitlements: quota.entitlements,
       scoreDelta: typeof previousScore === 'number' ? score - previousScore : null,
       audit: {
         totalScore: score,

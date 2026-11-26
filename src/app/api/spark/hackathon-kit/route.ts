@@ -5,7 +5,7 @@ import { isSupabaseConfigured, DEFAULT_SUPABASE_URL } from '@/lib/supabase/isCon
 import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 import { callSparkLLM } from '@/lib/spark/aiClient';
-import { getKaEntitlements } from '@/lib/spark/plans';
+import { consumeKaChatQuota } from '@/lib/spark/plans';
 import { fetchDeepGitHubContext } from '@/lib/spark/githubScanner';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +32,7 @@ function safeParseJson(text?: string) {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request);
-    const rate = checkIpRateLimit(`ka-hack-kit:${ip}`, 20, 5 * 60 * 1000, 5 * 60 * 1000);
+    const rate = checkIpRateLimit(`ka-hack-kit:${ip}`, 25, 5 * 60 * 1000, 5 * 60 * 1000);
     if (!rate.allowed) {
       return NextResponse.json({ error: 'Rate limit reached. Please wait a moment.' }, { status: 429 });
     }
@@ -44,17 +44,21 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null;
     } catch {}
 
-    const entitlements = await getKaEntitlements(userId || ip, userId);
-    if (!entitlements.canJudgeAudit && !entitlements.canSquadMatch) {
+    // Enforces Hackathon Pass (₹49, 10/day Hackathon Studio only) OR KΛ Pro Builder (₹149/mo) AND consumes 1 KΛ-Pro call
+    const quota = await consumeKaChatQuota(userId || ip, 'deep', userId, 'hackathon');
+    if (!quota.allowed) {
       return NextResponse.json(
         {
-          error: userId
-            ? 'Hackathon Sprint Kit requires Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
-            : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to access Hackathon Sprint Tools.',
-          requireAuth: !userId,
-          upgradeRequired: true,
+          error:
+            quota.error ||
+            (userId
+              ? 'Hackathon Sprint Kit requires Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
+              : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to access Hackathon Sprint Tools.'),
+          requireAuth: Boolean(quota.requireAuth),
+          upgradeRequired: Boolean(quota.upgradeRequired || !userId),
+          entitlements: quota.entitlements,
         },
-        { status: userId ? 402 : 401 }
+        { status: quota.requireAuth ? 401 : 402 }
       );
     }
 
@@ -96,7 +100,7 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
-    // 1. Screening-Round PPT & Slide Generator (.pptx exportable)
+    // 1. Screening-Round PPT & Slide Generator
     if (action === 'ppt_deck') {
       const ps = (problemStatement || blueprint?.summary || '').trim();
       if (!ps) {
@@ -104,19 +108,21 @@ export async function POST(request: NextRequest) {
       }
       const systemPrompt = `You are a Smart India Hackathon (SIH) & Devfolio Grand-Jury Mentor.
 Create a crisp 7-slide Screening-Round Presentation Deck that passes strict idea shortlisting.
-Every claim must avoid vague fluff ("uses AI to boost efficiency") and show concrete engineering metrics, system architecture, and failure fallbacks.
+Include a recommended visual/metric per slide and catch vague red-flag wording.
 Return ONLY valid JSON:
 {
   "deckTitle": "Crisp Project Title",
   "hackathonName": "Hackathon Name",
-  "shortlistScoreForecast": number (70 to 96),
+  "shortlistScoreForecast": number (72 to 96),
+  "juryObjectionShield": "Top 1-line objection screening judges will raise and how this deck counters it",
   "slides": [
     {
       "slideNumber": 1,
       "type": "cover" | "problem" | "solution" | "architecture" | "stack" | "feasibility" | "impact",
       "title": "Short Slide Title",
       "headline": "1 crisp impactful takeaway sentence",
-      "bullets": ["Concrete point 1", "Concrete point 2", "Concrete point 3"],
+      "recommendedVisual": "What diagram/chart/screenshot to place on this slide",
+      "bullets": ["Concrete point 1 with metric", "Concrete point 2", "Concrete point 3"],
       "speakerNotes": "Exact 2-sentence spoken pitch for this slide",
       "redFlagFix": { "weakClaim": "Generic claim judges reject", "improvedClaim": "Sharper shortlisted version with metrics" }
     }
@@ -142,12 +148,12 @@ Return ONLY valid JSON:
 
       const parsed = safeParseJson(llmRes?.text);
       if (!parsed) {
-        return NextResponse.json({ error: 'Could not generate slide deck right now.' }, { status: 502 });
+        return NextResponse.json({ error: 'Could not generate slide deck right now.', entitlements: quota.entitlements }, { status: 502 });
       }
-      return NextResponse.json({ success: true, deck: parsed, engine: llmRes?.engine || 'KΛ-Pro' });
+      return NextResponse.json({ success: true, deck: parsed, entitlements: quota.entitlements, engine: llmRes?.engine || 'KΛ-Pro' });
     }
 
-    // 2. "Pick the Winning Problem Statement" Analyzer
+    // 2. "Pick the Winning Problem Statement" Analyzer (with 36h sprint execution roadmap)
     if (action === 'pick_ps') {
       if (!statements.trim() || statements.trim().length < 20) {
         return NextResponse.json(
@@ -172,11 +178,16 @@ Return ONLY valid JSON:
       }
 
       const systemPrompt = `You are a blunt Hackathon Strategist helping a 2-4 student squad choose ONE problem statement they can ACTUALLY win in 36 hours.
-Never say "all options are great" — rank them ruthlessly, pick ONE clear winner, and tell them exactly what features to CUT so they finish on time.
+Rank every option ruthlessly, pick ONE clear winner, give exact Cut List items, plus a concrete 36-Hour Execution Schedule for the winning pick!
 Return ONLY valid JSON:
 {
   "winnerIndex": number (0-based index of best option),
   "winnerSummary": "2 crisp sentences explaining why this option beats the rest",
+  "sprintSchedule36h": [
+    { "window": "Hours 0 - 12", "focus": "Core Engine & Mock Data", "deliverable": "Exact milestone" },
+    { "window": "Hours 12 - 24", "focus": "UI Flow & Real Integration", "deliverable": "Exact milestone" },
+    { "window": "Hours 24 - 36", "focus": "Edge Cases, Demo & Pitch", "deliverable": "Exact milestone" }
+  ],
   "options": [
     {
       "label": "Option 1",
@@ -204,9 +215,9 @@ Return ONLY valid JSON:
 
       const parsed = safeParseJson(llmRes?.text);
       if (!parsed) {
-        return NextResponse.json({ error: 'Could not analyze problem statements right now.' }, { status: 502 });
+        return NextResponse.json({ error: 'Could not analyze problem statements right now.', entitlements: quota.entitlements }, { status: 502 });
       }
-      return NextResponse.json({ success: true, analysis: parsed, engine: llmRes?.engine || 'KΛ-Pro' });
+      return NextResponse.json({ success: true, analysis: parsed, entitlements: quota.entitlements, engine: llmRes?.engine || 'KΛ-Pro' });
     }
 
     // 3. 2-Minute Demo Script + Tough Judge Q&A Roast (scans real GitHub repo)
@@ -230,14 +241,16 @@ Return ONLY valid JSON:
 
       const systemPrompt = `You are a Principal Engineer & Final-Round Hackathon Judge.
 Using the team's actual repo files/dependencies/pitch below, craft:
-1) A tight timestamped 2-minute live demo script (exact spoken words + what to click on screen).
-2) A 10-second Wi-Fi / API crash recovery tip.
-3) 5 brutal, repo-specific judge cross-questions that target real weaknesses (scaling, mock data, latency, privacy, "why not ChatGPT wrapper?") with sharp 2-sentence winning answers.
+1) A tight timestamped 2-minute live demo script summing to 120 seconds (exact spoken words + screen action + seconds duration).
+2) A killer 2-sentence answer to "Why is this not just a ChatGPT/LLM wrapper?".
+3) A 10-second Wi-Fi / API crash recovery tip.
+4) 5 brutal, repo-specific judge cross-questions targeting real weaknesses, with sharp 2-sentence winning answers.
 Return ONLY valid JSON:
 {
   "scriptSegments": [
-    { "timeRange": "0:00 - 0:20", "section": "Hook & Problem", "spokenLine": "Exact words to say", "screenAction": "What to show on screen" }
+    { "timeRange": "0:00 - 0:25", "durationSec": 25, "section": "Hook & Problem", "spokenLine": "Exact words to say", "screenAction": "What to show on screen" }
   ],
+  "chatgptWrapperRebuttal": "Sharp answer proving why custom architecture / data / UX matters",
   "crashFallbackTip": "Concrete backup strategy if demo fails live",
   "toughQuestions": [
     { "question": "Hard judge question targeting this repo", "whyJudgesAskIt": "1-line reason", "winningAnswer": "Sharp 2-sentence answer with real engineering metrics" }
@@ -254,17 +267,18 @@ Return ONLY valid JSON:
 
       const parsed = safeParseJson(llmRes?.text);
       if (!parsed) {
-        return NextResponse.json({ error: 'Could not generate Demo & Judge Q&A right now.' }, { status: 502 });
+        return NextResponse.json({ error: 'Could not generate Demo & Judge Q&A right now.', entitlements: quota.entitlements }, { status: 502 });
       }
       return NextResponse.json({
         success: true,
         demoQa: parsed,
         repoScanned: repoSnap?.found ? { repoName: repoSnap.repoName, sha: repoSnap.lastCommitSha } : null,
+        entitlements: quota.entitlements,
         engine: llmRes?.engine || 'KΛ-Pro',
       });
     }
 
-    // 4. 1-Click GitHub README.md + Live Architecture Diagram + schema.sql + API Pack
+    // 4. 1-Click GitHub README.md + Architecture + schema.sql + API + .env.example Pack
     if (action === 'repo_pack') {
       const repoSnap = repoUrl.trim() ? await fetchDeepGitHubContext(repoUrl.trim()) : null;
       const contextStr = [
@@ -296,8 +310,9 @@ Return ONLY valid JSON:
     { "from": "n1", "to": "n2", "label": "Protocol/Action" }
   ],
   "mermaidCode": "flowchart LR\n  Client --> API",
-  "readmeMarkdown": "Complete submission-ready README.md with badges, features, architecture, env vars, and exact setup commands",
+  "readmeMarkdown": "Complete submission-ready README.md with features, architecture, env vars, and exact setup commands",
   "schemaSql": "-- Clean PostgreSQL/Supabase CREATE TABLE statements tailored to this project",
+  "envExample": "# Required environment variables\nNEXT_PUBLIC_APP_URL=http://localhost:3000",
   "apiEndpoints": [
     { "method": "POST", "path": "/api/...", "purpose": "What it does", "auth": "Session / Public" }
   ]
@@ -313,12 +328,13 @@ Return ONLY valid JSON:
 
       const parsed = safeParseJson(llmRes?.text);
       if (!parsed) {
-        return NextResponse.json({ error: 'Could not generate Repo Pack right now.' }, { status: 502 });
+        return NextResponse.json({ error: 'Could not generate Repo Pack right now.', entitlements: quota.entitlements }, { status: 502 });
       }
       return NextResponse.json({
         success: true,
         pack: parsed,
         repoScanned: repoSnap?.found ? { repoName: repoSnap.repoName, sha: repoSnap.lastCommitSha } : null,
+        entitlements: quota.entitlements,
         engine: llmRes?.engine || 'KΛ-Pro',
       });
     }

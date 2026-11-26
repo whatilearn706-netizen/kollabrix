@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null;
     } catch {}
 
-    const quota = await consumeKaChatQuota(userId || ip, tier, userId);
+    const quota = await consumeKaChatQuota(userId || ip, tier, userId, mode);
     if (!quota.allowed) {
       return NextResponse.json(
         {

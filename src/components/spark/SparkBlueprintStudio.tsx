@@ -49,6 +49,7 @@ interface Props {
   copilotMessages: SparkChatMessage[];
   setCopilotMessages: (msgs: SparkChatMessage[]) => void;
   onRequireUpgrade?: (reason: string) => void;
+  onEntitlementsUpdate?: (entitlements: any) => void;
   onSessionCreated: (session: any) => void;
 }
 
@@ -66,6 +67,7 @@ export function SparkBlueprintStudio({
   copilotMessages,
   setCopilotMessages,
   onRequireUpgrade,
+  onEntitlementsUpdate,
   onSessionCreated,
 }: Props) {
   const [prompt, setPrompt] = useState('');
@@ -102,7 +104,13 @@ export function SparkBlueprintStudio({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to synthesize blueprint');
+      if (data?.entitlements) onEntitlementsUpdate?.(data.entitlements);
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
+          onRequireUpgrade?.(data.error || 'Upgrade required to continue generating.');
+        }
+        throw new Error(data.error || 'Failed to synthesize blueprint');
+      }
 
       setBlueprint(data.blueprint);
       setCopilotMessages([]);
@@ -235,6 +243,7 @@ export function SparkBlueprintStudio({
         sessionId={sessionId}
         onSessionId={(id) => setSessionId(id)}
         onRequireUpgrade={(reason) => onRequireUpgrade?.(reason)}
+        onEntitlementsUpdate={onEntitlementsUpdate}
       />
 
       {/* Rendered Blueprint */}

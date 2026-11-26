@@ -759,6 +759,11 @@ export default function SparkUniversalWorkspacePage() {
                 setPricingReason(reason);
                 setPricingOpen(true);
               }}
+              onEntitlementsUpdate={(nextEnt) => {
+                setEntitlements(nextEnt);
+                setFastRemaining(nextEnt.fastRemaining);
+                setDeepRemaining(nextEnt.deepRemaining);
+              }}
               onSessionCreated={(sess) => {
                 const entry: StoredSparkThread = {
                   id: sess.id,
