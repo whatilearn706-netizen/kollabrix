@@ -176,23 +176,30 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // 3. Winner is locked strictly to the first verified participant's squad
-        const playerTeam = isAlpha ? 'Team Alpha' : 'Team Omega';
+        // 3. Winner is locked strictly to the first verified participant's squad (or opposing squad on forfeit)
+        const isForfeit = payload?.forfeit === true;
+        const actorIsAlpha = room.alphaPlayers.some((p) => p.id === playerId);
+        const actorTeam: 'Team Alpha' | 'Team Omega' = actorIsAlpha ? 'Team Alpha' : isOmega ? 'Team Omega' : 'Team Alpha';
+        const winningTeam: 'Team Alpha' | 'Team Omega' = isForfeit
+          ? (actorTeam === 'Team Alpha' ? 'Team Omega' : 'Team Alpha')
+          : actorTeam;
 
-        // 4. Update winner's verified test case score
-        const totalTests = room.question?.testCases?.length || 3;
-        const reportedPassed = Math.max(Number(payload?.testsPassed) || totalTests, 1);
+        // 4. Update winner's verified test case score (when solved, not forfeited)
+        if (!isForfeit) {
+          const totalTests = room.question?.testCases?.length || 3;
+          const reportedPassed = Math.max(Number(payload?.testsPassed) || totalTests, 1);
 
-        if (isAlpha) {
-          const p = room.alphaPlayers.find((x) => x.id === playerId || x.name === payload?.playerName);
-          if (p) p.testsPassed = reportedPassed;
-        } else {
-          const p = room.omegaPlayers.find((x) => x.id === playerId || x.name === payload?.playerName);
-          if (p) p.testsPassed = reportedPassed;
+          if (winningTeam === 'Team Alpha') {
+            const p = room.alphaPlayers.find((x) => x.id === playerId || x.name === payload?.playerName);
+            if (p) p.testsPassed = reportedPassed;
+          } else {
+            const p = room.omegaPlayers.find((x) => x.id === playerId || x.name === payload?.playerName);
+            if (p) p.testsPassed = reportedPassed;
+          }
         }
 
         room.status = 'finished';
-        room.winnerTeam = playerTeam;
+        room.winnerTeam = winningTeam;
         break;
       }
 

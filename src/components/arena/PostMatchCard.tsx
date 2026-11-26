@@ -42,7 +42,7 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
     engine.rivalSolution.cppCode ||
     engine.rivalSolution.javaCode ||
     engine.rivalSolution.htmlCode ||
-    `# ${engine.rivalProfile.name}'s ${engine.isGhostDuel ? 'Ghost Replay' : 'Live'} Attempt\n# ${engine.rivalTestsPassed}/${engine.totalTests} test cases verified at ${engine.rivalWpm || engine.rivalProfile.baseWpm} WPM`;
+    `# ${engine.rivalProfile.name}'s Submitted Attempt\n# ${engine.rivalTestsPassed}/${engine.totalTests} test cases verified at ${engine.rivalWpm || engine.rivalProfile.baseWpm} WPM`;
 
   return (
     <div className="relative z-10 min-h-screen w-full flex flex-col justify-between p-4 sm:p-6">

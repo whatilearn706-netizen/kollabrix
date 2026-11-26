@@ -398,22 +398,37 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         setStatusNotice({ type: 'info', text: 'Room closed by host.' });
         return;
       }
-      const realOpp = rm.omegaPlayers?.find((p: any) => p.id !== 'bot-rival');
+      const amHost = rm.hostId ? rm.hostId === myPlayerId : isHost;
+      const oppTeam = amHost ? rm.omegaPlayers : rm.alphaPlayers;
+      const realOpp = oppTeam?.find((p: any) => p.id !== 'bot-rival' && p.id !== myPlayerId);
       if (realOpp) {
         setIsGhostDuel(false);
-        setRivalProfile({
+        setRivalProfile((prev) => ({
+          ...prev,
           name: realOpp.name,
-          college: 'Campus Builder',
+          college: prev.college === 'DTU Delhi' && realOpp.name !== prev.name ? 'Campus Builder' : prev.college,
           branch: 'Live Rival',
           tag: 'ONLINE',
-          avatarIdx: realOpp.avatarIdx || 1,
-          avatarEmoji: '⚔️',
-          baseWpm: realOpp.wpm || 60,
-          elo: 1400,
-        });
+          avatarIdx: realOpp.avatarIdx || prev.avatarIdx || 1,
+          avatarEmoji: prev.avatarEmoji || '⚔️',
+          baseWpm: realOpp.wpm || prev.baseWpm || 60,
+        }));
+        if (typeof realOpp.testsPassed === 'number') {
+          setRivalTestsPassed((prev) => Math.max(prev, realOpp.testsPassed));
+        }
+        if (typeof realOpp.wpm === 'number' && realOpp.wpm > 0) {
+          setRivalWpm(realOpp.wpm);
+          setRivalActivityText('TYPING');
+        }
       }
       if (stageRef.current === 'room' && (rm.status === 'starting' || rm.status === 'in_progress')) {
-        if (rm.question) loadQuestionIntoWorkspace(rm.question, rm.timeLimit || timeLimit, algoLanguage, combatMode);
+        const roomMode: CombatModeId = rm.arena === 'web_dev' ? 'web_clash' : rm.arena === 'bug_hunt' ? 'bug_hunt' : 'blitz';
+        const qTags = [...(rm.selectedTags || []), ...(rm.question?.tags || [])].map((t: string) => String(t).toLowerCase().trim());
+        const isWebRoom = roomMode === 'web_clash' || Boolean(rm.question?.targetComponentHtml) || qTags.includes('web') || qTags.includes('html');
+        const roomLang: StackLanguage = isWebRoom ? 'web' : (qTags.includes('cpp') || qTags.includes('c++')) ? 'cpp' : qTags.includes('java') ? 'java' : 'python';
+        setCombatMode(roomMode);
+        setAlgoLanguage(roomLang);
+        if (rm.question) loadQuestionIntoWorkspace(rm.question, rm.timeLimit || timeLimit, roomLang, roomMode);
         setFaceOffStatus('countdown');
         setCountdownNum(3);
         setStage('faceoff');
@@ -611,7 +626,14 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       setRoomData(d.room);
       setRoomCode(d.room.code);
       setTeamSize(d.room.format || '1v1');
-      if (d.room.question) loadQuestionIntoWorkspace(d.room.question, d.room.timeLimit || 300, algoLanguage, combatMode);
+      const rm = d.room;
+      const roomMode: CombatModeId = rm.arena === 'web_dev' ? 'web_clash' : rm.arena === 'bug_hunt' ? 'bug_hunt' : 'blitz';
+      const qTags = [...(rm.selectedTags || []), ...(rm.question?.tags || [])].map((t: string) => String(t).toLowerCase().trim());
+      const isWebRoom = roomMode === 'web_clash' || Boolean(rm.question?.targetComponentHtml) || qTags.includes('web') || qTags.includes('html');
+      const roomLang: StackLanguage = isWebRoom ? 'web' : (qTags.includes('cpp') || qTags.includes('c++')) ? 'cpp' : qTags.includes('java') ? 'java' : 'python';
+      setCombatMode(roomMode);
+      setAlgoLanguage(roomLang);
+      if (rm.question) loadQuestionIntoWorkspace(rm.question, rm.timeLimit || 300, roomLang, roomMode);
       setStage('room');
       return true;
     } catch (e: any) {
@@ -701,6 +723,11 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         isSubscribed = false;
         clearInterval(pollInterval);
         clearTimeout(scanTimer);
+        if (queueTicketIdRef.current) {
+          const staleId = queueTicketIdRef.current;
+          queueTicketIdRef.current = null;
+          fetch(`/api/arena/matchmake?ticketId=${staleId}`, { method: 'DELETE' }).catch(() => {});
+        }
       };
     }
     if (faceOffStatus === 'locked') {
@@ -924,6 +951,13 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       setTotalTests(evalRes.totalTests);
       setUserTestsPassed(evalRes.testsPassed);
       sendEvent('progress_sync', { playerId: myPlayerId, testsPassed: evalRes.testsPassed, wpm: myWpm });
+      if (!isGhostDuel && roomCode) {
+        fetch('/api/arena/rooms/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: roomCode, action: 'progress', playerId: myPlayerId, payload: { testsPassed: evalRes.testsPassed, wpm: myWpm } }),
+        }).catch(() => {});
+      }
 
       const verdicts: Record<number, TestCaseVerdict> = {};
       evalRes.results.forEach((r, idx) => {
@@ -992,6 +1026,13 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setTestVerdicts(map);
     setUserTestsPassed(passed);
     sendEvent('progress_sync', { playerId: myPlayerId, testsPassed: passed, wpm: myWpm });
+    if (!isGhostDuel && roomCode) {
+      fetch('/api/arena/rooms/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: roomCode, action: 'progress', playerId: myPlayerId, payload: { testsPassed: passed, wpm: myWpm } }),
+      }).catch(() => {});
+    }
 
     if (passed === tcs.length && tcs.length > 0) {
       if (isSubmit) {
@@ -1079,7 +1120,30 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setPlayerName(RANDOM_CALLSIGNS[Math.floor(Math.random() * RANDOM_CALLSIGNS.length)]);
   };
 
+  const cancelMatchmaking = () => {
+    if (queueTicketIdRef.current) {
+      const staleId = queueTicketIdRef.current;
+      queueTicketIdRef.current = null;
+      fetch(`/api/arena/matchmake?ticketId=${staleId}`, { method: 'DELETE' }).catch(() => {});
+    }
+    setStage('lobby');
+  };
+
   const handleForfeit = () => {
+    if (!isGhostDuel && roomCode) {
+      const oppTeam = isHost ? 'Team Omega' : 'Team Alpha';
+      sendEvent('match_won', { winnerName: rivalProfile.name, winnerTeam: oppTeam });
+      fetch('/api/arena/rooms/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: roomCode,
+          action: 'match_won',
+          playerId: myPlayerId,
+          payload: { forfeit: true, winnerTeam: oppTeam },
+        }),
+      }).catch(() => {});
+    }
     finalizeMatchResult('rival');
   };
 
@@ -1178,6 +1242,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     startCustomRoomMatch,
     runOrSubmit,
     markPreviewInteraction,
+    cancelMatchmaking,
     handleForfeit,
   };
 }

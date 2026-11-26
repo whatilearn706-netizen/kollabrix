@@ -131,18 +131,32 @@ export async function enqueuePlayer(ticket: QueueTicket): Promise<{
 
     const waitDurationMs = now - cand.createdAt;
 
-    // Blitz / Logic Bug Hunt matching criteria
-    if (ticket.combatMode === 'blitz' || (ticket.combatMode === 'bug_hunt' && ticket.algoLanguage !== 'web')) {
+    if (ticket.combatMode === 'bug_hunt') {
+      // Bug Hunt MUST keep Web strictly with Web, and each language strictly with its own starter bug!
+      const candIsWeb = cand.algoLanguage === 'web';
+      const ticketIsWeb = ticket.algoLanguage === 'web';
+      if (candIsWeb !== ticketIsWeb) continue;
+
+      if (ticketIsWeb) {
+        matchedCandidateId = candId;
+        break;
+      }
+
+      if (cand.algoLanguage !== ticket.algoLanguage) continue;
+      if (cand.difficulty === ticket.difficulty || waitDurationMs > 2000) {
+        matchedCandidateId = candId;
+        break;
+      }
+    } else if (ticket.combatMode === 'blitz') {
+      // Quick Blitz supports Python/C++/Java on the same I/O problem after 2s wait
       const sameLanguage = cand.algoLanguage === ticket.algoLanguage;
       const sameDiff = cand.difficulty === ticket.difficulty;
-
-      // Exact match or lenient match after 2 seconds waiting
       if ((sameLanguage && sameDiff) || waitDurationMs > 2000) {
         matchedCandidateId = candId;
         break;
       }
     } else {
-      // Web Clash or Web Bug Hunt: pair any waiting web contender
+      // Web Clash: pair any waiting web contender
       matchedCandidateId = candId;
       break;
     }

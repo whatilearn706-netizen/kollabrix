@@ -216,7 +216,7 @@ export function MatchmakingFaceOff({ engine }: MatchmakingFaceOffProps) {
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => engine.setStage('lobby')}
+            onClick={engine.cancelMatchmaking}
             className="text-xs font-mono text-slate-500 hover:text-slate-300 cursor-pointer"
           >
             Cancel Matchmaking

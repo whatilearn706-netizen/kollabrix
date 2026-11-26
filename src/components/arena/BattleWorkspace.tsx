@@ -58,6 +58,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   const [hintsDismissed, setHintsDismissed] = useState<boolean>(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const gutterRef = useRef<HTMLDivElement | null>(null);
   const split = useResizableSplit(isWeb ? 33 : 27, isWeb ? 21 : 25);
 
   useEffect(() => {
@@ -481,7 +482,10 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
           </div>
 
           <div className="relative flex-1 min-h-0 flex bg-[#05080E] overflow-hidden">
-            <div className="w-10 py-3 pr-2 text-right font-mono text-xs leading-6 text-slate-600 select-none border-r border-white/[0.06] bg-[#04060B]">
+            <div
+              ref={gutterRef}
+              className="w-10 py-3 pr-2 text-right font-mono text-xs leading-6 text-slate-600 select-none border-r border-white/[0.06] bg-[#04060B] overflow-hidden"
+            >
               {Array.from({ length: linesCount }, (_, i) => (
                 <div key={i + 1}>{i + 1}</div>
               ))}
@@ -489,6 +493,9 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
             <textarea
               ref={textareaRef}
               value={activeBuffer}
+              onScroll={(e) => {
+                if (gutterRef.current) gutterRef.current.scrollTop = e.currentTarget.scrollTop;
+              }}
               onPaste={(e) => {
                 e.preventDefault();
                 blockPasteAction();
