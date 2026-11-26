@@ -23,6 +23,7 @@ import {
   ListVideo,
   Eye,
   EyeOff,
+  Power,
   Radio,
   Sparkles,
 } from 'lucide-react';
@@ -42,6 +43,13 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Global /resources Live vs Not Live control
+  const [isResourcesLive, setIsResourcesLive] = useState<boolean>(true);
+  const [resourcesNotice, setResourcesNotice] = useState<string>(
+    'KOLLΛBRIX CODEX is currently offline while we curate new language tracks, technical manuals, and OA playbooks. Check back soon!'
+  );
+  const [isUpdatingResourcesStatus, setIsUpdatingResourcesStatus] = useState<boolean>(false);
 
   // Selected Curriculum & Step
   const [selectedCurriculumId, setSelectedCurriculumId] = useState<string>('java-beginner');
@@ -127,8 +135,59 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
     }
   };
 
+  const fetchResourcesStatus = async () => {
+    try {
+      const res = await fetch(`/api/resources/status?_t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setIsResourcesLive(data.isLive !== false);
+        if (data.maintenanceMessage) setResourcesNotice(data.maintenanceMessage);
+      }
+    } catch {}
+  };
+
+  const updateResourcesStatus = async (nextLive: boolean, msg: string) => {
+    setIsUpdatingResourcesStatus(true);
+    setStatusMessage(null);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      }
+      const res = await fetch('/api/resources/status', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ isLive: nextLive, maintenanceMessage: msg }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsResourcesLive(data.isLive !== false);
+        if (data.maintenanceMessage) setResourcesNotice(data.maintenanceMessage);
+        setStatusMessage({
+          type: 'success',
+          text:
+            data.message ||
+            (data.isLive ? 'Resources section is now LIVE!' : 'Resources section is now NOT LIVE.'),
+        });
+      } else {
+        setStatusMessage({
+          type: 'error',
+          text: data?.error || 'Failed to update Resources section visibility',
+        });
+      }
+    } catch (err: any) {
+      setStatusMessage({
+        type: 'error',
+        text: err?.message || 'Network error updating Resources visibility',
+      });
+    } finally {
+      setIsUpdatingResourcesStatus(false);
+    }
+  };
+
   useEffect(() => {
     fetchCurricula();
+    fetchResourcesStatus();
   }, []);
 
   useEffect(() => {
@@ -682,6 +741,69 @@ export function AdminResourcesTab({ authToken }: AdminResourcesTabProps) {
           </button>
         </div>
       )}
+
+      {/* Global Resources (/resources · KOLLΛBRIX CODEX) Live / Not Live Switch */}
+      <div className="p-6 rounded-2xl bg-[#0A0E17] border border-slate-800 flex flex-col lg:flex-row justify-between gap-6 shadow-xl">
+        <div className="space-y-3">
+          <span
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-mono text-xs font-bold border ${
+              isResourcesLive
+                ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                : 'bg-rose-950/60 border-rose-500/40 text-rose-300'
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isResourcesLive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
+              }`}
+            />
+            {isResourcesLive ? 'RESOURCES SECTION: LIVE' : 'RESOURCES SECTION: NOT LIVE'}
+          </span>
+          <p className="text-xs text-slate-400 max-w-md leading-relaxed">
+            Control public visibility for <code className="text-slate-200">/resources</code> (KOLLΛBRIX CODEX). When set to <strong>Not Live</strong>, students see the offline notice below while admins can still preview.
+          </p>
+          <button
+            type="button"
+            disabled={isUpdatingResourcesStatus}
+            onClick={() => updateResourcesStatus(!isResourcesLive, resourcesNotice)}
+            className={`px-4 py-2.5 rounded-xl font-mono text-xs font-black flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50 ${
+              isResourcesLive
+                ? 'bg-rose-950/70 hover:bg-rose-900/70 border border-rose-500/40 text-rose-200'
+                : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950'
+            }`}
+          >
+            <Power className="w-3.5 h-3.5" />
+            <span>
+              {isUpdatingResourcesStatus
+                ? 'Updating...'
+                : isResourcesLive
+                  ? 'Set Resources Not Live'
+                  : 'Bring Resources Live'}
+            </span>
+          </button>
+        </div>
+
+        <div className="lg:w-96 space-y-2">
+          <label className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5 text-amber-400" />
+            <span>Offline / Coming Soon Notice</span>
+          </label>
+          <textarea
+            rows={2}
+            value={resourcesNotice}
+            onChange={(e) => setResourcesNotice(e.target.value)}
+            className="w-full p-2.5 rounded-xl bg-[#05080F] border border-slate-800 font-mono text-xs text-white outline-none focus:border-indigo-500/60"
+          />
+          <button
+            type="button"
+            disabled={isUpdatingResourcesStatus}
+            onClick={() => updateResourcesStatus(isResourcesLive, resourcesNotice)}
+            className="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 font-mono text-xs font-bold text-white cursor-pointer disabled:opacity-50"
+          >
+            Save Notice
+          </button>
+        </div>
+      </div>
 
       {/* Language & Step Selectors */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">

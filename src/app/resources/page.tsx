@@ -10,6 +10,7 @@ import {
   Gift,
   Rocket,
   Search,
+  ShieldAlert,
   Sparkles,
   Swords,
   X,
@@ -66,6 +67,13 @@ export default function ResourcesPage() {
     useState<Record<string, LanguageCurriculum>>(DEFAULT_CURRICULA);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
 
+  const [isResourcesLive, setIsResourcesLive] = useState<boolean>(true);
+  const [statusLoaded, setStatusLoaded] = useState<boolean>(false);
+  const [offlineNotice, setOfflineNotice] = useState<string>(
+    'KOLLΛBRIX CODEX is currently offline while we curate new language tracks, technical manuals, and OA playbooks. Check back soon!'
+  );
+  const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
+
   // Hydrate bookmarks, progress, and dynamic curricula
   useEffect(() => {
     try {
@@ -107,6 +115,20 @@ export default function ResourcesPage() {
       } catch {}
     }
 
+    async function loadResourcesStatus() {
+      try {
+        const res = await fetch(`/api/resources/status?_t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setIsResourcesLive(data.isLive !== false);
+          if (data.maintenanceMessage) setOfflineNotice(data.maintenanceMessage);
+        }
+      } catch {} finally {
+        setStatusLoaded(true);
+      }
+    }
+
+    loadResourcesStatus();
     loadCurricula();
   }, []);
 
@@ -198,6 +220,54 @@ export default function ResourcesPage() {
     [lastVisitedId]
   );
 
+  // Gate /resources when Admin has set Resources to Not Live (Admins still bypass to preview)
+  if (statusLoaded && !isResourcesLive && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-[#07090E] text-white flex items-center justify-center p-6 relative overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="fixed inset-y-0 right-0 w-full lg:w-1/2 bg-[#0B0F18] pointer-events-none border-l border-white/[0.03]"
+        />
+        <div className="relative z-10 w-full max-w-xl rounded-3xl bg-[#0A0E17] border border-white/12 p-8 sm:p-10 shadow-[0_35px_120px_rgba(0,0,0,0.85)] space-y-6">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-400/30 flex items-center justify-center text-rose-300 shrink-0">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/30 text-[10px] font-mono uppercase tracking-[0.2em] text-rose-300">
+                NOT LIVE · COMING SOON
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-white mt-1">
+                KOLLΛBRIX CODEX
+              </h1>
+            </div>
+          </div>
+
+          <p className="text-sm sm:text-base text-zinc-300 leading-relaxed bg-white/[0.03] border border-white/[0.08] rounded-2xl p-4">
+            {offlineNotice}
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#FAF8F5] text-[#07090E] font-semibold text-sm hover:bg-sky-100 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Return to Kollabrix</span>
+            </Link>
+            <Link
+              href="/arena"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/[0.05] border border-white/15 hover:border-white/30 text-xs font-mono text-zinc-200"
+            >
+              <span>Visit Battle Arena</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Full interactive step workspace mode if user explicitly drilled into a curriculum
   if (activeWorkspaceId && curriculaMap[activeWorkspaceId]) {
     return (
@@ -233,6 +303,19 @@ export default function ResourcesPage() {
 
       {/* Main Editorial Workspace */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
+        {statusLoaded && !isResourcesLive && isAdmin && (
+          <div className="px-5 sm:px-10 lg:px-14 py-2 bg-rose-950/70 border-b border-rose-500/30 text-rose-200 text-xs font-mono flex items-center justify-between gap-3">
+            <span>
+              ADMIN PREVIEW MODE: Resources (/resources) is currently <strong>NOT LIVE</strong> for students.
+            </span>
+            <Link
+              href="/control-center-7x9"
+              className="underline hover:text-white shrink-0"
+            >
+              Manage in Control Center →
+            </Link>
+          </div>
+        )}
         {/* Minimal Studio Top Strip */}
         <header className="h-[72px] px-5 sm:px-10 lg:px-14 flex items-center justify-between gap-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
