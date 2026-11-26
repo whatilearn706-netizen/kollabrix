@@ -30,9 +30,9 @@ export const COLLEGIATE_BOT_PROFILES: BotProfile[] = [
 ];
 
 export const PROVING_GROUNDS_AVATARS = [
-  { id: 'ronin', name: 'Cyber Ronin', image: '/images/arena-cyber-entity.png' },
-  { id: 'sentinel', name: 'Iron Sentinel', image: '/images/arena-retro-sentinel-clean.png' },
-  { id: 'walker', name: 'Portal Walker', image: '/images/arena-portal-walker-v1.png' },
+  { id: 'ronin', name: 'Cyber Ronin', image: '/images/arena-cyber-entity.jpg' },
+  { id: 'sentinel', name: 'Iron Sentinel', image: '/images/arena-retro-sentinel-hd.jpg' },
+  { id: 'walker', name: 'Portal Walker', image: '/images/arena-portal-walker-v1.webp' },
   { id: 'coder', name: 'Code Prodigy', image: '/images/arena-coder-burst.jpg' },
   { id: 'glitch', name: 'Glitch Viper', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=GlitchViper&backgroundColor=0f172a' },
 ] as const;

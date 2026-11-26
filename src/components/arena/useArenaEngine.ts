@@ -126,6 +126,9 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   const [roomData, setRoomData] = useState<any>(null);
   const [isHost, setIsHost] = useState<boolean>(true);
   const [isGhostDuel, setIsGhostDuel] = useState<boolean>(true);
+  const [isRankedMatch, setIsRankedMatch] = useState<boolean>(true);
+  const isRankedMatchRef = useRef<boolean>(true);
+  isRankedMatchRef.current = isRankedMatch;
   const [rivalProfile, setRivalProfile] = useState<BotProfile>(() => pickRivalProfile(0));
   const [faceOffStatus, setFaceOffStatus] = useState<'scanning' | 'locked' | 'countdown'>('scanning');
   const [countdownNum, setCountdownNum] = useState<number | 'COMPILE!'>(3);
@@ -184,6 +187,10 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   const lastKeyTimeRef = useRef<number>(0);
   const hasRecordedEloRef = useRef<boolean>(false);
   const matchEndedRef = useRef<boolean>(false);
+  const userTestsPassedRef = useRef<number>(0);
+  const rivalTestsPassedRef = useRef<number>(0);
+  userTestsPassedRef.current = userTestsPassed;
+  rivalTestsPassedRef.current = rivalTestsPassed;
 
   const finalizeMatchResult = useCallback(
     (side: 'you' | 'rival' | 'draw') => {
@@ -492,12 +499,15 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
     if (ghostOnly) {
       setIsGhostDuel(true);
+      setIsRankedMatch(false);
       setRivalProfile(pickRivalProfile());
       setFaceOffStatus('locked');
       setStage('faceoff');
       trackEvent('arena_match_started', { mode: combatMode, ghostOnly: true, language: algoLanguage });
       return;
     }
+
+    setIsRankedMatch(true);
 
     // Ranked Matchmaking: Scan for real human contender first!
     setRivalProfile(pickRivalProfile());
@@ -573,6 +583,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setRoomCode(code);
     setIsHost(true);
     setIsGhostDuel(false);
+    setIsRankedMatch(true);
     setEloBefore(stats.elo);
     loadQuestionIntoWorkspace(chosenQ, timeLimit, algoLanguage, combatMode);
     setStage('room');
@@ -768,15 +779,17 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     }
   }, [stage, faceOffStatus, countdownNum, audioEnabled, roomCode]);
 
-  // Countdown clock during battle
+  // Countdown clock during battle (uses refs so test passes never stall the 1s tick interval)
   useEffect(() => {
     if (stage !== 'battle') return;
     const iv = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(iv);
+          const uPassed = userTestsPassedRef.current;
+          const rPassed = rivalTestsPassedRef.current;
           const side: 'you' | 'rival' | 'draw' =
-            userTestsPassed > rivalTestsPassed ? 'you' : rivalTestsPassed > userTestsPassed ? 'rival' : 'draw';
+            uPassed > rPassed ? 'you' : rPassed > uPassed ? 'rival' : 'draw';
           finalizeMatchResult(side);
           return 0;
         }
@@ -784,7 +797,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       });
     }, 1000);
     return () => clearInterval(iv);
-  }, [stage, userTestsPassed, rivalTestsPassed]);
+  }, [stage, finalizeMatchResult]);
 
   // Ref snapshot for safe unmount / pagehide leave-forfeit without false triggers on stage transitions or re-renders
   const livePvpRef = useRef({
@@ -1062,37 +1075,50 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       return;
     }
 
-    // Compiler Execution (Python / Java / C++)
+    // Compiler Execution (Python / Java / C++) — fail-fast on Case #1 for syntax/compile errors
     const lang = activeTab === 'java' ? 'java' : activeTab === 'cpp' ? 'cpp' : 'python';
     const code = lang === 'python' ? pythonCode : lang === 'java' ? javaCode : cppCode;
     const tcs = activeQuestion.testCases || [];
 
-    const results = await Promise.all(
-      tcs.map(async (tc, idx) => {
-        try {
-          const res = await fetch('/api/compiler/run', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ language: lang, code, stdin: tc.input || '' }),
-          });
-          const d = await res.json();
-          const out = (d.stdout || '').trim();
-          const errText = (d.stderr || d.compile_output || (!d.success ? d.error : '') || '').trim();
-          const pass = Boolean(d.success) && verifyTestOutput(activeQuestion.id, out, (tc.expectedOutput || '').trim(), tc.input || '');
-          return {
-            idx,
-            verdict: {
-              status: (!d.success ? 'Error' : pass ? 'Accepted' : 'Wrong Answer') as TestCaseVerdict['status'],
-              stdout: out || (errText ? '' : '(No output)'),
-              stderr: errText || undefined,
-              executionTimeMs: d.executionTimeMs || 15,
-            },
-          };
-        } catch {
-          return { idx, verdict: { status: 'Error' as const, stdout: '', stderr: 'Execution service unreachable' } };
+    const runSingleCase = async (tc: any, idx: number) => {
+      try {
+        const res = await fetch('/api/compiler/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: lang, code, stdin: tc.input || '' }),
+        });
+        const d = await res.json();
+        const out = (d.stdout || '').trim();
+        const errText = (d.stderr || d.compile_output || (!d.success ? d.error : '') || '').trim();
+        const pass = Boolean(d.success) && verifyTestOutput(activeQuestion.id, out, (tc.expectedOutput || '').trim(), tc.input || '');
+        return {
+          idx,
+          verdict: {
+            status: (!d.success ? 'Error' : pass ? 'Accepted' : 'Wrong Answer') as TestCaseVerdict['status'],
+            stdout: out || (errText ? '' : '(No output)'),
+            stderr: errText || undefined,
+            executionTimeMs: d.executionTimeMs || 15,
+          },
+        };
+      } catch {
+        return { idx, verdict: { status: 'Error' as const, stdout: '', stderr: 'Execution service unreachable' } };
+      }
+    };
+
+    let results: Array<{ idx: number; verdict: TestCaseVerdict }> = [];
+    if (tcs.length > 0) {
+      const firstResult = await runSingleCase(tcs[0], 0);
+      results.push(firstResult);
+      if (firstResult.verdict.status === 'Error' && tcs.length > 1) {
+        // Mirror compile/runtime failure across cases without burning 5x compiler calls
+        for (let i = 1; i < tcs.length; i++) {
+          results.push({ idx: i, verdict: firstResult.verdict });
         }
-      })
-    );
+      } else if (tcs.length > 1) {
+        const restResults = await Promise.all(tcs.slice(1).map((tc, offset) => runSingleCase(tc, offset + 1)));
+        results = [...results, ...restResults];
+      }
+    }
 
     const map: Record<number, TestCaseVerdict> = {};
     let passed = 0;
@@ -1154,6 +1180,10 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       javaCode,
       cppCode,
     });
+
+    if (!isRankedMatchRef.current) {
+      return;
+    }
 
     const outcome = winnerSide === 'you' ? 'win' : winnerSide === 'rival' ? 'loss' : 'draw';
     const optimisticDelta = outcome === 'win' ? 24 : outcome === 'loss' ? -16 : 0;
@@ -1270,6 +1300,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     roomData,
     isHost,
     isGhostDuel,
+    isRankedMatch,
     rivalProfile,
     faceOffStatus,
     countdownNum,

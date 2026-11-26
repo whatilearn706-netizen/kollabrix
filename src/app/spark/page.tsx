@@ -136,7 +136,7 @@ export default function SparkUniversalWorkspacePage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [quotaNote, setQuotaNote] = useState('');
   const [deepRemaining, setDeepRemaining] = useState<number>(0);
-  const [fastRemaining, setFastRemaining] = useState<number>(4);
+  const [fastRemaining, setFastRemaining] = useState<number>(1);
   const [entitlements, setEntitlements] = useState<KaEntitlementSummary | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
@@ -571,7 +571,16 @@ export default function SparkUniversalWorkspacePage() {
 
           <button
             type="button"
-            onClick={() => setTier(tier === 'deep' ? 'fast' : 'deep')}
+            onClick={() => {
+              if (tier === 'fast' && entitlements?.hackathonOnly && mode !== 'hackathon') {
+                setPricingReason(
+                  '₹49 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro anywhere!'
+                );
+                setPricingOpen(true);
+                return;
+              }
+              setTier(tier === 'deep' ? 'fast' : 'deep');
+            }}
             title="Toggle KΛ-Pro Deep Think"
             className={`px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer shrink-0 mb-0.5 border ${
               tier === 'deep'

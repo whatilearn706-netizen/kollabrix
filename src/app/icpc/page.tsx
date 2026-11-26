@@ -546,16 +546,42 @@ export default function IcpcCollegiateArenaPage() {
     }
   };
 
-  const handleUnlockPasscode = (e?: React.FormEvent) => {
+  const handleUnlockPasscode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!passcodeModalContest) return;
 
-    const expected = passcodeModalContest.passcode?.trim().toUpperCase();
     const actual = enteredPasscode.trim().toUpperCase();
-
-    if (expected && actual !== expected) {
-      setPasscodeError(`Invalid room passcode. Check with your professor (Demo code: ${passcodeModalContest.passcode || 'LAB2026'}).`);
+    if (!actual) {
+      setPasscodeError('Please enter the room passcode.');
       return;
+    }
+
+    const expected = passcodeModalContest.passcode?.trim().toUpperCase();
+    if (expected) {
+      if (actual !== expected) {
+        setPasscodeError('Invalid room passcode. Check with your professor.');
+        return;
+      }
+    } else if (passcodeModalContest.hasPasscode) {
+      try {
+        const res = await fetch('/api/icpc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'verify_passcode',
+            contestId: passcodeModalContest.id,
+            passcode: actual,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.valid) {
+          setPasscodeError(data?.error || 'Invalid room passcode. Check with your professor.');
+          return;
+        }
+      } catch {
+        setPasscodeError('Unable to verify passcode right now. Please try again.');
+        return;
+      }
     }
 
     const studentCollege = ((profile as any)?.college || (user as any)?.user_metadata?.college || '').trim().toLowerCase();

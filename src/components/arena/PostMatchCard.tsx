@@ -102,18 +102,26 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
-                    eloDelta >= 0
-                      ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                      : 'bg-red-950/60 border-red-500/40 text-red-300'
-                  }`}
-                >
-                  {eloDelta >= 0 ? `+${eloDelta}` : eloDelta} ELO ({engine.eloBefore} → {engine.stats.elo})
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/35 font-mono text-[10px] font-bold text-amber-200">
-                  +{campusPts} Campus War Pts
-                </span>
+                {engine.isRankedMatch ? (
+                  <>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
+                        eloDelta >= 0
+                          ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                          : 'bg-red-950/60 border-red-500/40 text-red-300'
+                      }`}
+                    >
+                      {eloDelta >= 0 ? `+${eloDelta}` : eloDelta} ELO ({engine.eloBefore} → {engine.stats.elo})
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-950/50 border border-amber-500/35 font-mono text-[10px] font-bold text-amber-200">
+                      +{campusPts} Campus War Pts
+                    </span>
+                  </>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/15 font-mono text-[10px] font-bold text-slate-300">
+                    WARMUP PRACTICE &bull; 0 ELO CHANGE
+                  </span>
+                )}
               </div>
             </div>
 
@@ -147,21 +155,27 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
               </div>
 
               <div>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
-                    didWin
-                      ? 'bg-red-950/40 border-red-500/30 text-red-300'
+                {engine.isRankedMatch ? (
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold border ${
+                      didWin
+                        ? 'bg-red-950/40 border-red-500/30 text-red-300'
+                        : isDraw
+                          ? 'bg-white/[0.05] border-white/15 text-slate-300'
+                          : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                    }`}
+                  >
+                    {didWin
+                      ? `-14 ELO ▼ (${engine.rivalProfile.elo - 14})`
                       : isDraw
-                        ? 'bg-white/[0.05] border-white/15 text-slate-300'
-                        : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
-                  }`}
-                >
-                  {didWin
-                    ? `-14 ELO ▼ (${engine.rivalProfile.elo - 14})`
-                    : isDraw
-                      ? `0 ELO (${engine.rivalProfile.elo})`
-                      : `+24 ELO ▲ (${engine.rivalProfile.elo + 24})`}
-                </span>
+                        ? `0 ELO (${engine.rivalProfile.elo})`
+                        : `+24 ELO ▲ (${engine.rivalProfile.elo + 24})`}
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/[0.05] border border-white/15 font-mono text-[10px] font-bold text-slate-400">
+                    SHADOW GHOST BOT
+                  </span>
+                )}
               </div>
             </div>
           </div>

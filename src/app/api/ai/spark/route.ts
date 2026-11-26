@@ -69,8 +69,9 @@ export interface SparkBlueprintResponse {
   matchScore?: number;
 }
 
-// Active models to try in order of capability: Hydrogen 4 & 3.1 Pro first, fallback to Flash
-const GEMINI_MODELS = [
+// KΛ-1 uses Gemini Flash; KΛ-Pro uses Gemini 4 Hydrogen & Gemini 3.1 Pro first
+const FAST_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
+const DEEP_GEMINI_MODELS = [
   'gemini-4-hydrogen',
   'gemini-3.1-pro-preview',
   'gemini-3-flash-preview',
@@ -501,13 +502,23 @@ export async function POST(request: NextRequest) {
       sparkSettings.geminiApiKey && isValidGeminiKey(sparkSettings.geminiApiKey)
         ? sparkSettings.geminiApiKey.trim()
         : '';
-    const geminiKey =
-      validSettingsGeminiKey ||
-      process.env.GEMINI_API_KEY ||
-      process.env.GOOGLE_API_KEY ||
-      (process.env.GEMINI_API_KEYS || '').split(',').map((k) => k.trim()).find((k) => isValidGeminiKey(k));
+    const geminiKeys = Array.from(
+      new Set(
+        [
+          validSettingsGeminiKey,
+          process.env.GEMINI_API_KEY || '',
+          ...(process.env.GEMINI_API_KEYS || '').split(','),
+          process.env.GOOGLE_API_KEY || '',
+        ]
+          .map((k) => k.trim())
+          .filter((k) => isValidGeminiKey(k))
+      )
+    ).slice(0, 2);
     const openaiKey = sparkSettings.openaiApiKey || process.env.OPENAI_API_KEY;
     const preferredEngine = sparkSettings.engine || 'auto';
+    const isProTier = quota.effectiveTier === 'deep';
+    const activeModelLabel = isProTier ? 'KΛ-Pro' : 'KΛ-1';
+    const selectedModels = isProTier ? DEEP_GEMINI_MODELS : FAST_GEMINI_MODELS;
 
     // Admin-configured scoring weights
     const weights = sparkSettings.scoringWeights || { technical: 30, novelty: 25, feasibility: 25, impact: 20 };
@@ -519,8 +530,8 @@ export async function POST(request: NextRequest) {
 
     let blueprint: SparkBlueprintResponse | null = null;
 
-    // 1. If Gemini key is available, execute multi-model cascade
-    if (geminiKey && (preferredEngine === 'auto' || preferredEngine === 'gemini')) {
+    // 1. If Gemini key is available, execute tier-matched multi-model cascade
+    if (geminiKeys.length > 0 && (preferredEngine === 'auto' || preferredEngine === 'gemini')) {
       const sysPrompt = `You are a Principal Software Architect and Hackathon Grand Prize Judge.
 Evaluate the student project idea: "${prompt}".
 ${track ? `Target Hackathon Track: "${track}".` : ''}
@@ -594,81 +605,91 @@ Return ONLY a valid JSON object matching this exact schema:
   ]
 }`;
 
-      for (const model of GEMINI_MODELS) {
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 22000);
+      const overallStart = Date.now();
+      for (const model of selectedModels) {
+        if (blueprint || Date.now() - overallStart > 65000) break;
+        for (const geminiKey of geminiKeys) {
+          if (Date.now() - overallStart > 65000) break;
+          try {
+            const controller = new AbortController();
+            const isHydrogen = model.includes('4-');
+            const isPro = model.includes('pro');
+            const timeout = setTimeout(() => controller.abort(), isHydrogen ? 35000 : isPro ? 28000 : 18000);
 
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
-          const genConfig: any = {
-            responseMimeType: 'application/json',
-            temperature: sparkSettings.temperature || 0.7,
-          };
-          if (model.includes('flash')) {
-            genConfig.thinkingConfig = { thinkingBudget: 0 };
-          }
-
-          const res = await fetch(url, {
-            method: 'POST',
-            signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: sysPrompt }] }],
-              generationConfig: genConfig,
-            }),
-          });
-          clearTimeout(timeout);
-
-          if (res.ok) {
-            const aiJson = await res.json();
-            const text = aiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              const parsed = JSON.parse(text);
-
-              if (parsed.error) {
-                return NextResponse.json({ error: parsed.error }, { status: 400 });
-              }
-
-              const flatTech = [
-                ...(parsed.techStackByCategory?.frontend || []),
-                ...(parsed.techStackByCategory?.backend || []),
-                ...(parsed.techStackByCategory?.database || []),
-                ...(parsed.techStackByCategory?.aiOrCloud || []),
-              ];
-
-              const roles = (parsed.rolesBreakdown || []).map((r: any) => r.role);
-              const skillGaps = computeSkillGaps(userSkills, parsed.rolesBreakdown || []);
-
-              // Ensure calibrated 4-axis weighted overall score using admin formula
-              const scores = parsed.scores || {};
-              const techComp = Math.max(10, Math.min(99, Number(scores.technicalComplexity) || 80));
-              const nov = Math.max(10, Math.min(99, Number(scores.novelty) || 80));
-              const feas = Math.max(10, Math.min(99, Number(scores.feasibility) || 80));
-              const imp = Math.max(10, Math.min(99, Number(scores.impact) || 80));
-              const calculatedOverall = Math.round(
-                (techComp * wTech + nov * wNov + feas * wFeas + imp * wImp) / totalW
-              );
-
-              scores.technicalComplexity = techComp;
-              scores.novelty = nov;
-              scores.feasibility = feas;
-              scores.impact = imp;
-              scores.overall = calculatedOverall;
-
-              blueprint = {
-                ...parsed,
-                scores,
-                technologies: flatTech.length > 0 ? flatTech : ['Next.js 14', 'TypeScript', 'TailwindCSS', 'PostgreSQL'],
-                desired_roles: roles.length > 0 ? roles : ['Full-Stack Lead', 'Backend Specialist', 'UI/UX Designer'],
-                skillGaps,
-                hackathonTrack: track || 'Open Innovation Track',
-                engine: 'KΛ-Pro',
-              };
-              break; // Success! Exit model loop
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+            const genConfig: any = {
+              responseMimeType: 'application/json',
+              temperature: sparkSettings.temperature || 0.7,
+            };
+            if (model.includes('2.5') && model.includes('flash')) {
+              genConfig.thinkingConfig = { thinkingBudget: 0 };
             }
+
+            const res = await fetch(url, {
+              method: 'POST',
+              signal: controller.signal,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: sysPrompt }] }],
+                generationConfig: genConfig,
+              }),
+            });
+            clearTimeout(timeout);
+
+            if (res.ok) {
+              const aiJson = await res.json();
+              const text = aiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) {
+                const parsed = JSON.parse(text);
+
+                if (parsed.error) {
+                  return NextResponse.json({ error: parsed.error }, { status: 400 });
+                }
+
+                const flatTech = [
+                  ...(parsed.techStackByCategory?.frontend || []),
+                  ...(parsed.techStackByCategory?.backend || []),
+                  ...(parsed.techStackByCategory?.database || []),
+                  ...(parsed.techStackByCategory?.aiOrCloud || []),
+                ];
+
+                const roles = (parsed.rolesBreakdown || []).map((r: any) => r.role);
+                const skillGaps = computeSkillGaps(userSkills, parsed.rolesBreakdown || []);
+
+                // Ensure calibrated 4-axis weighted overall score using admin formula
+                const scores = parsed.scores || {};
+                const techComp = Math.max(10, Math.min(99, Number(scores.technicalComplexity) || 80));
+                const nov = Math.max(10, Math.min(99, Number(scores.novelty) || 80));
+                const feas = Math.max(10, Math.min(99, Number(scores.feasibility) || 80));
+                const imp = Math.max(10, Math.min(99, Number(scores.impact) || 80));
+                const calculatedOverall = Math.round(
+                  (techComp * wTech + nov * wNov + feas * wFeas + imp * wImp) / totalW
+                );
+
+                scores.technicalComplexity = techComp;
+                scores.novelty = nov;
+                scores.feasibility = feas;
+                scores.impact = imp;
+                scores.overall = calculatedOverall;
+
+                blueprint = {
+                  ...parsed,
+                  scores,
+                  technologies: flatTech.length > 0 ? flatTech : ['Next.js 14', 'TypeScript', 'TailwindCSS', 'PostgreSQL'],
+                  desired_roles: roles.length > 0 ? roles : ['Full-Stack Lead', 'Backend Specialist', 'UI/UX Designer'],
+                  skillGaps,
+                  hackathonTrack: track || 'Open Innovation Track',
+                  engine: activeModelLabel,
+                };
+                break;
+              }
+            } else if (res.status === 400) {
+              break;
+            }
+          } catch (err: any) {
+            console.warn(`Gemini model ${model} failed, trying next:`, err.message);
+            break;
           }
-        } catch (err: any) {
-          console.warn(`Gemini model ${model} failed, trying next:`, err.message);
         }
       }
     }

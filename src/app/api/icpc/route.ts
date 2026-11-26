@@ -246,6 +246,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    // Server-side lab passcode verification (since GET strips raw passcodes for anti-cheat security)
+    if (body?.action === 'verify_passcode') {
+      const targetContestId = String(body.contestId || '').trim();
+      const attempt = String(body.passcode || '').trim().toUpperCase();
+      if (!targetContestId || !attempt) {
+        return NextResponse.json({ success: false, valid: false, error: 'Contest ID and passcode are required.' }, { status: 400 });
+      }
+      const masterData = await loadIcpcMasterData();
+      const pool = [...masterData.contests, ...memoryContests, ...CURATED_ICPC_CONTESTS];
+      const contest = pool.find((c) => c.id === targetContestId);
+      if (!contest) {
+        return NextResponse.json({ success: false, valid: false, error: 'Contest not found.' }, { status: 404 });
+      }
+      const expected = String(contest.passcode || '').trim().toUpperCase();
+      if (!expected || expected === attempt) {
+        return NextResponse.json({ success: true, valid: true });
+      }
+      return NextResponse.json(
+        { success: false, valid: false, error: 'Invalid room passcode. Please verify with your faculty/organizer.' },
+        { status: 403 }
+      );
+    }
+
     const { title, subtitle, durationMinutes, problems, rules, visibility, passcode, college, contestType, creatorId, userRole, facultyVerified } = body;
 
     // ── Authentication Check: Verified faculty or administrators ONLY ──

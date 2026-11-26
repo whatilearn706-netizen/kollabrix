@@ -191,24 +191,29 @@ export function KaPricingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-      <div className="relative w-full max-w-4xl rounded-3xl bg-[#0b0d13] border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.85)] p-6 sm:p-8 text-white">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ka-pricing-title"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-5 overflow-y-auto"
+    >
+      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#0b0d13] border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.85)] p-5 sm:p-6 text-white my-auto">
         <button
           type="button"
           onClick={onClose}
           aria-label="Close pricing modal"
-          className="absolute right-5 top-5 p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+          className="absolute right-4 top-4 z-10 p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Header */}
-        <div className="text-center max-w-xl mx-auto space-y-2 mb-6">
+        <div className="text-center max-w-xl mx-auto space-y-1.5 mb-5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold tracking-wider uppercase">
             <Crown className="w-3.5 h-3.5" />
             <span>KΛ ΛI Builder Plans</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
+          <h2 id="ka-pricing-title" className="text-xl sm:text-2xl font-black tracking-tight">
             Win Hackathons &amp; Crack Placements Faster
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400">

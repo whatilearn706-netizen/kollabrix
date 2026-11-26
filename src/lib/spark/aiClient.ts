@@ -299,12 +299,18 @@ export async function streamSparkLLM(opts: CallSparkLLMOptions): Promise<{
   }
   contents.push({ role: 'user', parts: userParts });
 
+  const overallStart = Date.now();
+  const activeKeys = geminiKeys.slice(0, 2);
+
   for (const model of modelChain) {
-    for (const apiKey of geminiKeys) {
+    if (Date.now() - overallStart > 70000) break;
+    for (const apiKey of activeKeys) {
+      if (Date.now() - overallStart > 70000) break;
       try {
         const controller = new AbortController();
-        const isDeep = model.includes('4-') || model.includes('pro');
-        const timer = setTimeout(() => controller.abort(), isDeep ? 35000 : 15000);
+        const isHydrogen = model.includes('4-');
+        const isPro = model.includes('pro');
+        const timer = setTimeout(() => controller.abort(), isHydrogen ? 35000 : isPro ? 28000 : 18000);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
         const generationConfig: Record<string, any> = { temperature: temp };
@@ -322,7 +328,10 @@ export async function streamSparkLLM(opts: CallSparkLLMOptions): Promise<{
         });
         clearTimeout(timer);
 
-        if (!res.ok || !res.body) continue;
+        if (!res.ok || !res.body) {
+          if (res.status === 400 || res.status === 404) break;
+          continue;
+        }
 
         const engineLabel = tier === 'deep' ? 'KΛ-Pro' : 'KΛ-1';
 
@@ -361,7 +370,7 @@ export async function streamSparkLLM(opts: CallSparkLLMOptions): Promise<{
 
         return { stream: textStream, engine: engineLabel };
       } catch {
-        // Try next key/model
+        break;
       }
     }
   }

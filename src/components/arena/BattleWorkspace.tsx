@@ -297,7 +297,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
 
             <div className="flex-1 min-h-0 flex flex-col p-3 gap-2.5 overflow-hidden">
               {(!isWeb || !specCollapsed) && (
-                <div className={`space-y-2.5 overflow-y-auto shrink-0 ${isWeb ? 'max-h-40 pr-1' : 'flex-1'}`}>
+                <div className={`space-y-2.5 overflow-y-auto shrink-0 ${isWeb ? 'max-h-28 pr-1' : 'flex-1'}`}>
                   <h2 className="text-base sm:text-[17px] font-black text-white tracking-tight">{q.title}</h2>
                   <p className="text-[13.5px] leading-relaxed font-medium text-slate-100 whitespace-pre-line">{q.description}</p>
                   {!isWeb && (q.sampleInput || q.testCases?.[0]) && (
@@ -513,12 +513,12 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                   </button>
                 ))}
               </div>
-              <span className="hidden sm:inline-flex items-center gap-1 text-slate-400">
+              <span className="hidden 2xl:inline-flex items-center gap-1 text-slate-400 whitespace-nowrap shrink-0">
                 <Sparkles className="w-3 h-3 text-slate-300" />
                 Emmet / Hints Active
               </span>
-              <span className="text-slate-600">&bull;</span>
-              <span className="text-slate-500 uppercase">No-Paste</span>
+              <span className="hidden 2xl:inline text-slate-600">&bull;</span>
+              <span className="text-slate-500 uppercase whitespace-nowrap shrink-0">No-Paste</span>
             </div>
           </div>
 
@@ -678,8 +678,9 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
               autoCorrect="off"
               autoCapitalize="off"
               autoComplete="off"
+              wrap="off"
               data-gramm="false"
-              className={`flex-1 p-3.5 bg-transparent text-white/95 antialiased font-mono font-medium ${fontSizeClass} leading-[1.75] resize-none outline-none overflow-y-auto select-text`}
+              className={`flex-1 p-3.5 bg-transparent text-white/95 antialiased font-mono font-medium ${fontSizeClass} leading-[1.75] resize-none outline-none overflow-auto whitespace-pre select-text`}
             />
 
             {/* Floating VS Code / IntelliJ Abbreviation Hints Bar */}
