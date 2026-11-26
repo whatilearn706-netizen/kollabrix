@@ -7,8 +7,6 @@ import {
   Rocket,
   Gavel,
   FileCode2,
-  Send,
-  Sparkles,
   Check,
   Copy,
   Download,
@@ -16,7 +14,6 @@ import {
   Share2,
   AlertTriangle,
   Loader2,
-  MessageSquare,
 } from 'lucide-react';
 
 export interface SparkChatMessage {
@@ -61,37 +58,25 @@ interface Props {
   userCollege?: string;
   onShareSession: () => void;
   shareCopied: boolean;
+  onRequireUpgrade?: (reason: string) => void;
 }
 
-const COPILOT_QUICK_PROMPTS = [
-  'Write the PostgreSQL schema for this project',
-  'Generate our 6-slide SIH PPT outline & speaker script',
-  'Simplify this so 2 beginners can build an MVP in 24 hours',
-  'List the exact REST API endpoints & auth flow',
-];
-
 /**
- * Interactive AI Spark Superpowers Panel:
+ * Interactive KΛ ΛI Hackathon Superpowers Panel:
  * 1. Live Campus Squad Match & 1-Click Workspace + Kanban Launch
- * 2. Ongoing Spark Copilot Chat Workspace
- * 3. Hackathon Judge Simulator (with GitHub Repo Audit)
- * 4. 1-Click Starter Code & Architecture Export
+ * 2. Hackathon Judge Simulator (with GitHub Repo Audit)
+ * 3. 1-Click Starter Code & Architecture Export
  */
 export function SparkSuperpowersPanel({
   blueprint,
   track,
   sessionId,
-  messages,
-  onMessagesChange,
   userCollege,
   onShareSession,
   shareCopied,
+  onRequireUpgrade,
 }: Props) {
   const router = useRouter();
-
-  // Copilot Chat state
-  const [chatInput, setChatInput] = useState('');
-  const [chatLoading, setChatLoading] = useState(false);
 
   // Squad Match & Launch Workspace state
   const [matching, setMatching] = useState(false);
@@ -129,6 +114,13 @@ export function SparkSuperpowersPanel({
         }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
+          onRequireUpgrade?.(data?.error || 'Unlock Hackathon Pass (₹49 / 7 days) to match teammates.');
+        }
+        setLaunchError(data?.error || 'Could not scan campus teammates right now.');
+        return;
+      }
       if (data?.success && Array.isArray(data.matches)) {
         setMatches(data.matches);
         setSelectedInvites(data.matches.slice(0, 2).map((m: MatchedBuilder) => m.user_id));
@@ -156,6 +148,9 @@ export function SparkSuperpowersPanel({
       });
       const data = await res.json();
       if (!res.ok || !data?.workspaceUrl) {
+        if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
+          onRequireUpgrade?.(data?.error || 'Unlock Hackathon Pass (₹49 / 7 days) to launch a workspace.');
+        }
         setLaunchError(data?.error || 'Please sign in and complete your profile to launch a workspace.');
         return;
       }
@@ -164,34 +159,6 @@ export function SparkSuperpowersPanel({
       setLaunchError('Failed to create workspace. Please try again.');
     } finally {
       setLaunching(false);
-    }
-  };
-
-  const handleSendCopilot = async (customPrompt?: string) => {
-    const text = (customPrompt ?? chatInput).trim();
-    if (!text || chatLoading) return;
-    if (!customPrompt) setChatInput('');
-
-    setChatLoading(true);
-    try {
-      const res = await fetch('/api/spark/copilot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          blueprint,
-          messages,
-          userMessage: text,
-        }),
-      });
-      const data = await res.json();
-      if (data?.success && Array.isArray(data.messages)) {
-        onMessagesChange(data.messages);
-      }
-    } catch {
-      // Keep UI responsive
-    } finally {
-      setChatLoading(false);
     }
   };
 
@@ -206,6 +173,9 @@ export function SparkSuperpowersPanel({
       });
       const data = await res.json();
       if (!res.ok || !data?.audit) {
+        if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
+          onRequireUpgrade?.(data?.error || 'Unlock Hackathon Pass (₹49 / 7 days) for AI Judge Audits.');
+        }
         setJudgeError(data?.error || 'Audit failed.');
         return;
       }
@@ -524,89 +494,6 @@ export function SparkSuperpowersPanel({
           </pre>
         </div>
       )}
-
-      {/* 4. Ongoing Spark Copilot Chat Workspace */}
-      <div className="p-5 rounded-2xl bg-black/70 border border-white/15 space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div>
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-amber-400" />
-              <span>Spark Project Copilot (Ongoing Thread)</span>
-            </h4>
-            <p className="text-xs text-zinc-400">
-              Iterate on this exact blueprint — generate SQL schemas, pitch slides, API routes, or 24-hour MVP cuts.
-            </p>
-          </div>
-          {sessionId && (
-            <span className="text-[10px] font-mono px-2 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-              Auto-Saved to Cloud
-            </span>
-          )}
-        </div>
-
-        {/* Quick-Prompt Chips */}
-        <div className="flex flex-wrap gap-1.5">
-          {COPILOT_QUICK_PROMPTS.map((qp) => (
-            <button
-              key={qp}
-              type="button"
-              disabled={chatLoading}
-              onClick={() => handleSendCopilot(qp)}
-              className="px-3 py-1.5 rounded-full bg-[#090C12] hover:bg-white/10 border border-white/12 text-[11px] text-zinc-300 hover:text-white transition-all cursor-pointer flex items-center gap-1"
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>{qp}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Chat Thread */}
-        {messages.length > 0 && (
-          <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`p-3.5 rounded-2xl text-xs leading-relaxed whitespace-pre-wrap ${
-                  msg.role === 'user'
-                    ? 'bg-white/10 text-white ml-8 border border-white/15'
-                    : 'bg-[#090C12] text-zinc-200 mr-4 border border-white/10 font-mono'
-                }`}
-              >
-                <div className="text-[10px] font-bold uppercase tracking-wider mb-1 text-zinc-400">
-                  {msg.role === 'user' ? 'You' : 'Spark Copilot'}
-                </div>
-                {msg.content}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Follow-up Input */}
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendCopilot();
-              }
-            }}
-            placeholder="Ask Spark Copilot anything about building this project..."
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#090C12] border border-white/15 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/40"
-          />
-          <button
-            type="button"
-            onClick={() => handleSendCopilot()}
-            disabled={chatLoading || !chatInput.trim()}
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-          >
-            {chatLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            <span>Ask</span>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

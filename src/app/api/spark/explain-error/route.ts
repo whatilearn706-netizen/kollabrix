@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callSparkLLM } from '@/lib/spark/aiClient';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { consumeKaExplainQuota } from '@/lib/spark/plans';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,6 +13,25 @@ export async function POST(request: NextRequest) {
     const rateCheck = checkIpRateLimit(`spark-explain:${ip}`, 30, 5 * 60 * 1000, 5 * 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: 'Rate limit reached. Please wait a moment.' }, { status: 429 });
+    }
+
+    let userId: string | null = null;
+    try {
+      const serverClient = createServerSupabaseClient();
+      const { data: { user } } = await serverClient.auth.getUser();
+      userId = user?.id || null;
+    } catch {}
+
+    const quota = await consumeKaExplainQuota(userId || ip, userId);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: quota.error || 'Bug Coach daily limit reached.',
+          upgradeRequired: Boolean(quota.upgradeRequired),
+          requireAuth: !userId,
+        },
+        { status: quota.upgradeRequired ? 402 : 429 }
+      );
     }
 
     const body = await request.json();

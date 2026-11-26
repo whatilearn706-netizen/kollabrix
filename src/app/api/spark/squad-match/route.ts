@@ -3,6 +3,8 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured, DEFAULT_SUPABASE_URL } from '@/lib/supabase/isConfigured';
 import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
+import { getKaEntitlements } from '@/lib/spark/plans';
+import { getClientIp } from '@/lib/security/ipRateLimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -31,6 +33,22 @@ export async function POST(request: NextRequest) {
       const { data: { user } } = await serverClient.auth.getUser();
       currentUserId = user?.id || null;
     } catch {}
+
+    const ip = getClientIp(request);
+    const entitlements = await getKaEntitlements(currentUserId || ip, currentUserId);
+    if (!entitlements.canSquadMatch) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: currentUserId
+            ? 'AI Squad Match & Workspace Launch requires Hackathon Sprint Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
+            : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to use AI Squad Match.',
+          requireAuth: !currentUserId,
+          upgradeRequired: true,
+        },
+        { status: currentUserId ? 402 : 401 }
+      );
+    }
 
     if (action === 'match') {
       const { requiredSkills = [], desiredRoles = [], userCollege = '' } = body;

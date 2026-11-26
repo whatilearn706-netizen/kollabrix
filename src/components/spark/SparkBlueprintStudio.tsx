@@ -19,6 +19,7 @@ import {
   Code2,
 } from 'lucide-react';
 import { SparkSuperpowersPanel, SparkChatMessage } from './SparkSuperpowersPanel';
+import { KaHackathonWarRoom } from './KaHackathonWarRoom';
 
 const HACKATHON_TRACKS = [
   { id: 'open', label: '⚡ Open Brainstorm' },
@@ -47,6 +48,7 @@ interface Props {
   setSessionId: (id: string | null) => void;
   copilotMessages: SparkChatMessage[];
   setCopilotMessages: (msgs: SparkChatMessage[]) => void;
+  onRequireUpgrade?: (reason: string) => void;
   onSessionCreated: (session: any) => void;
 }
 
@@ -63,6 +65,7 @@ export function SparkBlueprintStudio({
   setSessionId,
   copilotMessages,
   setCopilotMessages,
+  onRequireUpgrade,
   onSessionCreated,
 }: Props) {
   const [prompt, setPrompt] = useState('');
@@ -225,6 +228,15 @@ export function SparkBlueprintStudio({
         </button>
       </div>
 
+      {/* 5-Tool Hackathon Sprint Pass War-Room */}
+      <KaHackathonWarRoom
+        user={user}
+        blueprint={blueprint}
+        sessionId={sessionId}
+        onSessionId={(id) => setSessionId(id)}
+        onRequireUpgrade={(reason) => onRequireUpgrade?.(reason)}
+      />
+
       {/* Rendered Blueprint */}
       {blueprint && (
         <div className="rounded-3xl bg-[#090C12] border border-white/15 p-6 sm:p-8 shadow-2xl space-y-6">
@@ -362,6 +374,7 @@ export function SparkBlueprintStudio({
             messages={copilotMessages}
             onMessagesChange={setCopilotMessages}
             userCollege={(profile as any)?.college || ''}
+            onRequireUpgrade={onRequireUpgrade}
             shareCopied={shareCopied}
             onShareSession={() => {
               if (!sessionId || typeof window === 'undefined') return;

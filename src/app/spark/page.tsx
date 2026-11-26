@@ -32,6 +32,8 @@ import { SparkBlueprintStudio } from '@/components/spark/SparkBlueprintStudio';
 import { SparkChatMessage } from '@/components/spark/SparkSuperpowersPanel';
 import { SparkMarkdown } from '@/components/spark/SparkMarkdown';
 import { SparkSidebar, SparkMode, StoredSparkThread } from '@/components/spark/SparkSidebar';
+import { KaPricingModal } from '@/components/spark/KaPricingModal';
+import type { KaEntitlementSummary } from '@/lib/spark/plans';
 
 type ModelTier = 'fast' | 'deep';
 
@@ -133,9 +135,27 @@ export default function SparkUniversalWorkspacePage() {
   const [streaming, setStreaming] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [quotaNote, setQuotaNote] = useState('');
-  const [deepRemaining, setDeepRemaining] = useState<number>(6);
+  const [deepRemaining, setDeepRemaining] = useState<number>(0);
+  const [fastRemaining, setFastRemaining] = useState<number>(4);
+  const [entitlements, setEntitlements] = useState<KaEntitlementSummary | null>(null);
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+
+  // Fetch active KΛ plan & daily remaining quota
+  useEffect(() => {
+    fetch('/api/spark/plan')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.entitlements) {
+          setEntitlements(d.entitlements);
+          setFastRemaining(d.entitlements.fastRemaining);
+          setDeepRemaining(d.entitlements.deepRemaining);
+        }
+      })
+      .catch(() => {});
+  }, [user?.id]);
 
   // Hydrate threads from localStorage immediately on mount
   useEffect(() => {
@@ -398,6 +418,15 @@ export default function SparkUniversalWorkspacePage() {
 
       if (!res.ok || !res.body) {
         const errJson = await res.json().catch(() => null);
+        if (errJson?.entitlements) {
+          setEntitlements(errJson.entitlements);
+          setFastRemaining(errJson.entitlements.fastRemaining);
+          setDeepRemaining(errJson.entitlements.deepRemaining);
+        }
+        if (errJson?.upgradeRequired || errJson?.requireAuth) {
+          setPricingReason(errJson?.error);
+          setPricingOpen(true);
+        }
         setErrorMsg(errJson?.error || 'KΛ ΛI could not respond right now.');
         setMessages(prevMessages);
         return;
@@ -432,6 +461,8 @@ export default function SparkUniversalWorkspacePage() {
             if (evt === 'meta') {
               if (payload.engine) streamEngine = payload.engine;
               if (typeof payload.deepRemaining === 'number') setDeepRemaining(payload.deepRemaining);
+              if (typeof payload.fastRemaining === 'number') setFastRemaining(payload.fastRemaining);
+              if (payload.entitlements) setEntitlements(payload.entitlements);
               if (payload.quotaNote) setQuotaNote(payload.quotaNote);
             } else if (evt === 'delta' && payload.text) {
               streamedText += payload.text;
@@ -589,6 +620,13 @@ export default function SparkUniversalWorkspacePage() {
           user={user}
           profile={profile}
           deepRemaining={deepRemaining}
+          fastRemaining={fastRemaining}
+          planName={entitlements?.planName || (user ? 'Free Builder' : 'Guest Preview')}
+          planId={entitlements?.planId || 'free'}
+          onOpenPricing={() => {
+            setPricingReason(undefined);
+            setPricingOpen(true);
+          }}
           onNewChat={handleNewChat}
           onSelectMode={handleSelectMode}
           onSelectThread={handleSelectThread}
@@ -717,6 +755,10 @@ export default function SparkUniversalWorkspacePage() {
               setSessionId={setRemoteSessionId}
               copilotMessages={messages}
               setCopilotMessages={setMessages}
+              onRequireUpgrade={(reason) => {
+                setPricingReason(reason);
+                setPricingOpen(true);
+              }}
               onSessionCreated={(sess) => {
                 const entry: StoredSparkThread = {
                   id: sess.id,
@@ -875,6 +917,20 @@ export default function SparkUniversalWorkspacePage() {
           </>
         )}
       </div>
+
+      <KaPricingModal
+        open={pricingOpen}
+        onClose={() => setPricingOpen(false)}
+        entitlements={entitlements}
+        reason={pricingReason}
+        onPlanActivated={(nextEnt) => {
+          setEntitlements(nextEnt);
+          setFastRemaining(nextEnt.fastRemaining);
+          setDeepRemaining(nextEnt.deepRemaining);
+          setErrorMsg('');
+          setQuotaNote('');
+        }}
+      />
     </div>
   );
 }

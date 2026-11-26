@@ -35,6 +35,10 @@ interface SparkSidebarProps {
   user: any;
   profile: any;
   deepRemaining: number;
+  fastRemaining?: number;
+  planName?: string;
+  planId?: string;
+  onOpenPricing?: () => void;
   onNewChat: () => void;
   onSelectMode: (mode: SparkMode) => void;
   onSelectThread: (thread: StoredSparkThread) => void;
@@ -53,6 +57,10 @@ export function SparkSidebar({
   user,
   profile,
   deepRemaining,
+  fastRemaining = 4,
+  planName = 'Free Builder',
+  planId = 'free',
+  onOpenPricing,
   onNewChat,
   onSelectMode,
   onSelectThread,
@@ -217,20 +225,33 @@ export function SparkSidebar({
           </div>
           <div className="min-w-0">
             <div className="text-xs font-medium text-zinc-100 truncate">{displayName}</div>
-            <div className="text-[10px] text-zinc-500 flex items-center gap-1">
-              <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-              <span>KΛ-Pro: {deepRemaining} left</span>
+            <div className="text-[10px] text-zinc-500 flex items-center gap-1.5">
+              <Sparkles className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+              <span className="truncate">
+                {planName} · {fastRemaining} KΛ-1 · {deepRemaining} Pro
+              </span>
             </div>
           </div>
         </div>
-        {!user && (
-          <Link
-            href="/login"
-            className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold text-white shrink-0 transition-colors"
-          >
-            Sign in
-          </Link>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onOpenPricing && planId === 'free' && (
+            <button
+              type="button"
+              onClick={onOpenPricing}
+              className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-[10px] font-bold text-zinc-950 transition-colors cursor-pointer"
+            >
+              Upgrade
+            </button>
+          )}
+          {!user && (
+            <Link
+              href="/login"
+              className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[11px] font-semibold text-white transition-colors"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     </aside>
   );

@@ -1,44 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callSparkLLM } from '@/lib/spark/aiClient';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getKaEntitlements } from '@/lib/spark/plans';
+import { fetchDeepGitHubContext } from '@/lib/spark/githubScanner';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-async function fetchGitHubContext(repoUrl: string): Promise<string> {
-  const match = repoUrl.match(/github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)/i);
-  if (!match) return '';
-
-  const owner = match[1];
-  const repo = match[2].replace(/\.git$/i, '');
-
-  try {
-    const [metaRes, readmeRes] = await Promise.all([
-      fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-        headers: { Accept: 'application/vnd.github+json' },
-      }),
-      fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-        headers: { Accept: 'application/vnd.github+json' },
-      }),
-    ]);
-
-    let summary = '';
-    if (metaRes.ok) {
-      const meta = await metaRes.json();
-      summary += `GitHub Repo: ${meta.full_name} | Language: ${meta.language || 'Unknown'} | Stars: ${meta.stargazers_count || 0} | Description: ${meta.description || 'None'}\n`;
-    }
-    if (readmeRes.ok) {
-      const readmeJson = await readmeRes.json();
-      if (readmeJson?.content) {
-        const decoded = Buffer.from(readmeJson.content, 'base64').toString('utf-8').slice(0, 3500);
-        summary += `\nREADME.md Excerpt:\n${decoded}`;
-      }
-    }
-    return summary;
-  } catch {
-    return '';
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,8 +16,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Rate limit reached. Please wait a moment.' }, { status: 429 });
     }
 
+    let userId: string | null = null;
+    try {
+      const serverClient = createServerSupabaseClient();
+      const { data: { user } } = await serverClient.auth.getUser();
+      userId = user?.id || null;
+    } catch {}
+
+    const entitlements = await getKaEntitlements(userId || ip, userId);
+    if (!entitlements.canJudgeAudit) {
+      return NextResponse.json(
+        {
+          error: userId
+            ? 'AI Judge Rubric Audit requires Hackathon Sprint Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
+            : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to run AI Judge Rubric Audits.',
+          requireAuth: !userId,
+          upgradeRequired: true,
+        },
+        { status: userId ? 402 : 401 }
+      );
+    }
+
     const body = await request.json();
-    const { repoUrl = '', pitchText = '', track = 'open', blueprint } = body;
+    const { repoUrl = '', pitchText = '', track = 'open', blueprint, previousScore } = body;
 
     if (!repoUrl.trim() && !pitchText.trim() && !blueprint) {
       return NextResponse.json(
@@ -58,10 +47,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const githubContext = repoUrl.trim() ? await fetchGitHubContext(repoUrl.trim()) : '';
+    const repoSnap = repoUrl.trim() ? await fetchDeepGitHubContext(repoUrl.trim()) : null;
+    const githubContext = repoSnap?.found ? repoSnap.summaryText : '';
 
     const systemPrompt = `You are a strict Grand-Prize Hackathon Judge auditing a student team's submission before final judging.
 Track Rubric: ${track.toUpperCase()} (SIH 2026 / ETHIndia / Google Solution Challenge / Open Hackathon).
+${typeof previousScore === 'number' ? `Note: This team scored ${previousScore}/100 on their previous audit and is re-auditing after fixes. Fairly reward concrete improvements if visible in their latest commits, README, or pitch.` : ''}
 Return ONLY valid JSON matching:
 {
   "totalScore": number (0 to 100),
@@ -93,10 +84,24 @@ ${blueprint ? `\nBlueprint Context: ${blueprint.title} — ${blueprint.summary}`
       tier: 'deep',
     });
 
+    const repoScanned = repoSnap?.found
+      ? { repoName: repoSnap.repoName, sha: repoSnap.lastCommitSha, lastCommitMessage: repoSnap.lastCommitMessage }
+      : null;
+
     if (llmRes?.text) {
       try {
-        const parsed = JSON.parse(llmRes.text);
-        return NextResponse.json({ success: true, audit: parsed, engine: llmRes.engine, githubDetected: Boolean(githubContext) });
+        const cleaned = llmRes.text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+        const parsed = JSON.parse(cleaned);
+        const newScore = Number(parsed?.totalScore || 0);
+        const scoreDelta = typeof previousScore === 'number' ? newScore - previousScore : null;
+        return NextResponse.json({
+          success: true,
+          audit: parsed,
+          scoreDelta,
+          repoScanned,
+          engine: llmRes.engine,
+          githubDetected: Boolean(githubContext),
+        });
       } catch {}
     }
 
@@ -108,6 +113,8 @@ ${blueprint ? `\nBlueprint Context: ${blueprint.title} — ${blueprint.summary}`
       success: true,
       engine: 'Kollabrix Rubric Engine',
       githubDetected: Boolean(githubContext),
+      repoScanned,
+      scoreDelta: typeof previousScore === 'number' ? score - previousScore : null,
       audit: {
         totalScore: score,
         judgeVerdict: hasRepo

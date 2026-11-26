@@ -6,11 +6,11 @@ import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import {
   callSparkLLM,
   streamSparkLLM,
-  checkAndConsumeSparkQuota,
   SparkAttachment,
   SparkChatMessage,
   SparkModelTier,
 } from '@/lib/spark/aiClient';
+import { consumeKaChatQuota } from '@/lib/spark/plans';
 import { buildKollabrixLiveContext } from '@/lib/spark/platformContext';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
@@ -147,16 +147,16 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null;
     } catch {}
 
-    const quota = checkAndConsumeSparkQuota(userId || ip, tier, Boolean(userId));
+    const quota = await consumeKaChatQuota(userId || ip, tier, userId);
     if (!quota.allowed) {
       return NextResponse.json(
         {
-          error: userId
-            ? 'Daily KΛ limit reached (40 messages). Come back tomorrow!'
-            : 'Guest limit reached. Sign in free on Kollabrix for 40 daily KΛ-1 messages + KΛ-Pro Deep Think!',
-          requireAuth: !userId,
+          error: quota.error || 'Daily KΛ ΛI quota reached.',
+          requireAuth: Boolean(quota.requireAuth),
+          upgradeRequired: Boolean(quota.upgradeRequired),
+          entitlements: quota.entitlements,
         },
-        { status: 429 }
+        { status: quota.upgradeRequired ? 402 : 429 }
       );
     }
 
@@ -202,8 +202,9 @@ export async function POST(request: NextRequest) {
           sendSse(ctrl, 'meta', {
             engine,
             effectiveTier: quota.effectiveTier,
-            deepRemaining: quota.deepRemaining,
-            fastRemaining: quota.fastRemaining,
+            deepRemaining: quota.entitlements.deepRemaining,
+            fastRemaining: quota.entitlements.fastRemaining,
+            entitlements: quota.entitlements,
             quotaNote: quota.note || null,
           });
 
@@ -303,8 +304,9 @@ export async function POST(request: NextRequest) {
       reply,
       engine,
       effectiveTier: quota.effectiveTier,
-      deepRemaining: quota.deepRemaining,
-      fastRemaining: quota.fastRemaining,
+      deepRemaining: quota.entitlements.deepRemaining,
+      fastRemaining: quota.entitlements.fastRemaining,
+      entitlements: quota.entitlements,
       quotaNote: quota.note || null,
       actions,
       sessionId: saved.sessionId,
