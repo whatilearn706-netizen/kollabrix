@@ -62,7 +62,7 @@ const PITCH_SCENES: PitchScene[] = [
     narration:
       'Kollabrix provides an integrated collegiate platform where students launch AI-assisted sprint blueprints, discover peers across departments, manage sprint roadmaps, and build production software solving real campus challenges.',
     visualHighlight:
-      'Features AI Spark Generator, structured role matching, and Campus Hall of Fame spotlights.',
+      'Features KΛ ΛI Generator, structured role matching, and Campus Hall of Fame spotlights.',
     metrics: [
       { label: 'Squad Formation', value: '< 2 mins' },
       { label: 'Active Universities', value: '180+' },
@@ -339,7 +339,7 @@ kollabrix.in`;
                   target="_blank"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-zinc-300 text-zinc-800 text-xs font-bold hover:bg-zinc-50 transition-all shadow-sm"
                 >
-                  <span>View Homepage & AI Spark</span>
+                  <span>View Homepage &amp; KΛ ΛI</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>

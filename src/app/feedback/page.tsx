@@ -405,7 +405,7 @@ export default function FeedbackPage() {
                     href="/spark"
                     className="flex items-center justify-between p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-slate-200 transition-colors"
                   >
-                    <span>✨ AI Spark Project Studio</span>
+                    <span>✨ KΛ ΛI</span>
                     <ArrowRight className="w-3.5 h-3.5 text-violet-400" />
                   </Link>
                   <Link

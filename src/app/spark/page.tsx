@@ -398,7 +398,7 @@ export default function SparkUniversalWorkspacePage() {
 
       if (!res.ok || !res.body) {
         const errJson = await res.json().catch(() => null);
-        setErrorMsg(errJson?.error || 'AI Spark could not respond right now.');
+        setErrorMsg(errJson?.error || 'KΛ ΛI could not respond right now.');
         setMessages(prevMessages);
         return;
       }

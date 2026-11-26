@@ -30,7 +30,7 @@ const KOLLABRIX_PLATFORM_MAP = `KOLLABRIX FULL WEBSITE & FEATURE MAP (Real Live 
 - **Builder Passport** ([Passport](/passport)): Holographic Verified Developer Passport & Flight Recorder skill proofs verifiable at \`/verify/[id]\`.
 - **Starter Kits** ([Starter Kits](/starter-kits)), **Student Perks** ([Perks](/perks)) & **Resources** ([Resources](/resources)): 1-click full-stack/AI hackathon templates, free student developer credits (GitHub Student Pack, cloud/dev tools), and structured coding curriculum tracks.
 - **AI Project Planner** ([Planner](/planner)) & **College Analytics** ([Analytics](/analytics)): Break projects into AI sprints/milestones and inspect institutional campus metrics.
-- **KΛ Assistant & Studios** ([KΛ](/spark)): **KΛ-1** (fast answers & live site intelligence), **KΛ-Pro** (deep reasoning & architecture), plus sidebar modes for **Code Sandbox**, **DSA & Placements**, and **Hackathon Studio**.`;
+- **KΛ ΛI & Studios** ([KΛ ΛI](/spark)): **KΛ-1** (fast answers & live site intelligence), **KΛ-Pro** (deep reasoning & architecture), plus sidebar modes for **Code Sandbox**, **DSA & Placements**, and **Hackathon Studio**.`;
 
 const RESPONSE_BEHAVIOR_RULES = `BEHAVIOR FOR WEBSITE QUESTIONS vs. OTHER QUESTIONS:
 1. **Website, Feature, or Live Data Queries** (when the user asks about Kollabrix, its features, navigation, projects, hackathons, teammates, duels, contests, leaderboard, deadlines, perks, starter kits, passport, faculty portal, or "how do I ... here"):

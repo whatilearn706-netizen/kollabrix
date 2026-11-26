@@ -90,7 +90,7 @@ export function AdminHeader({
     { id: 'id_verifications', label: '🎓 Student ID Verifications', icon: GraduationCap, category: 'campus' },
     { id: 'resources', label: '📚 Learning Resources Hub', icon: BookOpen, category: 'campus' },
     { id: 'hotpatch', label: '🤖 AI Hot-Patch & Code Desk', icon: Code2, category: 'code' },
-    { id: 'spark', label: '✨ AI Spark Templates', icon: Sparkles, category: 'code' },
+    { id: 'spark', label: '✨ KΛ ΛI Templates', icon: Sparkles, category: 'code' },
     { id: 'deadlines', label: '⏳ Deadlines Radar', icon: Clock, category: 'campus' },
     { id: 'icpc', label: '⚡ Competitive Practice', icon: Terminal, category: 'campus' },
     { id: 'security', label: '🛡️ WhatsApp Watchdog & Security', icon: ShieldAlert, category: 'security' },

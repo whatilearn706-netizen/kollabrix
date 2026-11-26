@@ -252,7 +252,7 @@ export function Footer() {
                 </li>
                 <li>
                   <Link href="/spark" className={linkClass}>
-                    AI Spark Studio
+                    KΛ ΛI
                   </Link>
                 </li>
               </ul>

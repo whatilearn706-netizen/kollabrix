@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No code or error output provided.' }, { status: 400 });
     }
 
-    const systemPrompt = `You are Spark AI Tutor inside Kollabrix's coding compiler.
+    const systemPrompt = `You are KΛ ΛI Tutor inside Kollabrix's coding compiler.
 A student just ran their ${language} code and got "${verdict}".
 Your job is to act like a Socratic coding coach — DO NOT dump the full solution code!
 Instead, return ONLY valid JSON matching:

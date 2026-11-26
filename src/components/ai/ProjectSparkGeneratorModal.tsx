@@ -288,10 +288,10 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                  Kollabrix Spark: AI Project Blueprint Generator
+                  KΛ ΛI: Project Blueprint Generator
                 </h3>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold uppercase">
-                  AI Powered
+                  KΛ-1 · KΛ-Pro
                 </span>
               </div>
               <p className="text-xs text-slate-500">
@@ -306,7 +306,7 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
                   }}
                   className="text-xs font-bold text-violet-600 hover:text-violet-700 underline inline-flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Open Dedicated Spark Studio Page →</span>
+                  <span>Open Dedicated KΛ ΛI Workspace →</span>
                 </button>
               </div>
             </div>
@@ -346,7 +346,7 @@ export function ProjectSparkGeneratorModal({ isOpen, onClose }: ProjectSparkGene
               ) : (
                 <>
                   <Wand2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Spark AI</span>
+                  <span>KΛ ΛI</span>
                 </>
               )}
             </button>

@@ -169,12 +169,12 @@ const STATIC_PLATFORM_CATALOG: SearchItem[] = [
   // ⚡ Tools & Platform Hubs
   {
     id: 'tool-spark',
-    title: 'AI Spark Studio',
+    title: 'KΛ ΛI',
     category: 'tool',
-    categoryLabel: 'AI Engine',
-    snippet: 'Generate production-ready hackathon architecture and code blueprints in 0.04s',
+    categoryLabel: 'KΛ-1 · KΛ-Pro',
+    snippet: 'Ask live platform intelligence, debug code, or generate hackathon blueprints in 0.04s',
     href: '/spark',
-    tags: ['spark', 'ai', 'ai spark', 'generator', 'blueprint', 'idea', 'prompt', 'architecture'],
+    tags: ['spark', 'ka', 'kλ', 'ai', 'ai spark', 'generator', 'blueprint', 'idea', 'prompt', 'architecture'],
     tone: 'cyan',
   },
   {
@@ -509,7 +509,7 @@ export function GlowingSearchSparkBar() {
           {/* Middle: Crisp Translucent Vertical Divider Line */}
           <div className="h-6 w-[1.5px] bg-gradient-to-b from-white/5 via-white/25 to-white/5 mx-2 sm:mx-3 shrink-0" />
 
-          {/* Right: Dedicated AI Spark Action Button with ⌘K Badge */}
+          {/* Right: Dedicated KΛ ΛI Action Button with ⌘K Badge */}
           <button
             type="button"
             onClick={(e) => {
@@ -517,11 +517,11 @@ export function GlowingSearchSparkBar() {
               router.push('/spark');
             }}
             className="group/spark inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-violet-600/35 via-fuchsia-600/35 to-cyan-500/35 hover:from-violet-500/50 hover:via-fuchsia-500/50 hover:to-cyan-400/50 border border-white/20 hover:border-cyan-400/60 text-white transition-all duration-300 shrink-0 shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_24px_rgba(6,182,212,0.6)] active:scale-95 cursor-pointer"
-            title="Launch AI Spark Studio (⌘K)"
+            title="Launch KΛ ΛI (⌘K)"
           >
             <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-300 group-hover/spark:rotate-12 transition-transform duration-300" />
             <span className="font-heading font-bold text-xs sm:text-sm tracking-wide bg-gradient-to-r from-white via-cyan-100 to-fuchsia-200 bg-clip-text text-transparent">
-              AI Spark
+              KΛ ΛI
             </span>
             <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-md bg-black/60 border border-white/20 text-[10px] font-mono font-semibold text-slate-300 group-hover/spark:text-white group-hover/spark:border-cyan-400/50 transition-colors">
               ⌘K

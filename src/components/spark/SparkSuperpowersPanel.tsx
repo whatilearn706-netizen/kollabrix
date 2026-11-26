@@ -241,7 +241,7 @@ export function SparkSuperpowersPanel({
     if (!starterFiles || starterFiles.length === 0) return;
     const scriptLines = [
       '#!/usr/bin/env bash',
-      `# Kollabrix AI Spark Starter Setup for: ${blueprint.title}`,
+      `# Kollabrix KΛ ΛI Starter Setup for: ${blueprint.title}`,
       'set -e',
       ...starterFiles.flatMap((f) => {
         const dir = f.path.includes('/') ? f.path.split('/').slice(0, -1).join('/') : '';

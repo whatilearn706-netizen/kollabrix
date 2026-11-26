@@ -379,7 +379,7 @@ export function Navbar() {
                       className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-500 hover:bg-amber-500/10 transition-colors font-bold"
                     >
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>AI Spark Studio</span>
+                      <span>KΛ ΛI</span>
                     </Link>
 
                     <Link
@@ -637,7 +637,7 @@ export function Navbar() {
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>AI Spark Studio</span>
+              <span>KΛ ΛI</span>
             </Link>
 
             <Link

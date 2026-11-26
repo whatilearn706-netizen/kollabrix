@@ -64,7 +64,7 @@ export function SparkExplainErrorButton({
       }
       setExplanation(data.explanation);
     } catch {
-      setErrorMsg('Network error contacting Spark AI Tutor.');
+      setErrorMsg('Network error contacting KΛ ΛI Tutor.');
     } finally {
       setLoading(false);
     }
@@ -79,7 +79,7 @@ export function SparkExplainErrorButton({
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[11px] font-bold transition-all cursor-pointer disabled:opacity-60"
       >
         {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-        <span>{loading ? 'Spark AI Analyzing...' : 'Ask Spark AI Why This Failed'}</span>
+        <span>{loading ? 'KΛ ΛI Analyzing...' : 'Ask KΛ ΛI Why This Failed'}</span>
       </button>
 
       {errorMsg && <div className="text-[11px] text-rose-400">{errorMsg}</div>}
@@ -88,7 +88,7 @@ export function SparkExplainErrorButton({
         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-slate-200 space-y-1.5 font-sans">
           <div className="font-bold text-amber-300 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Spark AI Coach Hint</span>
+            <span>KΛ ΛI Coach Hint</span>
           </div>
           <div>
             <strong className="text-white">Why it failed:</strong> {explanation.rootCause}

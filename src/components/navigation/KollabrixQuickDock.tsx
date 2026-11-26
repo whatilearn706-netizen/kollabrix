@@ -97,8 +97,8 @@ const APPS_LIST: AppItem[] = [
   },
   {
     id: 'spark',
-    name: 'AI Spark',
-    sub: 'Stack Co-Pilot',
+    name: 'KΛ ΛI',
+    sub: 'KΛ-1 & KΛ-Pro',
     category: 'build',
     href: '/spark',
     icon: Sparkles,

@@ -61,9 +61,9 @@ const features = [
     href: '/icpc',
   },
   {
-    title: 'Spark AI',
+    title: 'KΛ ΛI',
     priority: 'PRIORITY 05',
-    priorityBadge: 'IDEATION COPILOT',
+    priorityBadge: 'KΛ-1 · KΛ-PRO',
     priorityTheme: 'border-violet-500/50 bg-violet-500/15 text-violet-300 shadow-violet-500/20',
     glowColor: 'rgba(139, 92, 246, 0.35)',
     description:

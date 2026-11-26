@@ -104,14 +104,14 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   },
   {
     id: 'spark',
-    label: 'AI Spark Studio',
+    label: 'KΛ ΛI',
     group: 'build',
     href: '/spark',
-    badge: 'AI CO-PILOT',
+    badge: 'KΛ-1 · KΛ-PRO',
     dotColor: 'bg-violet-400 shadow-[0_0_8px_#a78bfa]',
     badgeClass: 'bg-violet-500/15 text-violet-300 border-violet-500/35',
     description: 'Brainstorm winning hackathon concepts, specs & architecture stacks.',
-    ctaLabel: 'Open AI Spark',
+    ctaLabel: 'Open KΛ ΛI',
     icon: Sparkles,
   },
   {
