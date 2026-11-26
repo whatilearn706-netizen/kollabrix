@@ -55,10 +55,15 @@ export async function POST(request: NextRequest) {
       }
 
       case 'leave_room': {
-        const isHostPlayer =
+        const isActorAlpha =
           (room.hostId && room.hostId === playerId) ||
-          room.alphaPlayers[0]?.id === playerId;
-        if (isHostPlayer) {
+          room.alphaPlayers.some((p) => p.id === playerId);
+        const isActorOmega = room.omegaPlayers.some((p) => p.id === playerId);
+
+        if ((room.status === 'in_progress' || room.status === 'starting') && (isActorAlpha || isActorOmega)) {
+          room.status = 'finished';
+          room.winnerTeam = isActorAlpha ? 'Team Omega' : 'Team Alpha';
+        } else if (isActorAlpha) {
           room.status = 'closed';
         } else {
           room.alphaPlayers = room.alphaPlayers.filter((p) => p.id !== playerId);
@@ -205,11 +210,28 @@ export async function POST(request: NextRequest) {
 
       case 'heartbeat':
       default: {
-        // Just refresh heartbeat
+        // Refresh caller heartbeat & auto-award win if live PvP opponent disconnected > 18s
         const p1 = room.alphaPlayers.find((p) => p.id === playerId);
         if (p1) p1.lastActive = now;
         const p2 = room.omegaPlayers.find((p) => p.id === playerId);
         if (p2) p2.lastActive = now;
+
+        if (room.status === 'in_progress' && !room.isBotEnabled && room.startedAt) {
+          const startedMs = Date.parse(room.startedAt);
+          const nowMs = Date.now();
+          if (Number.isFinite(startedMs) && nowMs - startedMs >= 18000) {
+            const actorIsAlpha = Boolean(p1);
+            const oppList = actorIsAlpha ? room.omegaPlayers : room.alphaPlayers;
+            const humanOpp = oppList.find((p) => p.id !== 'bot-rival');
+            if (humanOpp?.lastActive) {
+              const oppLastMs = Date.parse(humanOpp.lastActive);
+              if (Number.isFinite(oppLastMs) && oppLastMs >= startedMs - 5000 && nowMs - oppLastMs >= 18000) {
+                room.status = 'finished';
+                room.winnerTeam = actorIsAlpha ? 'Team Alpha' : 'Team Omega';
+              }
+            }
+          }
+        }
         break;
       }
     }

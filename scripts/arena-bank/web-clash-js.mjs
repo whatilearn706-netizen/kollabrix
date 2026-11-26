@@ -133,14 +133,77 @@ function buildWebJsSuites(withCss) {
         const targetHtml = withCss
           ? w.html.replace('<div style="padding:16px;font-family:sans-serif;text-align:center;">', '<div class="box">').replace('<div style="padding:16px;font-family:sans-serif;">', '<div class="box">')
           : w.html;
-        const starterHtml = withCss
-          ? '<div class="box">\n  <!-- Add widget markup matching Blueprint -->\n</div>'
-          : '<div>\n  <!-- Add semantic HTML matching Blueprint -->\n</div>';
 
-        const checks = [
-          ...w.checks,
-          ...(withCss ? [{ label: 'Styled .box layout & accent button/panel CSS', scope: 'css', req: 'background\\s*:&&padding\\s*:' }] : []),
-        ];
+        const htmlLines = targetHtml.split('\n');
+        const cssLines = w.css.split('\n');
+
+        let starterHtml = targetHtml;
+        let starterCss = '';
+        let checks = [];
+        let scopeDesc = '';
+
+        if (withCss) {
+          if (dur.secs === 180) {
+            // 3m HTML+CSS+JS: 100% HTML + 100% CSS given -> user writes JS only
+            starterHtml = targetHtml;
+            starterCss = w.css;
+            checks = w.checks.filter((c) => c.scope === 'js');
+            scopeDesc = 'HTML & CSS are 100% pre-filled — write script.js interactivity only.';
+          } else if (dur.secs === 300) {
+            // 5m HTML+CSS+JS: ~60% HTML + ~40% CSS given -> user finishes HTML, control CSS & JS
+            starterHtml = [
+              ...htmlLines.slice(0, -2),
+              '  <!-- Add remaining interactive element matching Blueprint -->',
+              htmlLines[htmlLines.length - 1],
+            ].join('\n');
+            starterCss = `${cssLines.slice(0, 2).join('\n')}\n/* Finish button/control & display CSS (~60% remaining) */\n`;
+            checks = [
+              ...w.checks,
+              { label: 'Style inner controls & display elements (#id / button)', scope: 'css', req: '#[a-z]+|button|input' },
+            ];
+            scopeDesc = '60% HTML & 40% CSS are pre-filled — finish HTML/CSS + write script.js.';
+          } else {
+            // 10m HTML+CSS+JS: ~30% HTML + ~20% CSS given -> user finishes most HTML, CSS & JS
+            starterHtml = [
+              htmlLines[0],
+              htmlLines[1],
+              '  <!-- Build interactive inputs, buttons & output elements -->',
+              htmlLines[htmlLines.length - 1],
+            ].join('\n');
+            starterCss = `${cssLines[0]}\n.box {\n  /* Add card & interactive control styles */\n}\n`;
+            checks = [
+              ...w.checks,
+              { label: 'Styled .box layout & accent button/panel CSS', scope: 'css', req: 'background\\s*:&&padding\\s*:' },
+            ];
+            scopeDesc = '30% HTML & 20% CSS starter — build UI markup, styling & script.js.';
+          }
+        } else {
+          if (dur.secs === 180) {
+            // 3m HTML+JS: 100% HTML given -> user writes JS only
+            starterHtml = targetHtml;
+            checks = w.checks.filter((c) => c.scope === 'js');
+            scopeDesc = 'HTML is 100% pre-filled — write script.js interactivity only.';
+          } else if (dur.secs === 300) {
+            // 5m HTML+JS: ~75% HTML given -> user adds final control/display + writes JS
+            starterHtml = [
+              ...htmlLines.slice(0, -2),
+              '  <!-- Add remaining interactive element matching Blueprint -->',
+              htmlLines[htmlLines.length - 1],
+            ].join('\n');
+            checks = w.checks;
+            scopeDesc = '75% HTML is pre-filled — add missing control/output + write script.js.';
+          } else {
+            // 10m HTML+JS: ~40% HTML given -> user builds controls & writes JS
+            starterHtml = [
+              htmlLines[0],
+              htmlLines[1],
+              '  <!-- Add semantic interactive controls matching Blueprint -->',
+              htmlLines[htmlLines.length - 1],
+            ].join('\n');
+            checks = w.checks;
+            scopeDesc = '40% HTML starter — add interactive DOM controls + write script.js.';
+          }
+        }
 
         list.push(makeWebClash({
           id,
@@ -148,9 +211,9 @@ function buildWebJsSuites(withCss) {
           difficulty: diff,
           durationSecs: dur.secs,
           stackTags,
-          description: `Build "${w.heading}" interactive widget (${ctx} edition):\n- Include heading "${w.heading}" and required inputs/buttons\n${withCss ? '- Style clean card padding, border-radius & accent colors in style.css\n' : ''}- Wire working DOM event listener logic in script.js`,
+          description: `Build "${w.heading}" interactive widget (${ctx} edition — ${scopeDesc}):\n- Include heading "${w.heading}" and required inputs/buttons\n${withCss ? '- Ensure clean card layout & accent controls in style.css\n' : ''}- Wire working DOM event listener logic in script.js`,
           starterHtml,
-          starterCss: withCss ? '.box {\n  /* Add card & interactive control styles */\n}\n' : '',
+          starterCss,
           starterJs: '// Wire interactive DOM listeners here\n',
           targetHtml,
           targetCss: withCss ? w.css : '',

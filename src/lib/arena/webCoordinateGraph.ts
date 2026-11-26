@@ -348,10 +348,9 @@ export function evaluateWebCoordinateGraph(
     ? (rawTags.includes('javascript') || rawTags.includes('js'))
     : Boolean(cleanTargetJs && cleanTargetJs.length > 25 && !cleanTargetJs.startsWith('//'));
 
-  // 1. Strict starter & empty code validation (in Bug Hunt, starter HTML/CSS may already be clean when bug is in JS)
+  // 1. Strict starter & empty code validation (pre-filled 100% starter layers in 3m modes or Bug Hunt stay valid)
   const targetHtmlNoComments = (targetHtml || '').replace(/<!--[\s\S]*?-->/g, '').trim();
   const starterHtmlMatchesTarget =
-    isBugHunt &&
     starterHtmlNoComments.length > 0 &&
     starterHtmlNoComments.replace(/\s+/g, '') === targetHtmlNoComments.replace(/\s+/g, '');
 
@@ -376,7 +375,6 @@ export function evaluateWebCoordinateGraph(
 
   const targetCssNoComments = (targetCss || '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
   const starterCssMatchesTarget =
-    isBugHunt &&
     starterCssNoComments.length > 0 &&
     starterCssNoComments.replace(/\s+/g, '') === targetCssNoComments.replace(/\s+/g, '');
 

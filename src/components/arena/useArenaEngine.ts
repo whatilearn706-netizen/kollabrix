@@ -295,8 +295,8 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
         const htmlSame = Boolean(enriched.starterHtml && enriched.targetComponentHtml && enriched.starterHtml.replace(/\s+/g, '') === enriched.targetComponentHtml.replace(/\s+/g, ''));
         const cssSame = !hasCss || !enriched.targetComponentCss || Boolean(enriched.starterCss && enriched.starterCss.replace(/\s+/g, '') === enriched.targetComponentCss.replace(/\s+/g, ''));
-        if (enriched.arena === 'bug_hunt' && htmlSame && !cssSame && hasCss) setActiveTab('css');
-        else if (enriched.arena === 'bug_hunt' && htmlSame && cssSame && hasJs) setActiveTab('js');
+        if (htmlSame && !cssSame && hasCss) setActiveTab('css');
+        else if (htmlSame && cssSame && hasJs) setActiveTab('js');
         else setActiveTab('html');
       } else {
         const qTags = (enriched.tags || []).map((t) => t.toLowerCase().trim());
@@ -785,6 +785,74 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     }, 1000);
     return () => clearInterval(iv);
   }, [stage, userTestsPassed, rivalTestsPassed]);
+
+  // Live PvP leave/disconnect protection: tab close, Back, refresh, or unmount auto-forfeits so opponent wins immediately
+  useEffect(() => {
+    const inLivePvp =
+      !isGhostDuel &&
+      Boolean(roomCode) &&
+      (stage === 'battle' || (stage === 'faceoff' && faceOffStatus === 'countdown'));
+    if (!inLivePvp) return;
+
+    const oppTeam = isHost ? 'Team Omega' : 'Team Alpha';
+    let sentLeave = false;
+
+    const notifyLeaveForfeit = () => {
+      if (sentLeave || matchEndedRef.current) return;
+      sentLeave = true;
+      const body = JSON.stringify({
+        code: roomCode,
+        action: 'match_won',
+        playerId: myPlayerId,
+        payload: { forfeit: true, winnerTeam: oppTeam },
+      });
+      try {
+        sendEvent('match_won', { winnerName: rivalProfile.name, winnerTeam: oppTeam });
+      } catch {}
+      try {
+        if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+          navigator.sendBeacon('/api/arena/rooms/sync', new Blob([body], { type: 'application/json' }));
+          return;
+        }
+      } catch {}
+      fetch('/api/arena/rooms/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    };
+
+    const hb = setInterval(() => {
+      if (matchEndedRef.current || stageRef.current !== 'battle') return;
+      fetch('/api/arena/rooms/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: roomCode, action: 'heartbeat', playerId: myPlayerId }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.room?.status === 'finished' && d?.room?.winnerTeam && !matchEndedRef.current) {
+            const amHost = d.room.hostId ? d.room.hostId === myPlayerId : isHost;
+            const iWon = (d.room.winnerTeam === 'Team Alpha' && amHost) || (d.room.winnerTeam === 'Team Omega' && !amHost);
+            finalizeMatchResult(iWon ? 'you' : 'rival');
+          }
+        })
+        .catch(() => {});
+    }, 5000);
+
+    window.addEventListener('pagehide', notifyLeaveForfeit);
+    window.addEventListener('beforeunload', notifyLeaveForfeit);
+    return () => {
+      clearInterval(hb);
+      window.removeEventListener('pagehide', notifyLeaveForfeit);
+      window.removeEventListener('beforeunload', notifyLeaveForfeit);
+      // If leaving active PvP before match naturally finished, award opponent win
+      if (!matchEndedRef.current) {
+        notifyLeaveForfeit();
+      }
+    };
+  }, [stage, faceOffStatus, isGhostDuel, roomCode, isHost, myPlayerId, rivalProfile.name, sendEvent, finalizeMatchResult]);
 
   // Typing cadence tracker
   const handleCodeChange = (nextCode: string, setter: (v: string) => void) => {
