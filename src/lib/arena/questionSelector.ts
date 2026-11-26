@@ -107,11 +107,9 @@ export function scoreQuestion(q: DuelQuestion, criteria: QuestionMatchCriteria):
     const targetTime = Number(criteria.timeLimit);
     const qTime = Number(q.timeLimitSeconds);
     if (qTime === targetTime) {
-      score += 250;
-    } else if (Math.abs(qTime - targetTime) <= 120) {
-      score += 40;
+      score += 600;
     } else {
-      score -= 100;
+      score -= 800; // Strong penalty so 3m/5m/10m buckets never bleed into each other
     }
   }
 
@@ -154,7 +152,7 @@ export function selectBestQuestion(
     for (const item of scored) {
       if (item.score > maxScore) maxScore = item.score;
     }
-    const topScoreThreshold = maxScore - 40;
+    const topScoreThreshold = maxScore - 10;
     bestCandidates = scored
       .filter((item) => item.score >= topScoreThreshold)
       .map((item) => item.question);
@@ -268,10 +266,7 @@ export function filterAndRankQuestions(
       const isUnseen = q.id && !seenSet.has(q.id.toLowerCase().trim());
       const jitter = Math.random();
       return {
-        question: {
-          ...q,
-          timeLimitSeconds: criteria.timeLimit ? matchDuration : q.timeLimitSeconds,
-        },
+        question: q,
         score: s,
         isUnseen,
         jitter,
