@@ -195,6 +195,59 @@ export default function IcpcCollegiateArenaPage() {
     } catch (e) {}
   }, []);
 
+  // Cross-Device Progress Sync: hydrate & merge Supabase progress when user logs in
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await fetch('/api/icpc/progress', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.success || !data?.progress || cancelled) return;
+
+        const remote: StudentIcpcProgress = data.progress;
+        let localParsed: StudentIcpcProgress = { streak: 0, totalPoints: 0, solvedProblemIds: [] };
+        try {
+          const raw = localStorage.getItem('linkora_icpc_progress');
+          if (raw) localParsed = JSON.parse(raw);
+        } catch {}
+
+        const mergedSolved = Array.from(
+          new Set([...(remote.solvedProblemIds || []), ...(localParsed.solvedProblemIds || [])])
+        );
+        const merged: StudentIcpcProgress = {
+          streak: Math.max(remote.streak || 0, localParsed.streak || 0),
+          lastSolvedDate: remote.lastSolvedDate || localParsed.lastSolvedDate || undefined,
+          totalPoints: Math.max(remote.totalPoints || 0, localParsed.totalPoints || 0),
+          solvedProblemIds: mergedSolved,
+        };
+
+        if (!cancelled) {
+          setProgress(merged);
+          try {
+            localStorage.setItem('linkora_icpc_progress', JSON.stringify(merged));
+          } catch {}
+        }
+
+        // If local had solves not yet in remote, push merge back to Supabase
+        const remoteSet = new Set(remote.solvedProblemIds || []);
+        if (mergedSolved.some((id) => !remoteSet.has(id))) {
+          fetch('/api/icpc/progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ localMerge: merged }),
+          }).catch(() => {});
+        }
+      } catch {}
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   // Countdown timer to automatically advance to the next problem upon correct answer
   useEffect(() => {
     if (!nextQuestionPrompt || nextQuestionPrompt.secondsLeft <= 0) return;
@@ -554,6 +607,7 @@ export default function IcpcCollegiateArenaPage() {
           expectedOutput: activeProblem.sampleOutput || '',
           cpuTimeLimit: activeProblem.timeLimit ? parseFloat(activeProblem.timeLimit) || 2 : 2,
           memoryLimitMb: activeProblem.memoryLimit ? parseInt(activeProblem.memoryLimit) || 256 : 256,
+          examMode: selectedContest?.contestType !== 'practice',
         }),
       });
 
@@ -610,50 +664,38 @@ export default function IcpcCollegiateArenaPage() {
       ? activeProblem.testCases
       : [{ input: activeProblem.sampleInput, output: activeProblem.sampleOutput, isHidden: false }];
 
-    setConsoleOutput({ status: 'running', message: `Compiling ${selectedLanguage.toUpperCase()} & evaluating against ${testCases.length} collegiate testcases...` });
+    setConsoleOutput({ status: 'running', message: `Compiling ${selectedLanguage.toUpperCase()} & evaluating against ${testCases.length} collegiate testcases in batch...` });
 
     try {
-      let passedCount = 0;
-      let maxTime = '0.00s';
-      let maxMemory = '0 KB';
-      let failedResult: any = null;
-      let failedCaseIndex = -1;
+      const isExam = selectedContest.contestType !== 'practice';
+      const res = await fetch('/api/icpc/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contestId: selectedContest.id,
+          problemId: activeProblem.id,
+          sourceCode: userCode,
+          language: selectedLanguage,
+          testCases,
+          examMode: isExam,
+          userId: user?.id,
+        }),
+      });
 
-      for (let i = 0; i < testCases.length; i++) {
-        const tc = testCases[i];
-        const res = await fetch('/api/icpc/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sourceCode: userCode,
-            language: selectedLanguage,
-            stdin: tc.input,
-            expectedOutput: tc.output,
-            cpuTimeLimit: activeProblem.timeLimit ? parseFloat(activeProblem.timeLimit) || 2 : 2,
-            memoryLimitMb: activeProblem.memoryLimit ? parseInt(activeProblem.memoryLimit) || 256 : 256,
-          }),
+      const batch = await res.json();
+      if (!res.ok && !batch?.verdict) {
+        setConsoleOutput({
+          status: 'error',
+          message: `❌ Judge Error: ${batch?.error || 'Server error while evaluating submission.'}`,
         });
-
-        const result = await res.json();
-        if (!res.ok || result.error) {
-          failedResult = { status: 'Judge Error', statusDescription: result.error || 'Server error' };
-          failedCaseIndex = i + 1;
-          break;
-        }
-
-        if (result.time && result.time > maxTime) maxTime = result.time;
-        if (result.memory && result.memory > maxMemory) maxMemory = result.memory;
-
-        if (result.status === 'Accepted' && result.passed === true) {
-          passedCount++;
-        } else {
-          failedResult = result;
-          failedCaseIndex = i + 1;
-          break;
-        }
+        return;
       }
 
-      if (passedCount === testCases.length) {
+      const maxTime = batch.maxTime || '0ms';
+      const maxMemory = batch.maxMemory || '0MB';
+      const totalCount = batch.totalCount || testCases.length;
+
+      if (batch.passed === true) {
         // Automatic Points and Streak Credit
         const today = new Date().toISOString().split('T')[0];
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
@@ -686,9 +728,32 @@ export default function IcpcCollegiateArenaPage() {
           localStorage.setItem('linkora_icpc_progress', JSON.stringify(updatedProgress));
         } catch (e) {}
 
+        // Persist cross-device progress to Supabase
+        if (user?.id) {
+          fetch('/api/icpc/progress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              problemId: activeProblem.id,
+              points: activeProblem.points,
+              localMerge: updatedProgress,
+            }),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((syncData) => {
+              if (syncData?.success && syncData?.progress) {
+                setProgress(syncData.progress);
+                try {
+                  localStorage.setItem('linkora_icpc_progress', JSON.stringify(syncData.progress));
+                } catch {}
+              }
+            })
+            .catch(() => {});
+        }
+
         setConsoleOutput({
           status: 'success',
-          message: `🎉 ACCEPTED (AC)\n\nVerdict: All ${testCases.length}/${testCases.length} Testcases Passed!\nLanguage: ${selectedLanguage.toUpperCase()} (Genuine Compiler Execution)\nPeak Runtime: ${maxTime}\nPeak Memory: ${maxMemory}\n\n⚡ Points Credited: +${pointsToAdd} ICPC Points (Total: ${newTotalPoints} pts)\n🔥 Daily Streak: ${newStreak} Day${newStreak > 1 ? 's' : ''} Active!\n${isAlreadySolved ? 'ℹ️ Problem previously solved — streak maintained.' : '🌟 First-time solve bonus credited to your collegiate rank!'}`,
+          message: `🎉 ACCEPTED (AC)\n\nVerdict: All ${totalCount}/${totalCount} Testcases Passed!\nLanguage: ${selectedLanguage.toUpperCase()} (Private Multicore Compiler)\nPeak Runtime: ${maxTime}\nPeak Memory: ${maxMemory}\n\n⚡ Points Credited: +${pointsToAdd} ICPC Points (Total: ${newTotalPoints} pts)\n🔥 Daily Streak: ${newStreak} Day${newStreak > 1 ? 's' : ''} Active!\n${isAlreadySolved ? 'ℹ️ Problem previously solved — streak maintained.' : '🌟 First-time solve bonus credited to your collegiate rank!'}`,
         });
 
         const newSub: ContestSubmission = {
@@ -761,23 +826,23 @@ export default function IcpcCollegiateArenaPage() {
         }
       } else {
         setNextQuestionPrompt(null);
-        const tc = testCases[failedCaseIndex - 1];
+        const failedIdx = batch.failedCaseIndex || 1;
         let details = '';
-        if (failedResult.status === 'Compilation Error' && (failedResult.compile_output || failedResult.compileOutput || failedResult.stderr)) {
-          details = `Compilation Diagnostics:\n${failedResult.compile_output || failedResult.compileOutput || failedResult.stderr}`;
-        } else if (failedResult.status === 'Runtime Error' && (failedResult.stderr || failedResult.message)) {
-          details = `Runtime Error on Testcase #${failedCaseIndex}:\n${failedResult.stderr || failedResult.message}`;
+        if (batch.verdict === 'Compilation Error' && (batch.compileOutput || batch.stderr)) {
+          details = `Compilation Diagnostics:\n${batch.compileOutput || batch.stderr}`;
+        } else if (batch.verdict === 'Runtime Error' && (batch.stderr || batch.message)) {
+          details = `Runtime Error on Testcase #${failedIdx}:\n${batch.stderr || batch.message}`;
+        } else if (batch.verdict === 'Judge Busy') {
+          details = batch.error || 'Private exam compiler is temporarily busy. Please retry in a few seconds.';
+        } else if (batch.failedIsHidden) {
+          details = `Failed on Hidden Testcase #${failedIdx}.\n(Hidden testcase details are veiled to preserve competitive integrity)`;
         } else {
-          if (tc.isHidden) {
-            details = `Failed on Hidden Testcase #${failedCaseIndex}.\n(Hidden testcase details are veiled to preserve competitive integrity)`;
-          } else {
-            details = `Failed on Testcase #${failedCaseIndex}:\nInput:\n${tc.input}\n\nYour Output:\n${failedResult.stdout || '(no output)'}\n\nExpected Output:\n${tc.output}`;
-          }
+          details = `Failed on Testcase #${failedIdx}:\nInput:\n${batch.failedInput ?? ''}\n\nYour Output:\n${batch.stdout || '(no output)'}\n\nExpected Output:\n${batch.failedExpected ?? ''}`;
         }
 
         setConsoleOutput({
           status: 'error',
-          message: `❌ Verdict: ${failedResult.status || 'Wrong Answer'} on Testcase ${failedCaseIndex}/${testCases.length}\n${failedResult.statusDescription ? '(' + failedResult.statusDescription + ')\n' : ''}\n${details}\n\nTime: ${failedResult.time || 'N/A'} | Memory: ${failedResult.memory || 'N/A'}`,
+          message: `❌ Verdict: ${batch.verdict || 'Wrong Answer'} on Testcase ${failedIdx}/${totalCount}\n${batch.statusDescription ? '(' + batch.statusDescription + ')\n' : ''}\n${details}\n\nTime: ${maxTime} | Memory: ${maxMemory}`,
         });
 
         const newSub: ContestSubmission = {
@@ -788,9 +853,9 @@ export default function IcpcCollegiateArenaPage() {
           college: profile?.college || 'Collegiate Network',
           language: selectedLanguage.toUpperCase(),
           code: userCode,
-          verdict: failedResult.status === 'Compilation Error' ? 'Compilation Error' : (failedResult.status === 'Time Limit Exceeded' ? 'Time Limit Exceeded' : (failedResult.status === 'Runtime Error' ? 'Runtime Error' : 'Wrong Answer')),
-          runtime: failedResult.time || 'N/A',
-          memory: failedResult.memory || 'N/A',
+          verdict: batch.verdict === 'Compilation Error' ? 'Compilation Error' : (batch.verdict === 'Time Limit Exceeded' ? 'Time Limit Exceeded' : (batch.verdict === 'Runtime Error' ? 'Runtime Error' : 'Wrong Answer')),
+          runtime: maxTime,
+          memory: maxMemory,
           submittedAt: 'Just now',
           pointsEarned: 0,
         };
