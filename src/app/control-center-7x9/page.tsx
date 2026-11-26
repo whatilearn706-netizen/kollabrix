@@ -43,6 +43,7 @@ import { AdminFlightRecorderTab } from '@/components/admin/AdminFlightRecorderTa
 import { AdminArenaTab } from '@/components/admin/AdminArenaTab';
 import { AdminCampusWarTab } from '@/components/admin/AdminCampusWarTab';
 import { AdminSparkTab } from '@/components/admin/AdminSparkTab';
+import { AdminSubscriptionsTab } from '@/components/admin/AdminSubscriptionsTab';
 import { AdminResourcesTab } from '@/components/admin/AdminResourcesTab';
 import { AdminIntegrationsPanel } from '@/components/admin/AdminIntegrationsPanel';
 
@@ -431,6 +432,12 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
       {visitedTabs.has('master') && (
         <div className={currentTab === 'master' ? 'block' : 'hidden'}>
           <AdminMasterControlTab authToken={authToken} initialSubTab={masterSubTab} onNavigateTab={setCurrentTab} />
+        </div>
+      )}
+
+      {visitedTabs.has('subscriptions') && (
+        <div className={currentTab === 'subscriptions' ? 'block' : 'hidden'}>
+          <AdminSubscriptionsTab authToken={authToken} />
         </div>
       )}
 

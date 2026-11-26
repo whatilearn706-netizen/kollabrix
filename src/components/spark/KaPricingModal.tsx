@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   X,
@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Loader2,
   Crown,
+  CreditCard,
 } from 'lucide-react';
 import type { KaEntitlementSummary, KaPlanId } from '@/lib/spark/plans';
 
@@ -20,6 +21,23 @@ interface KaPricingModalProps {
   entitlements: KaEntitlementSummary | null;
   reason?: string;
   onPlanActivated: (entitlements: KaEntitlementSummary) => void;
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+    const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existing) {
+      return resolve(true);
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }
 
 export function KaPricingModal({
@@ -34,13 +52,113 @@ export function KaPricingModal({
   const [utrInput, setUtrInput] = useState('');
   const [showUpiFor, setShowUpiFor] = useState<KaPlanId | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [razorpayConfig, setRazorpayConfig] = useState<{ enabled: boolean; keyId: string | null } | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      fetch('/api/spark/checkout/razorpay/config')
+        .then((r) => r.json())
+        .then((d) => setRazorpayConfig(d))
+        .catch(() => setRazorpayConfig({ enabled: false, keyId: null }));
+    }
+  }, [open]);
 
   if (!open) return null;
 
   const isAuth = Boolean(entitlements?.isAuthenticated);
   const currentPlan = entitlements?.planId || 'free';
 
+  const handleRazorpayPayment = async (planId: KaPlanId) => {
+    setFeedback(null);
+    setLoadingPlan(planId);
+    try {
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded) {
+        setFeedback({ type: 'err', text: 'Could not load Razorpay payment gateway SDK. Please check your internet connection.' });
+        setLoadingPlan(null);
+        return;
+      }
+
+      const res = await fetch('/api/spark/checkout/razorpay/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      });
+
+      const orderData = await res.json();
+      if (!res.ok || !orderData.orderId) {
+        setFeedback({ type: 'err', text: orderData.error || 'Could not initiate payment order.' });
+        setLoadingPlan(null);
+        return;
+      }
+
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'Kollabrix Technologies',
+        description: `${orderData.planName} Subscription`,
+        order_id: orderData.orderId,
+        prefill: {
+          name: orderData.userName || '',
+          email: orderData.userEmail || '',
+        },
+        theme: {
+          color: '#f59e0b',
+        },
+        handler: async function (response: any) {
+          try {
+            setFeedback({ type: 'ok', text: 'Payment received! Verifying cryptographic signature...' });
+            const verifyRes = await fetch('/api/spark/checkout/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                planId,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.entitlements) {
+              onPlanActivated(verifyData.entitlements);
+              setFeedback({ type: 'ok', text: verifyData.message || 'Payment Successful! Welcome to KΛ Pro.' });
+              setTimeout(() => onClose(), 1200);
+            } else {
+              setFeedback({ type: 'err', text: verifyData.error || 'Payment signature verification failed.' });
+            }
+          } catch {
+            setFeedback({ type: 'err', text: 'Error finalizing payment verification with server.' });
+          } finally {
+            setLoadingPlan(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoadingPlan(null);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        setFeedback({ type: 'err', text: response.error?.description || 'Payment was declined or cancelled.' });
+        setLoadingPlan(null);
+      });
+      rzp.open();
+    } catch {
+      setFeedback({ type: 'err', text: 'Network error launching Razorpay.' });
+      setLoadingPlan(null);
+    }
+  };
+
   const handleActivate = async (planId: KaPlanId, mode: 'activate_demo' | 'submit_upi') => {
+    // If Razorpay is enabled and user clicked normal payment button, launch Razorpay!
+    if (razorpayConfig?.enabled && mode === 'activate_demo') {
+      return handleRazorpayPayment(planId);
+    }
+
     setFeedback(null);
     setLoadingPlan(planId);
     try {
@@ -121,11 +239,9 @@ export function KaPricingModal({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Free Tier</span>
-                {currentPlan === 'free' && (
-                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-semibold text-zinc-200">
-                    Current
-                  </span>
-                )}
+                <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-semibold text-zinc-300">
+                  Current
+                </span>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-black">₹0</span>
@@ -150,30 +266,30 @@ export function KaPricingModal({
               </ul>
             </div>
 
-            {!isAuth ? (
-              <Link
-                href="/login"
-                className="w-full py-2.5 rounded-xl bg-white text-zinc-950 font-bold text-xs text-center hover:bg-zinc-200 transition-colors"
-              >
-                Sign in Free (4 msgs/day)
-              </Link>
-            ) : (
+            {isAuth ? (
               <button
                 type="button"
                 disabled
-                className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-500 font-semibold text-xs"
+                className="w-full py-2.5 rounded-xl bg-white/10 text-zinc-400 font-semibold text-xs cursor-default"
               >
-                {currentPlan === 'free' ? 'Active Plan' : 'Included Base'}
+                Included
               </button>
+            ) : (
+              <Link
+                href="/login"
+                className="w-full py-2.5 rounded-xl bg-white/15 hover:bg-white/20 text-white font-bold text-xs text-center transition-colors"
+              >
+                Sign In Free (4 msgs/day)
+              </Link>
             )}
           </div>
 
-          {/* 2. Hackathon Pass ₹49 / 7 days */}
-          <div className="rounded-2xl bg-[#131724] border border-cyan-400/35 p-5 flex flex-col justify-between space-y-5 relative overflow-hidden">
+          {/* 2. Hackathon Sprint Pass ₹49 */}
+          <div className="relative rounded-2xl bg-[#0f1824] border border-cyan-400/40 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
-                  <Trophy className="w-3.5 h-3.5" />
+                  <Zap className="w-3.5 h-3.5" />
                   Hackathon Pass
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300">
@@ -181,20 +297,20 @@ export function KaPricingModal({
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black">₹49</span>
+                <span className="text-3xl font-black text-cyan-300">₹49</span>
                 <span className="text-xs text-zinc-400">/ 7 days</span>
               </div>
               <p className="text-xs text-zinc-400">
-                Hackathon Studio pass — split ₹12/person across your 4-member squad.
+                Built for hackathon weekend — split ₹12/person across your 4-member squad.
               </p>
               <ul className="space-y-2 pt-2 text-xs text-zinc-200">
                 <li className="flex items-start gap-2">
-                  <Zap className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>10 KΛ-Pro + 10 KΛ-1 msgs/day (Hackathon Studio only)</span>
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <span className="font-semibold text-cyan-200">10 KΛ-Pro + 10 KΛ-1 msgs/day (Hackathon Studio only)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Screening Deck (.pptx) + Pick Winning PS Cut-List</span>
+                  <span>AI Screening PPT Deck (.pptx) &amp; Cut-List</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
@@ -224,10 +340,18 @@ export function KaPricingModal({
                   type="button"
                   disabled={loadingPlan === 'hackathon_pass'}
                   onClick={() => handleActivate('hackathon_pass', 'activate_demo')}
-                  className="w-full py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+                  className="w-full py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 shadow-glow"
                 >
-                  {loadingPlan === 'hackathon_pass' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Activate ₹49 Pass (Local Test)</span>
+                  {loadingPlan === 'hackathon_pass' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : razorpayConfig?.enabled ? (
+                    <CreditCard className="w-3.5 h-3.5" />
+                  ) : null}
+                  <span>
+                    {razorpayConfig?.enabled
+                      ? 'Pay ₹49 via Razorpay / UPI'
+                      : 'Unlock ₹49 Pass (Instant Access)'}
+                  </span>
                 </button>
                 {showUpiFor === 'hackathon_pass' ? (
                   <div className="flex gap-1.5">
@@ -344,11 +468,17 @@ export function KaPricingModal({
                   type="button"
                   disabled={loadingPlan === proBilling}
                   onClick={() => handleActivate(proBilling, 'activate_demo')}
-                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60"
+                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 shadow-glow"
                 >
-                  {loadingPlan === proBilling && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {loadingPlan === proBilling ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : razorpayConfig?.enabled ? (
+                    <CreditCard className="w-3.5 h-3.5" />
+                  ) : null}
                   <span>
-                    Activate {proBilling === 'pro_monthly' ? '₹149/mo' : '₹399/sem'} (Local Test)
+                    {razorpayConfig?.enabled
+                      ? `Pay ${proBilling === 'pro_monthly' ? '₹149' : '₹399'} via Razorpay / UPI`
+                      : `Unlock ${proBilling === 'pro_monthly' ? '₹149/mo' : '₹399/sem'} (Instant Access)`}
                   </span>
                 </button>
                 {showUpiFor === proBilling ? (

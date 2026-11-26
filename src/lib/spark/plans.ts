@@ -115,7 +115,12 @@ export interface UserPlanRecord {
   activatedAt: string;
   expiresAt: string | null;
   utrNumber?: string;
-  source?: 'upi' | 'sandbox_demo' | 'admin';
+  source?: 'upi' | 'sandbox_demo' | 'admin' | 'razorpay';
+  userEmail?: string;
+  userName?: string;
+  paymentId?: string;
+  orderId?: string;
+  amount?: number;
 }
 
 export interface DailyUsageCounter {
@@ -201,12 +206,22 @@ export async function getUserActivePlan(userId: string | null): Promise<UserPlan
 export async function activateUserPlan(
   userId: string,
   planId: KaPlanId,
-  opts?: { utrNumber?: string; source?: 'upi' | 'sandbox_demo' | 'admin' }
+  opts?: {
+    utrNumber?: string;
+    source?: 'upi' | 'sandbox_demo' | 'admin' | 'razorpay';
+    userEmail?: string;
+    userName?: string;
+    paymentId?: string;
+    orderId?: string;
+    amount?: number;
+    customDays?: number;
+  }
 ): Promise<UserPlanRecord> {
   const def = KA_PLANS[planId] || KA_PLANS.free;
   const now = new Date();
-  const expiresAt = def.durationDays
-    ? new Date(now.getTime() + def.durationDays * 24 * 60 * 60 * 1000).toISOString()
+  const duration = typeof opts?.customDays === 'number' && opts.customDays > 0 ? opts.customDays : def.durationDays;
+  const expiresAt = duration
+    ? new Date(now.getTime() + duration * 24 * 60 * 60 * 1000).toISOString()
     : null;
 
   const rec: UserPlanRecord = {
@@ -215,6 +230,11 @@ export async function activateUserPlan(
     expiresAt,
     ...(opts?.utrNumber ? { utrNumber: opts.utrNumber } : {}),
     source: opts?.source || 'sandbox_demo',
+    ...(opts?.userEmail ? { userEmail: opts.userEmail } : {}),
+    ...(opts?.userName ? { userName: opts.userName } : {}),
+    ...(opts?.paymentId ? { paymentId: opts.paymentId } : {}),
+    ...(opts?.orderId ? { orderId: opts.orderId } : {}),
+    ...(typeof opts?.amount === 'number' ? { amount: opts.amount } : {}),
   };
 
   memPlans.set(userId, rec);
@@ -222,6 +242,39 @@ export async function activateUserPlan(
   allPlans[userId] = rec;
   await writeSettingsMap(PLANS_KEY, allPlans);
   return rec;
+}
+
+export async function revokeUserPlan(userId: string): Promise<UserPlanRecord> {
+  const rec: UserPlanRecord = {
+    planId: 'free',
+    activatedAt: new Date().toISOString(),
+    expiresAt: null,
+    source: 'admin',
+  };
+  memPlans.set(userId, rec);
+  const allPlans = await readSettingsMap<UserPlanRecord>(PLANS_KEY);
+  allPlans[userId] = rec;
+  await writeSettingsMap(PLANS_KEY, allPlans);
+  return rec;
+}
+
+export async function extendUserPlan(userId: string, extraDays: number): Promise<UserPlanRecord> {
+  const current = await getUserActivePlan(userId);
+  const baseTime = current.expiresAt ? Math.max(Date.now(), new Date(current.expiresAt).getTime()) : Date.now();
+  const newExpiresAt = new Date(baseTime + extraDays * 24 * 60 * 60 * 1000).toISOString();
+  const rec: UserPlanRecord = {
+    ...current,
+    expiresAt: newExpiresAt,
+  };
+  memPlans.set(userId, rec);
+  const allPlans = await readSettingsMap<UserPlanRecord>(PLANS_KEY);
+  allPlans[userId] = rec;
+  await writeSettingsMap(PLANS_KEY, allPlans);
+  return rec;
+}
+
+export async function getAllUserPlans(): Promise<Record<string, UserPlanRecord>> {
+  return readSettingsMap<UserPlanRecord>(PLANS_KEY);
 }
 
 function getTodayStr() {

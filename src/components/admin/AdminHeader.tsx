@@ -31,12 +31,14 @@ import {
   BookOpen,
   Zap,
   Swords,
+  CreditCard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export type AdminTab =
   | 'overview'
   | 'master'
+  | 'subscriptions'
   | 'integrations'
   | 'campus_war'
   | 'arena'
@@ -83,6 +85,7 @@ export function AdminHeader({
 
   const tabs: { id: AdminTab; label: string; icon: any; category: TabCategory }[] = [
     { id: 'master', label: '👑 ALL 6 MASTER CONTROLS', icon: Crown, category: 'master' },
+    { id: 'subscriptions', label: '💳 Subscriptions & Razorpay', icon: CreditCard, category: 'master' },
     { id: 'integrations', label: '⚡ Live Integrations & Email Test', icon: Zap, category: 'master' },
     { id: 'arena', label: '⚔️ 2v2 Battleground Arena', icon: Zap, category: 'code' },
     { id: 'campus_war', label: '⚔️ Campus War Hub & Sponsors', icon: Swords, category: 'campus' },
