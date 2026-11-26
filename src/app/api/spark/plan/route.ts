@@ -7,6 +7,7 @@ import {
   activateUserPlan,
   getKaEntitlements,
 } from '@/lib/spark/plans';
+import { getRazorpaySettings } from '@/lib/spark/razorpay';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -58,6 +59,17 @@ export async function POST(request: NextRequest) {
 
     if (!planId || !KA_PLANS[planId] || planId === 'free') {
       return NextResponse.json({ error: 'Invalid paid plan selected.' }, { status: 400 });
+    }
+
+    const razorpay = await getRazorpaySettings();
+    if (razorpay.enabled) {
+      return NextResponse.json(
+        {
+          error:
+            'Live Razorpay checkout is enabled. Please complete payment via Razorpay to activate your subscription.',
+        },
+        { status: 403 }
+      );
     }
 
     if (action === 'submit_upi' && String(utrNumber).trim().length < 6) {

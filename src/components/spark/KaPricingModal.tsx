@@ -360,32 +360,33 @@ export function KaPricingModal({
                       : 'Unlock ₹49 Pass (Instant Access)'}
                   </span>
                 </button>
-                {showUpiFor === 'hackathon_pass' ? (
-                  <div className="flex gap-1.5">
-                    <input
-                      type="text"
-                      value={utrInput}
-                      onChange={(e) => setUtrInput(e.target.value)}
-                      placeholder="12-digit UPI UTR"
-                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/15 text-[11px] text-white"
-                    />
+                {!razorpayConfig?.enabled &&
+                  (showUpiFor === 'hackathon_pass' ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={utrInput}
+                        onChange={(e) => setUtrInput(e.target.value)}
+                        placeholder="12-digit UPI UTR"
+                        className="flex-1 px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/15 text-[11px] text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleActivate('hackathon_pass', 'submit_upi')}
+                        className="px-2.5 py-1.5 rounded-lg bg-white text-black text-[11px] font-bold cursor-pointer"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => handleActivate('hackathon_pass', 'submit_upi')}
-                      className="px-2.5 py-1.5 rounded-lg bg-white text-black text-[11px] font-bold cursor-pointer"
+                      onClick={() => setShowUpiFor('hackathon_pass')}
+                      className="w-full text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
                     >
-                      Verify
+                      Enter UPI UTR Reference instead
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowUpiFor('hackathon_pass')}
-                    className="w-full text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
-                  >
-                    Enter UPI UTR Reference instead
-                  </button>
-                )}
+                  ))}
               </div>
             )}
           </div>
@@ -488,32 +489,33 @@ export function KaPricingModal({
                       : `Unlock ${proBilling === 'pro_monthly' ? '₹149/mo' : '₹399/sem'} (Instant Access)`}
                   </span>
                 </button>
-                {showUpiFor === proBilling ? (
-                  <div className="flex gap-1.5">
-                    <input
-                      type="text"
-                      value={utrInput}
-                      onChange={(e) => setUtrInput(e.target.value)}
-                      placeholder="12-digit UPI UTR"
-                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/15 text-[11px] text-white"
-                    />
+                {!razorpayConfig?.enabled &&
+                  (showUpiFor === proBilling ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        type="text"
+                        value={utrInput}
+                        onChange={(e) => setUtrInput(e.target.value)}
+                        placeholder="12-digit UPI UTR"
+                        className="flex-1 px-2.5 py-1.5 rounded-lg bg-black/50 border border-white/15 text-[11px] text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleActivate(proBilling, 'submit_upi')}
+                        className="px-2.5 py-1.5 rounded-lg bg-white text-black text-[11px] font-bold cursor-pointer"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() => handleActivate(proBilling, 'submit_upi')}
-                      className="px-2.5 py-1.5 rounded-lg bg-white text-black text-[11px] font-bold cursor-pointer"
+                      onClick={() => setShowUpiFor(proBilling)}
+                      className="w-full text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
                     >
-                      Verify
+                      Enter UPI UTR Reference instead
                     </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowUpiFor(proBilling)}
-                    className="w-full text-[11px] text-zinc-400 hover:text-white underline cursor-pointer"
-                  >
-                    Enter UPI UTR Reference instead
-                  </button>
-                )}
+                  ))}
               </div>
             )}
           </div>
