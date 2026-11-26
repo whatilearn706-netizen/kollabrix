@@ -385,7 +385,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
   // Socket hook
   const { sendEvent } = useArenaSocket({
-    active: stage === 'room' || stage === 'faceoff' || stage === 'battle',
+    active: (stage === 'room' || stage === 'faceoff' || stage === 'battle') && !isGhostDuel,
     roomCode,
     myPlayerId,
     playerName,
@@ -755,7 +755,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         if (audioEnabled) playCyberSwordClashSound();
         const t = setTimeout(() => {
           setStage('battle');
-          if (roomCode) {
+          if (!isGhostDuel && roomCode) {
             fetch('/api/arena/rooms/sync', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
