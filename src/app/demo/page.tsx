@@ -39,7 +39,7 @@ export default function DemoPage() {
               playsInline
               loop
               className="w-full h-full object-cover rounded-2xl"
-              poster="/brand/kollabrix-logo.min.svg"
+              poster="/showcase/kollabrix-hero-showcase.png"
             >
               <source src="/videos/linkora-live-demo.mp4" type="video/mp4" />
               <source src="/videos/linkora-live-demo.webm" type="video/webm" />
@@ -100,6 +100,60 @@ export default function DemoPage() {
             </p>
           </div>
         </div>
+
+        {/* Platform Visual Showcase Gallery (Crawlable SEO Product Screenshots) */}
+        <section className="pt-8 space-y-4 text-left">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+              Kollabrix Platform Showcase
+            </h2>
+            <span className="text-xs font-mono text-slate-400">LIVE PRODUCT CAPTURES</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              {
+                src: '/showcase/kollabrix-hero-showcase.png',
+                alt: 'Kollabrix Collegiate Coding Battle Arena and Hackathon Platform Hero',
+                title: 'Real-Time Coding Duel Hero',
+              },
+              {
+                src: '/showcase/kollabrix-battle-arena-ide.png',
+                alt: 'Kollabrix Battle Arena Live IDE with Blueprint, Sandbox & Rival Fog-of-War Monitor',
+                title: 'Battle Arena Live IDE & Fog of War',
+              },
+              {
+                src: '/showcase/kollabrix-arena-lobby.png',
+                alt: 'Kollabrix Arena Lobby — 1v1 Quick Blitz, 60s Bug Hunt, Web Pixel Clash & Custom Rooms',
+                title: 'Arena Command Center & Modes',
+              },
+              {
+                src: '/showcase/kollabrix-hackathon-passes-3d.png',
+                alt: 'Kollabrix 3D Hanging Physical PVC Collegiate Hackathon ID Passes',
+                title: '3D Collegiate Hackathon Passes',
+              },
+              {
+                src: '/showcase/kollabrix-victory-fight-card.png',
+                alt: 'Kollabrix Post-Match Knockout Victory Card with ELO and Campus War Points',
+                title: 'Knockout Victory & ELO Fight Card',
+              },
+            ].map((item) => (
+              <figure
+                key={item.src}
+                className="rounded-2xl border border-slate-800 bg-slate-900/50 overflow-hidden"
+              >
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  loading="lazy"
+                  className="w-full aspect-video object-cover"
+                />
+                <figcaption className="px-4 py-2.5 text-xs font-medium text-slate-300 border-t border-slate-800/80">
+                  {item.title}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

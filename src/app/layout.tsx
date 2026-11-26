@@ -99,16 +99,22 @@ export const metadata: Metadata = {
     siteName: 'Kollabrix',
     images: [
       {
+        url: `${siteUrl}/showcase/kollabrix-hero-showcase.png`,
+        width: 1200,
+        height: 630,
+        alt: 'Kollabrix — Collegiate Coding Battle Arena & Hackathon Platform',
+      },
+      {
+        url: `${siteUrl}/showcase/kollabrix-battle-arena-ide.png`,
+        width: 1280,
+        height: 720,
+        alt: 'Kollabrix Battle Arena Live IDE & Rival Fog-of-War Monitor',
+      },
+      {
         url: `${siteUrl}/kollabrix-icon-512.png`,
         width: 512,
         height: 512,
         alt: 'Kollabrix Official Metallic Emblem',
-      },
-      {
-        url: `${siteUrl}/brand/kollabrix-logo.min.svg`,
-        width: 380,
-        height: 380,
-        alt: 'Kollabrix Brand Logo',
       },
     ],
   },
@@ -117,7 +123,7 @@ export const metadata: Metadata = {
     title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     description:
       'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
-    images: [`${siteUrl}/kollabrix-icon-512.png`],
+    images: [`${siteUrl}/showcase/kollabrix-hero-showcase.png`],
   },
   robots: {
     index: true,
@@ -286,6 +292,43 @@ const jsonLd = {
         'ICPC Contest Proctoring with WebRTC Live Camera & Screen Feeds',
         'Student Engineering Project Workspaces & Task Kanban',
         'Faculty Challenge Problem Statements & Student Solutions',
+      ],
+      screenshot: [
+        {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/showcase/kollabrix-hero-showcase.png`,
+          caption: 'Kollabrix Obsidian Titanium Homepage & Live Coding Duel Preview',
+          width: 1200,
+          height: 630,
+        },
+        {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/showcase/kollabrix-battle-arena-ide.png`,
+          caption: 'Kollabrix Battle Arena Live IDE with Blueprint, Interactive Sandbox & Rival Fog-of-War',
+          width: 1280,
+          height: 720,
+        },
+        {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/showcase/kollabrix-arena-lobby.png`,
+          caption: 'Kollabrix Arena Lobby — 1v1 Quick Blitz, 60s Bug Hunt, Web Pixel Clash & Custom Rooms',
+          width: 1280,
+          height: 720,
+        },
+        {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/showcase/kollabrix-hackathon-passes-3d.png`,
+          caption: 'Kollabrix 3D Hanging Physical PVC Collegiate Hackathon ID Passes',
+          width: 1280,
+          height: 720,
+        },
+        {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/showcase/kollabrix-victory-fight-card.png`,
+          caption: 'Kollabrix Post-Match Knockout Victory Card with ELO & Campus War Points',
+          width: 1280,
+          height: 720,
+        },
       ],
       author: {
         '@id': `${siteUrl}/#organization`,
