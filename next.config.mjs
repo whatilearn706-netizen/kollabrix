@@ -58,7 +58,7 @@ const nextConfig = {
       },
       {
         key: 'Content-Security-Policy',
-        value: `default-src 'self'; script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:${isDev ? ' http:' : ''}; font-src 'self' data: https:; connect-src 'self' https: wss:${isDev ? ' http: ws:' : ''}; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; frame-ancestors 'self' https://search.google.com https://*.google.com; object-src 'none'; base-uri 'self'; report-uri /api/security/csp-report;`,
+        value: `default-src 'self'; script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: blob: https:${isDev ? ' http:' : ''}; font-src 'self' data: https:; connect-src 'self' https: wss:${isDev ? ' http: ws:' : ''}; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://api.razorpay.com https://checkout.razorpay.com https://*.razorpay.com; frame-ancestors 'self' https://search.google.com https://*.google.com; object-src 'none'; base-uri 'self'; report-uri /api/security/csp-report;`,
       },
     ];
 
