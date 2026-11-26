@@ -8,12 +8,12 @@ import {
   FileCode2,
   Gavel,
   RefreshCw,
-  Share2,
-  Check,
   Loader2,
   Trophy,
   AlertTriangle,
   Sparkles,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import {
   ScreeningDeckView,
@@ -34,10 +34,7 @@ interface Props {
 }
 
 export function KaHackathonWarRoom({
-  user,
   blueprint,
-  sessionId,
-  onSessionId,
   onRequireUpgrade,
   onEntitlementsUpdate,
 }: Props) {
@@ -49,6 +46,7 @@ export function KaHackathonWarRoom({
   const [notesInput, setNotesInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [noticeMsg, setNoticeMsg] = useState('');
 
   // Saved deliverables
   const [deck, setDeck] = useState<any>(blueprint?.warRoom?.deck || null);
@@ -57,16 +55,13 @@ export function KaHackathonWarRoom({
   const [repoPack, setRepoPack] = useState<any>(blueprint?.warRoom?.repoPack || null);
   const [repoMeta, setRepoMeta] = useState<any>(blueprint?.warRoom?.repoMeta || null);
 
-  // Judge Re-Audit loop + Share Squad state
+  // Judge Re-Audit loop state
   const [audit, setAudit] = useState<any>(blueprint?.warRoom?.audit || null);
   const [scoreHistory, setScoreHistory] = useState<number[]>(
     Array.isArray(blueprint?.warRoom?.scoreHistory) ? blueprint.warRoom.scoreHistory : []
   );
-  const [prevScore, setPrevScore] = useState<number | null>(blueprint?.warRoom?.prevScore ?? null);
+  const [lastAuditSha, setLastAuditSha] = useState<string>(blueprint?.warRoom?.lastAuditSha || '');
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
-  const [shareUrl, setShareUrl] = useState('');
-  const [sharing, setSharing] = useState(false);
-  const [copiedShare, setCopiedShare] = useState(false);
 
   useEffect(() => {
     fetch('/api/hackathons')
@@ -80,6 +75,7 @@ export function KaHackathonWarRoom({
 
   const runKit = async (action: 'ppt_deck' | 'pick_ps' | 'demo_qa' | 'repo_pack') => {
     setErrorMsg('');
+    setNoticeMsg('');
     setLoading(true);
     try {
       const selH = hackathons.find((h) => h.id === selectedHackathonId);
@@ -121,8 +117,10 @@ export function KaHackathonWarRoom({
 
   const runJudgeAudit = async (isReaudit = false) => {
     setErrorMsg('');
+    setNoticeMsg('');
     setLoading(true);
     try {
+      const selH = hackathons.find((h) => h.id === selectedHackathonId);
       const previous = isReaudit && audit?.totalScore ? Number(audit.totalScore) : null;
       const res = await fetch('/api/spark/judge', {
         method: 'POST',
@@ -130,12 +128,23 @@ export function KaHackathonWarRoom({
         body: JSON.stringify({
           repoUrl,
           pitchText: notesInput,
+          hackathonId: selectedHackathonId,
+          hackathonTitle: selH?.title || '',
           blueprint,
           previousScore: previous ?? undefined,
+          previousCommitSha: isReaudit ? lastAuditSha : '',
+          isReaudit,
         }),
       });
       const data = await res.json();
       if (data?.entitlements) onEntitlementsUpdate?.(data.entitlements);
+
+      if (data?.unchanged) {
+        if (data.repoScanned) setRepoMeta(data.repoScanned);
+        setNoticeMsg(data.error || 'No new commits detected since last audit.');
+        return;
+      }
+
       if (!res.ok) {
         if (res.status === 401 || res.status === 402 || data?.upgradeRequired) {
           onRequireUpgrade(data?.error || 'Unlock Hackathon Pass (₹49 / 7 days) to run Judge Audits.');
@@ -143,10 +152,13 @@ export function KaHackathonWarRoom({
         setErrorMsg(data?.error || 'Judge audit failed.');
         return;
       }
-      if (previous !== null) setPrevScore(previous);
+
       setScoreDelta(typeof data.scoreDelta === 'number' ? data.scoreDelta : null);
-      if (data.repoScanned) setRepoMeta(data.repoScanned);
-      if (data.audit?.totalScore) {
+      if (data.repoScanned) {
+        setRepoMeta(data.repoScanned);
+        if (data.repoScanned.sha) setLastAuditSha(data.repoScanned.sha);
+      }
+      if (data.audit?.totalScore !== undefined) {
         setScoreHistory((prev) => [...prev, Number(data.audit.totalScore)].slice(-6));
       }
       setAudit(data.audit);
@@ -157,81 +169,25 @@ export function KaHackathonWarRoom({
     }
   };
 
-  const handleShareWarRoom = async () => {
-    if (!user?.id) {
-      onRequireUpgrade('Sign in to save & share this Sprint War-Room with up to 3 squad teammates.');
-      return;
-    }
-    setSharing(true);
-    setErrorMsg('');
-    try {
-      const res = await fetch('/api/spark/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: sessionId || undefined,
-          title: deck?.deckTitle || blueprint?.title || 'Hackathon Sprint War-Room',
-          prompt: notesInput || blueprint?.summary || 'Hackathon Sprint Pass War-Room',
-          track: 'hackathon',
-          blueprint: {
-            ...(blueprint || { title: deck?.deckTitle || 'Hackathon Sprint War-Room', summary: notesInput }),
-            warRoom: { repoUrl, audit, prevScore, scoreHistory, deck, psAnalysis, demoQa, repoPack, repoMeta },
-          },
-          messages: [],
-        }),
-      });
-      const data = await res.json();
-      if (data?.success && data?.session?.id) {
-        onSessionId(data.session.id);
-        const link = `${window.location.origin}/spark?session=${data.session.id}`;
-        setShareUrl(link);
-        navigator.clipboard?.writeText(link);
-        setCopiedShare(true);
-        setTimeout(() => setCopiedShare(false), 3000);
-      } else {
-        setErrorMsg(data?.error || 'Could not create shared War-Room link.');
-      }
-    } catch {
-      setErrorMsg('Failed to share War-Room.');
-    } finally {
-      setSharing(false);
-    }
-  };
-
   const tabs: Array<{ id: WarRoomTab; label: string; icon: React.ComponentType<any> }> = [
     { id: 'ppt_deck', label: 'Screening PPT Deck', icon: Presentation },
     { id: 'pick_ps', label: 'Pick Winning PS', icon: Target },
     { id: 'demo_qa', label: '2-Min Demo & Q&A', icon: Mic },
     { id: 'repo_pack', label: 'README + Schema', icon: FileCode2 },
-    { id: 'judge_share', label: 'Judge Re-Audit & Share', icon: Gavel },
+    { id: 'judge_share', label: 'Judge Re-Audit', icon: Gavel },
   ];
+
+  const signals = repoMeta?.signals;
 
   return (
     <div className="p-5 sm:p-6 rounded-3xl bg-[#0D1018] border border-cyan-500/25 space-y-5 shadow-2xl">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
-            <Trophy className="w-3.5 h-3.5" />
-            <span>Hackathon Sprint Pass Toolkit · KΛ-Pro</span>
-          </div>
-          <h3 className="text-lg font-black text-white">Submission-Ready Assets &amp; Repo War-Room</h3>
+      <div>
+        <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+          <Trophy className="w-3.5 h-3.5" />
+          <span>Hackathon Sprint Pass Toolkit · KΛ-Pro</span>
         </div>
-        <button
-          type="button"
-          onClick={handleShareWarRoom}
-          disabled={sharing}
-          className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-60"
-        >
-          {copiedShare ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5 text-amber-400" />}
-          <span>{sharing ? 'Saving...' : copiedShare ? 'War-Room Link Copied!' : 'Share with Squad (3 Teammates)'}</span>
-        </button>
+        <h3 className="text-lg font-black text-white">Submission-Ready Assets &amp; Repo War-Room</h3>
       </div>
-
-      {shareUrl && (
-        <div className="px-3.5 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-[11px] text-emerald-200 font-mono truncate">
-          Shared Squad Link: {shareUrl}
-        </div>
-      )}
 
       {/* Shared Context Bar: Target Hackathon + GitHub Repo */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -269,6 +225,7 @@ export function KaHackathonWarRoom({
               onClick={() => {
                 setActiveTab(t.id);
                 setErrorMsg('');
+                setNoticeMsg('');
               }}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
                 active
@@ -282,6 +239,13 @@ export function KaHackathonWarRoom({
           );
         })}
       </div>
+
+      {noticeMsg && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/35 text-xs text-amber-200 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{noticeMsg}</span>
+        </div>
+      )}
 
       {errorMsg && (
         <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center gap-2">
@@ -343,7 +307,7 @@ export function KaHackathonWarRoom({
                   className="px-5 py-2.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-extrabold flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gavel className="w-3.5 h-3.5" />}
-                  <span>{loading ? 'Scoring Repo & Pitch...' : 'Run Strict Judge Audit'}</span>
+                  <span>{loading ? 'Scanning Full Repo & Rubric...' : 'Run Strict Judge Audit'}</span>
                 </button>
                 {audit && (
                   <button
@@ -393,18 +357,42 @@ export function KaHackathonWarRoom({
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {scoreDelta !== null && (
+                  {scoreDelta !== null && scoreDelta !== 0 && (
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        scoreDelta >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
+                        scoreDelta > 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'
                       }`}
                     >
-                      {scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta} pts since last audit
+                      {scoreDelta > 0 ? `+${scoreDelta}` : scoreDelta} pts since last audit
                     </span>
                   )}
                   <div className="text-2xl font-black text-amber-300">{audit.totalScore}/100</div>
                 </div>
               </div>
+
+              {signals && (
+                <div className="flex flex-wrap gap-2 text-[11px]">
+                  {[
+                    { label: 'Backend API', ok: signals.hasBackendApi },
+                    { label: 'Real Database', ok: signals.hasDatabase },
+                    { label: 'AI / Agent SDK', ok: signals.hasAiIntegration },
+                    { label: 'Tests', ok: signals.hasTests },
+                  ].map((sig) => (
+                    <span
+                      key={sig.label}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border ${
+                        sig.ok
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                          : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                      }`}
+                    >
+                      {sig.ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      <span>{sig.label}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {scoreHistory.length > 1 && (
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono text-zinc-300">
                   <span className="text-zinc-500">Audit Progress:</span>
@@ -422,6 +410,7 @@ export function KaHackathonWarRoom({
                   ))}
                 </div>
               )}
+
               <p className="text-xs text-zinc-300 leading-relaxed">{audit.judgeVerdict}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {(audit.breakdown || []).map((b: any) => (
