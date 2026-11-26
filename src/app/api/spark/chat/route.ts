@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
           upgradeRequired: Boolean(quota.upgradeRequired),
           entitlements: quota.entitlements,
         },
-        { status: quota.upgradeRequired ? 402 : 429 }
+        { status: quota.requireAuth ? 401 : quota.upgradeRequired ? 402 : 429 }
       );
     }
 

@@ -621,6 +621,8 @@ export default function SparkUniversalWorkspacePage() {
           profile={profile}
           deepRemaining={deepRemaining}
           fastRemaining={fastRemaining}
+          generalFastRemaining={entitlements?.generalFastRemaining}
+          nextResetAt={entitlements?.nextResetAt}
           planName={entitlements?.planName || (user ? 'Free Builder' : 'Guest Preview')}
           planId={entitlements?.planId || 'free'}
           onOpenPricing={() => {
@@ -685,13 +687,27 @@ export default function SparkUniversalWorkspacePage() {
                   >
                     <Zap className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                     <div>
-                      <div className="text-xs font-bold text-white">KΛ-1</div>
+                      <div className="text-xs font-bold text-white">
+                        KΛ-1 (
+                        {entitlements?.hackathonOnly && mode !== 'hackathon' && typeof entitlements.generalFastRemaining === 'number'
+                          ? entitlements.generalFastRemaining
+                          : fastRemaining}{' '}
+                        left)
+                      </div>
                       <div className="text-[11px] text-zinc-400">Fast daily answers, code &amp; notes</div>
                     </div>
                   </button>
                   <button
                     type="button"
                     onClick={() => {
+                      if (entitlements?.hackathonOnly && mode !== 'hackathon') {
+                        setModelMenuOpen(false);
+                        setPricingReason(
+                          '₹49 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro everywhere!'
+                        );
+                        setPricingOpen(true);
+                        return;
+                      }
                       setTier('deep');
                       setModelMenuOpen(false);
                     }}
@@ -701,8 +717,21 @@ export default function SparkUniversalWorkspacePage() {
                   >
                     <Sparkles className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
                     <div>
-                      <div className="text-xs font-bold text-white">KΛ-Pro ({deepRemaining} left)</div>
-                      <div className="text-[11px] text-zinc-400">Deep reasoning for tough bugs &amp; architecture</div>
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <span>KΛ-Pro ({deepRemaining} left)</span>
+                        {entitlements?.hackathonOnly && mode !== 'hackathon' && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-[9px] text-amber-300">
+                            PRO UPGRADE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-zinc-400">
+                        {entitlements?.hackathonOnly && mode !== 'hackathon'
+                          ? 'Hackathon Studio only on ₹49 Pass · Go Pro ₹149/mo'
+                          : deepRemaining === 0 && entitlements?.nextResetAt
+                          ? `Daily limit ended · Resets at ${new Date(entitlements.nextResetAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                          : 'Deep reasoning for tough bugs & architecture'}
+                      </div>
                     </div>
                   </button>
                 </div>
@@ -717,6 +746,22 @@ export default function SparkUniversalWorkspacePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {(!entitlements || entitlements.planId === 'free' || entitlements.planId === 'hackathon_pass') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setPricingReason(
+                    entitlements?.planId === 'hackathon_pass'
+                      ? 'Upgrade from ₹49 Hackathon Pass to KΛ Pro Builder (₹149/mo) to unlock KΛ-Pro across ALL modes!'
+                      : undefined
+                  );
+                  setPricingOpen(true);
+                }}
+                className="px-3 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-xs font-extrabold text-zinc-950 cursor-pointer transition-colors"
+              >
+                {entitlements?.planId === 'hackathon_pass' ? 'Upgrade to Pro' : 'Upgrade'}
+              </button>
+            )}
             {mode === 'hackathon' && (
               <button
                 type="button"

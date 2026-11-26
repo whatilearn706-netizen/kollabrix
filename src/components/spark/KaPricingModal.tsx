@@ -219,6 +219,13 @@ export function KaPricingModal({
               {reason}
             </div>
           )}
+          {entitlements && entitlements.planId !== 'free' && (
+            <div className="mt-2 px-3.5 py-2 rounded-xl bg-cyan-500/10 border border-cyan-400/30 text-[11px] text-cyan-200">
+              Active Plan: <strong className="text-white">{entitlements.planName}</strong>
+              {entitlements.expiresAt ? ` · Valid until ${new Date(entitlements.expiresAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}
+              {entitlements.nextResetAt ? ` · Daily quota resets at ${new Date(entitlements.nextResetAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
+            </div>
+          )}
           {feedback && (
             <div
               className={`mt-3 px-3.5 py-2 rounded-xl text-xs font-semibold ${

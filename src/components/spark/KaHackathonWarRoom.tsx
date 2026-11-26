@@ -319,9 +319,20 @@ export function KaHackathonWarRoom({
       )}
 
       {errorMsg && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
+        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+          {errorMsg.toLowerCase().includes('limit') || errorMsg.toLowerCase().includes('upgrade') || errorMsg.toLowerCase().includes('pass') ? (
+            <button
+              type="button"
+              onClick={() => onRequireUpgrade(errorMsg)}
+              className="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 text-[11px] font-extrabold cursor-pointer shrink-0"
+            >
+              Upgrade Plan
+            </button>
+          ) : null}
         </div>
       )}
 

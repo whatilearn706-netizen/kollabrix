@@ -36,6 +36,8 @@ interface SparkSidebarProps {
   profile: any;
   deepRemaining: number;
   fastRemaining?: number;
+  generalFastRemaining?: number;
+  nextResetAt?: string | null;
   planName?: string;
   planId?: string;
   onOpenPricing?: () => void;
@@ -58,6 +60,8 @@ export function SparkSidebar({
   profile,
   deepRemaining,
   fastRemaining = 4,
+  generalFastRemaining,
+  nextResetAt,
   planName = 'Free Builder',
   planId = 'free',
   onOpenPricing,
@@ -228,19 +232,41 @@ export function SparkSidebar({
             <div className="text-[10px] text-zinc-500 flex items-center gap-1.5">
               <Sparkles className="w-2.5 h-2.5 text-amber-400 shrink-0" />
               <span className="truncate">
-                {planName} · {fastRemaining} KΛ-1 · {deepRemaining} Pro
+                {planName} ·{' '}
+                {planId === 'hackathon_pass' && activeMode !== 'hackathon' && typeof generalFastRemaining === 'number'
+                  ? `${generalFastRemaining} KΛ-1 · Hackathon Pro Only`
+                  : `${fastRemaining} KΛ-1 · ${deepRemaining} Pro`}
               </span>
             </div>
+            {nextResetAt && (deepRemaining === 0 || fastRemaining === 0) && (
+              <div className="text-[9px] text-amber-300/90 font-mono truncate">
+                24h reset at{' '}
+                {new Date(nextResetAt).toLocaleTimeString('en-IN', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })}
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {onOpenPricing && planId === 'free' && (
+          {onOpenPricing && (planId === 'free' || planId === 'hackathon_pass') && (
             <button
               type="button"
               onClick={onOpenPricing}
               className="px-2.5 py-1 rounded-full bg-amber-400 hover:bg-amber-300 text-[10px] font-bold text-zinc-950 transition-colors cursor-pointer"
             >
               Upgrade
+            </button>
+          )}
+          {onOpenPricing && planId !== 'free' && planId !== 'hackathon_pass' && deepRemaining === 0 && (
+            <button
+              type="button"
+              onClick={onOpenPricing}
+              className="px-2 py-1 rounded-full bg-white/10 hover:bg-white/20 text-[10px] font-semibold text-amber-300 transition-colors cursor-pointer"
+            >
+              Plan
             </button>
           )}
           {!user && (

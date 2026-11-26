@@ -5,6 +5,8 @@ import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 export type KaPlanId = 'free' | 'hackathon_pass' | 'pro_monthly' | 'pro_semester';
 export type KaQuotaContext = 'general' | 'code' | 'dsa' | 'hackathon';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export interface KaPlanDefinition {
   id: KaPlanId;
   name: string;
@@ -60,9 +62,9 @@ export const KA_PLANS: Record<KaPlanId, KaPlanDefinition> = {
     hasPriorityBoost: false,
     highlights: [
       '10 KΛ-Pro + 10 KΛ-1/day (Hackathon Studio only)',
+      '4 KΛ-1/day in General, Code & DSA modes',
       'Screening PPT Deck (.pptx) + Pick Winning PS Cut-List',
-      '2-Min Demo Timer + Tough Judge Q&A + README/SQL Pack',
-      'Live Judge Re-Audit Loop + 3-Teammate War-Room Share',
+      '2-Min Demo Timer + Tough Judge Q&A + README/SQL + Re-Audit',
     ],
   },
   pro_monthly: {
@@ -125,7 +127,10 @@ export interface UserPlanRecord {
 
 export interface DailyUsageCounter {
   date: string;
+  windowKey?: string;
+  windowStartAt?: number;
   fast: number;
+  generalFast?: number;
   deep: number;
   explain: number;
 }
@@ -133,13 +138,16 @@ export interface DailyUsageCounter {
 export interface KaEntitlementSummary {
   planId: KaPlanId;
   planName: string;
+  activatedAt?: string | null;
   expiresAt: string | null;
+  nextResetAt?: string | null;
   isAuthenticated: boolean;
   hackathonOnly: boolean;
   fastLimit: number;
   deepLimit: number;
   explainLimit: number;
   fastRemaining: number;
+  generalFastRemaining: number;
   deepRemaining: number;
   explainRemaining: number;
   canJudgeAudit: boolean;
@@ -193,7 +201,7 @@ export async function getUserActivePlan(userId: string | null): Promise<UserPlan
   const allPlans = await readSettingsMap<UserPlanRecord>(PLANS_KEY);
   const rec = allPlans[userId] || memPlans.get(userId);
   if (!rec || rec.planId === 'free') {
-    return { planId: 'free', activatedAt: new Date().toISOString(), expiresAt: null };
+    return { planId: 'free', activatedAt: rec?.activatedAt || new Date().toISOString(), expiresAt: null };
   }
 
   if (rec.expiresAt && new Date(rec.expiresAt).getTime() <= Date.now()) {
@@ -220,9 +228,7 @@ export async function activateUserPlan(
   const def = KA_PLANS[planId] || KA_PLANS.free;
   const now = new Date();
   const duration = typeof opts?.customDays === 'number' && opts.customDays > 0 ? opts.customDays : def.durationDays;
-  const expiresAt = duration
-    ? new Date(now.getTime() + duration * 24 * 60 * 60 * 1000).toISOString()
-    : null;
+  const expiresAt = duration ? new Date(now.getTime() + duration * DAY_MS).toISOString() : null;
 
   const rec: UserPlanRecord = {
     planId: def.id,
@@ -261,7 +267,7 @@ export async function revokeUserPlan(userId: string): Promise<UserPlanRecord> {
 export async function extendUserPlan(userId: string, extraDays: number): Promise<UserPlanRecord> {
   const current = await getUserActivePlan(userId);
   const baseTime = current.expiresAt ? Math.max(Date.now(), new Date(current.expiresAt).getTime()) : Date.now();
-  const newExpiresAt = new Date(baseTime + extraDays * 24 * 60 * 60 * 1000).toISOString();
+  const newExpiresAt = new Date(baseTime + extraDays * DAY_MS).toISOString();
   const rec: UserPlanRecord = {
     ...current,
     expiresAt: newExpiresAt,
@@ -281,36 +287,117 @@ function getTodayStr() {
   return new Date().toISOString().split('T')[0];
 }
 
-async function getUsageCounter(actorKey: string): Promise<DailyUsageCounter> {
+/**
+ * Computes exact rolling 24-hour quota cycle anchored to the user's purchase timestamp (`activatedAt`).
+ * Example: Buy at 7:30 PM -> daily limit resets at 7:30 PM every 24h until plan expires.
+ */
+function resolveRollingWindow(planRec: UserPlanRecord, stored?: DailyUsageCounter): {
+  windowKey: string;
+  windowStartAt: number;
+  nextResetAt: string;
+} {
+  const now = Date.now();
+
+  if (planRec.planId !== 'free' && planRec.activatedAt) {
+    const anchorMs = new Date(planRec.activatedAt).getTime();
+    if (Number.isFinite(anchorMs)) {
+      const elapsed = Math.max(0, now - anchorMs);
+      const cycleIdx = Math.floor(elapsed / DAY_MS);
+      const cycleStartMs = anchorMs + cycleIdx * DAY_MS;
+      return {
+        windowKey: `${planRec.planId}:${planRec.activatedAt}:${cycleIdx}`,
+        windowStartAt: cycleStartMs,
+        nextResetAt: new Date(cycleStartMs + DAY_MS).toISOString(),
+      };
+    }
+  }
+
+  // Free / guest rolling 24h anchor from first usage in current window
+  const existingStart = stored?.windowStartAt && Number.isFinite(stored.windowStartAt) ? stored.windowStartAt : 0;
+  if (existingStart && now - existingStart < DAY_MS && (!stored?.windowKey || stored.windowKey.startsWith('free:'))) {
+    return {
+      windowKey: stored?.windowKey || `free:${existingStart}`,
+      windowStartAt: existingStart,
+      nextResetAt: new Date(existingStart + DAY_MS).toISOString(),
+    };
+  }
+
+  return {
+    windowKey: `free:${now}`,
+    windowStartAt: now,
+    nextResetAt: new Date(now + DAY_MS).toISOString(),
+  };
+}
+
+function formatResetMessage(nextResetAt: string): string {
+  const msLeft = Math.max(60_000, new Date(nextResetAt).getTime() - Date.now());
+  const hrs = Math.floor(msLeft / 3_600_000);
+  const mins = Math.floor((msLeft % 3_600_000) / 60_000);
+  let timeStr = '';
+  try {
+    timeStr = new Date(nextResetAt).toLocaleTimeString('en-IN', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Kolkata',
+    });
+  } catch {}
+  return `Resets in ${hrs}h ${mins}m${timeStr ? ` (at ${timeStr} IST)` : ''}`;
+}
+
+async function getUsageCounter(actorKey: string, planRec: UserPlanRecord): Promise<{
+  counter: DailyUsageCounter;
+  nextResetAt: string;
+}> {
   const today = getTodayStr();
   const allUsage = await readSettingsMap<DailyUsageCounter>(USAGE_KEY);
   const dbEntry = allUsage[actorKey];
   const memEntry = memUsage.get(actorKey);
 
-  // Merge max values in case an instance is slightly ahead of DB read
-  const dbFast = dbEntry && dbEntry.date === today ? Number(dbEntry.fast || 0) : 0;
-  const dbDeep = dbEntry && dbEntry.date === today ? Number(dbEntry.deep || 0) : 0;
-  const dbExplain = dbEntry && dbEntry.date === today ? Number(dbEntry.explain || 0) : 0;
+  // Pick whichever entry belongs to the active rolling window
+  const activeWin = resolveRollingWindow(planRec, dbEntry || memEntry);
 
-  const mFast = memEntry && memEntry.date === today ? Number(memEntry.fast || 0) : 0;
-  const mDeep = memEntry && memEntry.date === today ? Number(memEntry.deep || 0) : 0;
-  const mExplain = memEntry && memEntry.date === today ? Number(memEntry.explain || 0) : 0;
+  const dbMatches =
+    dbEntry &&
+    (dbEntry.windowKey ? dbEntry.windowKey === activeWin.windowKey : dbEntry.date === today && planRec.planId === 'free');
+  const memMatches =
+    memEntry &&
+    (memEntry.windowKey ? memEntry.windowKey === activeWin.windowKey : memEntry.date === today && planRec.planId === 'free');
+
+  const dbFast = dbMatches ? Number(dbEntry.fast || 0) : 0;
+  const dbGenFast = dbMatches ? Number(dbEntry.generalFast || 0) : 0;
+  const dbDeep = dbMatches ? Number(dbEntry.deep || 0) : 0;
+  const dbExplain = dbMatches ? Number(dbEntry.explain || 0) : 0;
+
+  const mFast = memMatches ? Number(memEntry.fast || 0) : 0;
+  const mGenFast = memMatches ? Number(memEntry.generalFast || 0) : 0;
+  const mDeep = memMatches ? Number(memEntry.deep || 0) : 0;
+  const mExplain = memMatches ? Number(memEntry.explain || 0) : 0;
 
   return {
-    date: today,
-    fast: Math.max(dbFast, mFast),
-    deep: Math.max(dbDeep, mDeep),
-    explain: Math.max(dbExplain, mExplain),
+    counter: {
+      date: today,
+      windowKey: activeWin.windowKey,
+      windowStartAt: activeWin.windowStartAt,
+      fast: Math.max(dbFast, mFast),
+      generalFast: Math.max(dbGenFast, mGenFast),
+      deep: Math.max(dbDeep, mDeep),
+      explain: Math.max(dbExplain, mExplain),
+    },
+    nextResetAt: activeWin.nextResetAt,
   };
 }
 
 async function saveUsageCounter(actorKey: string, counter: DailyUsageCounter): Promise<void> {
   memUsage.set(actorKey, counter);
+  const now = Date.now();
   const today = getTodayStr();
   const allUsage = await readSettingsMap<DailyUsageCounter>(USAGE_KEY);
   const pruned: Record<string, DailyUsageCounter> = {};
   for (const [k, v] of Object.entries(allUsage)) {
-    if (v && v.date === today) pruned[k] = v;
+    if (!v) continue;
+    const stillValid = v.windowStartAt ? now - v.windowStartAt < DAY_MS * 2 : v.date === today;
+    if (stillValid) pruned[k] = v;
   }
   pruned[actorKey] = counter;
   await writeSettingsMap(USAGE_KEY, pruned);
@@ -319,27 +406,31 @@ async function saveUsageCounter(actorKey: string, counter: DailyUsageCounter): P
 export async function getKaEntitlements(
   actorKey: string,
   userId: string | null,
-  usageOverride?: DailyUsageCounter
+  usageOverride?: { counter: DailyUsageCounter; nextResetAt: string }
 ): Promise<KaEntitlementSummary> {
   const isAuth = Boolean(userId);
   const planRec = await getUserActivePlan(userId);
   const def = KA_PLANS[planRec.planId] || KA_PLANS.free;
-  const usage = usageOverride || (await getUsageCounter(actorKey));
+  const { counter: usage, nextResetAt } = usageOverride || (await getUsageCounter(actorKey, planRec));
 
   const fastLimit = isAuth ? def.fastPerDay : 1;
   const deepLimit = isAuth ? def.deepPerDay : 0;
   const explainLimit = isAuth ? def.explainPerDay : 1;
+  const generalFastLimit = def.hackathonOnly ? 4 : fastLimit;
 
   return {
     planId: def.id,
     planName: isAuth ? def.name : 'Guest Preview',
+    activatedAt: planRec.activatedAt || null,
     expiresAt: planRec.expiresAt,
+    nextResetAt,
     isAuthenticated: isAuth,
     hackathonOnly: Boolean(def.hackathonOnly),
     fastLimit,
     deepLimit,
     explainLimit,
     fastRemaining: Math.max(0, fastLimit - usage.fast),
+    generalFastRemaining: Math.max(0, generalFastLimit - (def.hackathonOnly ? (usage.generalFast || 0) : usage.fast)),
     deepRemaining: Math.max(0, deepLimit - usage.deep),
     explainRemaining: Math.max(0, explainLimit - usage.explain),
     canJudgeAudit: isAuth && def.canJudgeAudit,
@@ -367,9 +458,13 @@ export async function consumeKaChatQuota(
   const isAuth = Boolean(userId);
   const planRec = await getUserActivePlan(userId);
   const def = KA_PLANS[planRec.planId] || KA_PLANS.free;
-  const usage = await getUsageCounter(actorKey);
+  const usageState = await getUsageCounter(actorKey, planRec);
+  const { counter: usage, nextResetAt } = usageState;
+  const resetText = formatResetMessage(nextResetAt);
 
-  // Enforce Hackathon Pass isolation: Hackathon Pass ₹49 ONLY gives KΛ-Pro & 10/day inside Hackathon Studio
+  // 1. Hackathon Pass (₹49 / 7 days) Isolation:
+  //    - KΛ-Pro & 10/day quota are ONLY allowed in Hackathon Studio (`contextMode === 'hackathon'`)
+  //    - Outside Hackathon Studio (General, Code Sandbox, DSA), KΛ-Pro is blocked and KΛ-1 is capped at 4/day!
   if (def.hackathonOnly && contextMode !== 'hackathon') {
     if (requestedTier === 'deep') {
       return {
@@ -378,94 +473,87 @@ export async function consumeKaChatQuota(
         upgradeRequired: true,
         recommendedPlan: 'pro_monthly',
         error:
-          'Hackathon Pass (₹49) covers Hackathon Studio only. Upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro in Code Sandbox, DSA & General Chat!',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
+          '₹49 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Switch to KΛ-1 (4/day) here or upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro anywhere on Kollabrix!',
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
 
-    // Outside Hackathon Studio on KΛ-1, keep Hackathon Pass users at Free cap (4/day)
     const generalFastLimit = 4;
-    if (usage.fast >= generalFastLimit) {
+    const usedGen = usage.generalFast || 0;
+    if (usedGen >= generalFastLimit) {
       return {
         allowed: false,
         effectiveTier: 'fast',
         upgradeRequired: true,
         recommendedPlan: 'pro_monthly',
-        error:
-          'Free general chat limit reached (4/4). Your 10/day Hackathon Pass works in Hackathon Studio — upgrade to KΛ Pro Builder (₹149/mo) for 30/day everywhere!',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
+        error: `Daily KΛ-1 general limit reached (${generalFastLimit}/${generalFastLimit}). ${resetText} — or upgrade to KΛ Pro Builder (₹149/mo) for 30 KΛ-1 + 10 KΛ-Pro/day everywhere!`,
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
 
-    usage.fast += 1;
+    usage.generalFast = usedGen + 1;
     await saveUsageCounter(actorKey, usage);
     return {
       allowed: true,
       effectiveTier: 'fast',
-      entitlements: await getKaEntitlements(actorKey, userId, usage),
+      entitlements: await getKaEntitlements(actorKey, userId, usageState),
     };
   }
 
   const fastLimit = isAuth ? def.fastPerDay : 1;
   const deepLimit = isAuth ? def.deepPerDay : 0;
 
+  // 2. KΛ-Pro (`deep`) — Strict Hard Stop when 0 left (NEVER silently downgrade to KΛ-1!)
   if (requestedTier === 'deep') {
-    if (usage.deep < deepLimit) {
-      usage.deep += 1;
-      await saveUsageCounter(actorKey, usage);
-      return {
-        allowed: true,
-        effectiveTier: 'deep',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
-      };
-    }
-
     if (!isAuth) {
       return {
         allowed: false,
-        effectiveTier: 'fast',
+        effectiveTier: 'deep',
         requireAuth: true,
         error: 'Sign in free for 4 daily KΛ-1 messages, or unlock KΛ-Pro with Hackathon Pass (₹49 / 7 days).',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
 
     if (def.id === 'free') {
       return {
         allowed: false,
-        effectiveTier: 'fast',
+        effectiveTier: 'deep',
         upgradeRequired: true,
         recommendedPlan: contextMode === 'hackathon' ? 'hackathon_pass' : 'pro_monthly',
         error:
           contextMode === 'hackathon'
             ? 'KΛ-Pro Hackathon Studio is unlocked with Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
             : 'KΛ-Pro in Code Sandbox, DSA & General Chat requires KΛ Pro Builder (₹149/mo).',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
 
-    if (usage.fast < fastLimit) {
-      usage.fast += 1;
+    if (usage.deep < deepLimit) {
+      usage.deep += 1;
       await saveUsageCounter(actorKey, usage);
       return {
         allowed: true,
-        effectiveTier: 'fast',
-        note: 'Daily KΛ-Pro quota reached — routed automatically to KΛ-1.',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
+        effectiveTier: 'deep',
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
 
+    // 0 KΛ-Pro left -> strictly return error with exact 24h reset countdown (+ Upgrade button if on Hackathon Pass)
     return {
       allowed: false,
-      effectiveTier: 'fast',
-      upgradeRequired: true,
-      recommendedPlan: 'pro_monthly',
-      error: 'Daily KΛ ΛI quota reached (10/10). Upgrade to KΛ Pro Builder (₹149/mo) or wait for tomorrow.',
-      entitlements: await getKaEntitlements(actorKey, userId, usage),
+      effectiveTier: 'deep',
+      upgradeRequired: def.id === 'hackathon_pass',
+      recommendedPlan: def.id === 'hackathon_pass' ? 'pro_monthly' : undefined,
+      error:
+        def.id === 'hackathon_pass'
+          ? `Daily KΛ-Pro limit reached (${deepLimit}/${deepLimit} used). ${resetText} — or upgrade to KΛ Pro Builder (₹149/mo) for fresh Pro access everywhere!`
+          : `Daily KΛ-Pro limit reached (${deepLimit}/${deepLimit} used). ${resetText}. Switch to KΛ-1 if you still have fast messages remaining.`,
+      entitlements: await getKaEntitlements(actorKey, userId, usageState),
     };
   }
 
-  // Fast tier (KΛ-1)
+  // 3. KΛ-1 (`fast`)
   if (usage.fast >= fastLimit) {
     if (!isAuth) {
       return {
@@ -473,19 +561,19 @@ export async function consumeKaChatQuota(
         effectiveTier: 'fast',
         requireAuth: true,
         error: 'Free guest preview used (1/1). Sign in free for 4 daily KΛ-1 messages!',
-        entitlements: await getKaEntitlements(actorKey, userId, usage),
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
     return {
       allowed: false,
       effectiveTier: 'fast',
-      upgradeRequired: true,
-      recommendedPlan: contextMode === 'hackathon' ? 'hackathon_pass' : 'pro_monthly',
+      upgradeRequired: def.id === 'free' || def.id === 'hackathon_pass',
+      recommendedPlan: contextMode === 'hackathon' && def.id === 'free' ? 'hackathon_pass' : 'pro_monthly',
       error:
         def.id === 'free'
-          ? 'Daily Free limit reached (4/4 KΛ-1). Upgrade to Hackathon Pass (₹49) for Hackathon Studio or KΛ Pro (₹149/mo) sitewide.'
-          : 'Daily KΛ-1 quota reached for today.',
-      entitlements: await getKaEntitlements(actorKey, userId, usage),
+          ? `Daily Free KΛ-1 limit reached (4/4). ${resetText} — or upgrade to Hackathon Pass (₹49) / KΛ Pro Builder (₹149/mo).`
+          : `Daily KΛ-1 limit reached (${fastLimit}/${fastLimit}). ${resetText}.`,
+      entitlements: await getKaEntitlements(actorKey, userId, usageState),
     };
   }
 
@@ -494,7 +582,7 @@ export async function consumeKaChatQuota(
   return {
     allowed: true,
     effectiveTier: 'fast',
-    entitlements: await getKaEntitlements(actorKey, userId, usage),
+    entitlements: await getKaEntitlements(actorKey, userId, usageState),
   };
 }
 
@@ -504,16 +592,18 @@ export async function consumeKaExplainQuota(
 ): Promise<{ allowed: boolean; remaining: number; upgradeRequired?: boolean; error?: string }> {
   const ent = await getKaEntitlements(actorKey, userId);
   if (ent.explainRemaining <= 0) {
+    const resetHint = ent.nextResetAt ? ` ${formatResetMessage(ent.nextResetAt)}.` : '';
     return {
       allowed: false,
       remaining: 0,
       upgradeRequired: true,
       error: ent.isAuthenticated
-        ? 'Bug Coach limit reached. Upgrade to KΛ Pro Builder (₹149/mo) for unlimited Practice IDE & Arena debugging hints!'
+        ? `Bug Coach limit reached.${resetHint} Upgrade to KΛ Pro Builder (₹149/mo) for unlimited Practice IDE & Arena debugging hints!`
         : 'Sign in free for 2 daily Bug Coach hints, or go KΛ Pro Builder (₹149/mo) for unlimited debugging.',
     };
   }
-  const usage = await getUsageCounter(actorKey);
+  const planRec = await getUserActivePlan(userId);
+  const { counter: usage } = await getUsageCounter(actorKey, planRec);
   usage.explain += 1;
   await saveUsageCounter(actorKey, usage);
   return {

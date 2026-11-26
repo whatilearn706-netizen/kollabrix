@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { callSparkLLM } from '@/lib/spark/aiClient';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
+import { consumeKaChatQuota } from '@/lib/spark/plans';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,6 +13,26 @@ export async function POST(request: NextRequest) {
     const rateCheck = checkIpRateLimit(`spark-export:${ip}`, 15, 5 * 60 * 1000, 5 * 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json({ error: 'Rate limit reached. Please wait a moment.' }, { status: 429 });
+    }
+
+    let userId: string | null = null;
+    try {
+      const serverClient = createServerSupabaseClient();
+      const { data: { user } } = await serverClient.auth.getUser();
+      userId = user?.id || null;
+    } catch {}
+
+    const quota = await consumeKaChatQuota(userId || ip, 'fast', userId, 'hackathon');
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          error: quota.error || 'Daily KΛ ΛI quota reached.',
+          requireAuth: Boolean(quota.requireAuth),
+          upgradeRequired: Boolean(quota.upgradeRequired),
+          entitlements: quota.entitlements,
+        },
+        { status: quota.requireAuth ? 401 : quota.upgradeRequired ? 402 : 429 }
+      );
     }
 
     const body = await request.json();
