@@ -56,6 +56,10 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   const [cursorPos, setCursorPos] = useState<number>(0);
   const [selectedHintIdx, setSelectedHintIdx] = useState<number>(0);
   const [hintsDismissed, setHintsDismissed] = useState<boolean>(false);
+  const [editorFontSize, setEditorFontSize] = useState<13 | 14 | 16>(14);
+
+  const fontSizeClass =
+    editorFontSize === 13 ? 'text-[13px]' : editorFontSize === 16 ? 'text-[16px]' : 'text-[14px]';
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const gutterRef = useRef<HTMLDivElement | null>(null);
@@ -292,16 +296,16 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
 
             <div className="flex-1 min-h-0 flex flex-col p-3 gap-2.5 overflow-hidden">
               {(!isWeb || !specCollapsed) && (
-                <div className={`space-y-2 text-xs overflow-y-auto shrink-0 ${isWeb ? 'max-h-36 pr-1' : 'flex-1'}`}>
-                  <h2 className="text-base font-black text-white tracking-tight">{q.title}</h2>
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-line">{q.description}</p>
+                <div className={`space-y-2.5 overflow-y-auto shrink-0 ${isWeb ? 'max-h-40 pr-1' : 'flex-1'}`}>
+                  <h2 className="text-base sm:text-[17px] font-black text-white tracking-tight">{q.title}</h2>
+                  <p className="text-[13.5px] leading-relaxed font-medium text-slate-100 whitespace-pre-line">{q.description}</p>
                   {!isWeb && (q.sampleInput || q.testCases?.[0]) && (
-                    <div className="p-3 rounded-xl bg-[#05080F] border border-white/10 font-mono text-[11px] space-y-1">
-                      <div className="text-slate-400">
-                        <strong className="text-slate-200">Input:</strong> {q.sampleInput || q.testCases[0]?.input}
+                    <div className="p-3.5 rounded-xl bg-[#05080F] border border-white/15 font-mono text-[12.5px] leading-relaxed space-y-1.5">
+                      <div className="text-slate-200">
+                        <strong className="text-white font-bold">Input:</strong> {q.sampleInput || q.testCases[0]?.input}
                       </div>
-                      <div className="text-slate-400">
-                        <strong className="text-slate-200">Output:</strong> {q.sampleOutput || q.testCases[0]?.expectedOutput}
+                      <div className="text-slate-200">
+                        <strong className="text-white font-bold">Output:</strong> {q.sampleOutput || q.testCases[0]?.expectedOutput}
                       </div>
                     </div>
                   )}
@@ -472,6 +476,21 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
               )}
             </div>
             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+              <div className="inline-flex items-center gap-0.5 p-0.5 rounded-md bg-white/[0.04] border border-white/10">
+                {([13, 14, 16] as const).map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setEditorFontSize(sz)}
+                    title={`Set editor font size to ${sz}px`}
+                    className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold cursor-pointer transition-colors ${
+                      editorFontSize === sz ? 'bg-white text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {sz}px
+                  </button>
+                ))}
+              </div>
               <span className="hidden sm:inline-flex items-center gap-1 text-slate-400">
                 <Sparkles className="w-3 h-3 text-slate-300" />
                 Emmet / Hints Active
@@ -481,10 +500,10 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
             </div>
           </div>
 
-          <div className="relative flex-1 min-h-0 flex bg-[#05080E] overflow-hidden">
+          <div className="relative flex-1 min-h-0 flex bg-[#060A12] overflow-hidden">
             <div
               ref={gutterRef}
-              className="w-10 py-3 pr-2 text-right font-mono text-xs leading-6 text-slate-600 select-none border-r border-white/[0.06] bg-[#04060B] overflow-hidden"
+              className={`w-11 py-3.5 pr-2.5 text-right font-mono ${fontSizeClass} leading-[1.75] text-slate-500 select-none border-r border-white/[0.07] bg-[#04060B] overflow-hidden`}
             >
               {Array.from({ length: linesCount }, (_, i) => (
                 <div key={i + 1}>{i + 1}</div>
@@ -638,7 +657,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
               autoCapitalize="off"
               autoComplete="off"
               data-gramm="false"
-              className="flex-1 p-3 bg-transparent text-slate-100 font-mono text-xs leading-6 resize-none outline-none overflow-y-auto select-text"
+              className={`flex-1 p-3.5 bg-transparent text-white/95 antialiased font-mono font-medium ${fontSizeClass} leading-[1.75] resize-none outline-none overflow-y-auto select-text`}
             />
 
             {/* Floating VS Code / IntelliJ Abbreviation Hints Bar */}

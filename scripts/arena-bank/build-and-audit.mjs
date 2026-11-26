@@ -10,8 +10,9 @@ import { WEB_CLASH_JS_QUESTIONS } from './web-clash-js.mjs';
 import { WEB_BUG_QUESTIONS } from './web-bughunt.mjs';
 import { testCompiledSet } from './verify-code.mjs';
 import { verifyAllWeb } from './verify-web.mjs';
+import { formatQuestionCode } from './format-starters.mjs';
 
-const allQuestions = [
+const rawQuestions = [
   ...PYTHON_BLITZ_QUESTIONS.map((x) => x.question),
   ...CPP_BLITZ_QUESTIONS.map((x) => x.question),
   ...JAVA_BLITZ_QUESTIONS.map((x) => x.question),
@@ -22,6 +23,8 @@ const allQuestions = [
   ...WEB_CLASH_JS_QUESTIONS.map((x) => x.question),
   ...WEB_BUG_QUESTIONS.map((x) => x.question),
 ];
+
+const allQuestions = rawQuestions.map(formatQuestionCode);
 
 console.log('Total Questions Generated:', allQuestions.length);
 
