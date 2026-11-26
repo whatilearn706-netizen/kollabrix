@@ -143,6 +143,9 @@ function buildWebJsSuites(withCss) {
         let scopeDesc = '';
 
         if (withCss) {
+          const bodyRule = cssLines[0];
+          const boxRule = cssLines[1];
+
           if (dur.secs === 180) {
             // 3m HTML+CSS+JS: 100% HTML + 100% CSS given -> user writes JS only
             starterHtml = targetHtml;
@@ -150,58 +153,34 @@ function buildWebJsSuites(withCss) {
             checks = w.checks.filter((c) => c.scope === 'js');
             scopeDesc = 'HTML & CSS are 100% pre-filled — write script.js interactivity only.';
           } else if (dur.secs === 300) {
-            // 5m HTML+CSS+JS: ~60% HTML + ~40% CSS given -> user finishes HTML, control CSS & JS
-            starterHtml = [
-              ...htmlLines.slice(0, -2),
-              '  <!-- Add remaining interactive element matching Blueprint -->',
-              htmlLines[htmlLines.length - 1],
-            ].join('\n');
-            starterCss = `${cssLines.slice(0, 2).join('\n')}\n/* Finish button/control & display CSS (~60% remaining) */\n`;
+            // 5m HTML+CSS+JS: 100% HTML + card shell CSS given -> user styles controls & writes JS
+            starterHtml = targetHtml;
+            starterCss = `${bodyRule}\n${boxRule}\n\n/* Style interactive controls, buttons & state elements to match Blueprint */\n`;
             checks = [
-              ...w.checks,
+              ...w.checks.filter((c) => c.scope === 'js'),
               { label: 'Style inner controls & display elements (#id / button)', scope: 'css', req: '#[a-z]+|button|input' },
             ];
-            scopeDesc = '60% HTML & 40% CSS are pre-filled — finish HTML/CSS + write script.js.';
+            scopeDesc = 'HTML & card container CSS are pre-filled — style controls + write script.js.';
           } else {
-            // 10m HTML+CSS+JS: ~30% HTML + ~20% CSS given -> user finishes most HTML, CSS & JS
-            starterHtml = [
-              htmlLines[0],
-              htmlLines[1],
-              '  <!-- Build interactive inputs, buttons & output elements -->',
-              htmlLines[htmlLines.length - 1],
-            ].join('\n');
-            starterCss = `${cssLines[0]}\n.box {\n  /* Add card & interactive control styles */\n}\n`;
+            // 10m HTML+CSS+JS: 100% HTML + card shell CSS given -> user styles controls & writes JS
+            starterHtml = targetHtml;
+            starterCss = `${bodyRule}\n${boxRule}\n\n/* Refine button/input accents & spacing to match Blueprint */\n`;
             checks = [
-              ...w.checks,
-              { label: 'Styled .box layout & accent button/panel CSS', scope: 'css', req: 'background\\s*:&&padding\\s*:' },
+              ...w.checks.filter((c) => c.scope === 'js'),
+              { label: 'Style inner controls & display elements (#id / button)', scope: 'css', req: '#[a-z]+|button|input' },
             ];
-            scopeDesc = '30% HTML & 20% CSS starter — build UI markup, styling & script.js.';
+            scopeDesc = 'HTML & card container CSS are pre-filled — style controls + write script.js.';
           }
         } else {
+          // HTML + JS: 100% HTML given across all durations -> user writes JS only
+          starterHtml = targetHtml;
+          checks = w.checks.filter((c) => c.scope === 'js');
           if (dur.secs === 180) {
-            // 3m HTML+JS: 100% HTML given -> user writes JS only
-            starterHtml = targetHtml;
-            checks = w.checks.filter((c) => c.scope === 'js');
             scopeDesc = 'HTML is 100% pre-filled — write script.js interactivity only.';
           } else if (dur.secs === 300) {
-            // 5m HTML+JS: ~75% HTML given -> user adds final control/display + writes JS
-            starterHtml = [
-              ...htmlLines.slice(0, -2),
-              '  <!-- Add remaining interactive element matching Blueprint -->',
-              htmlLines[htmlLines.length - 1],
-            ].join('\n');
-            checks = w.checks;
-            scopeDesc = '75% HTML is pre-filled — add missing control/output + write script.js.';
+            scopeDesc = 'HTML is 100% pre-filled — write script.js state & DOM logic.';
           } else {
-            // 10m HTML+JS: ~40% HTML given -> user builds controls & writes JS
-            starterHtml = [
-              htmlLines[0],
-              htmlLines[1],
-              '  <!-- Add semantic interactive controls matching Blueprint -->',
-              htmlLines[htmlLines.length - 1],
-            ].join('\n');
-            checks = w.checks;
-            scopeDesc = '40% HTML starter — add interactive DOM controls + write script.js.';
+            scopeDesc = 'HTML is 100% pre-filled — implement complete script.js event handling.';
           }
         }
 

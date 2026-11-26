@@ -243,11 +243,11 @@ export function HackathonCard({
                 </span>
               ) : isUrgent ? (
                 <span className="text-zinc-100 font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/25">
-                  {diffDays === 0 ? 'Closes today!' : `${diffDays} days left to apply`}
+                  {diffDays === 0 ? 'Closes today!' : diffDays === 1 ? '1 day left to apply' : `${diffDays} days left to apply`}
                 </span>
               ) : (
                 <span style={{ color: isCardDark ? '#a1a1aa' : theme.mutedTextColor }}>
-                  {diffDays} days left to apply
+                  {diffDays === 1 ? '1 day left to apply' : `${diffDays} days left to apply`}
                 </span>
               )}
             </div>

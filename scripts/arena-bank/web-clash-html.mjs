@@ -191,18 +191,8 @@ function buildHtmlCssQuestions() {
         if (diff === 'easy') {
           const targetHtml = `<div class="${slug}-card">\n  <span class="badge">${sectionTitle.split(' ')[0]}</span>\n  <h2>${baseTitle}</h2>\n  <p>${subtitle}</p>\n  <button class="cta">${btnText}</button>\n</div>`;
           const targetCss = `body { background: ${lightTint}; display: flex; justify-content: center; align-items: center; min-height: 100vh; }\n.${slug}-card { background: ${darkBg}; color: #ffffff; padding: 20px; border-radius: 14px; max-width: 320px; text-align: center; }\n.badge { display: inline-block; background: ${accent}; color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px; }\nh2 { margin: 4px 0 6px; font-size: 18px; }\np { color: #cbd5e1; font-size: 13px; margin: 0 0 14px; }\n.cta { background: ${accent}; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }`;
-          const starterHtml =
-            dur.secs === 180
-              ? targetHtml
-              : dur.secs === 300
-                ? `<div class="${slug}-card">\n  <span class="badge">${sectionTitle.split(' ')[0]}</span>\n  <h2>${baseTitle}</h2>\n  <p>${subtitle}</p>\n  <!-- Add missing button.cta (~15% HTML) -->\n</div>`
-                : `<div class="${slug}-card">\n  <span class="badge">${sectionTitle.split(' ')[0]}</span>\n  <h2>${baseTitle}</h2>\n  <!-- Add subtitle <p> and button.cta (~50% HTML) -->\n</div>`;
-          const htmlChecks =
-            dur.secs === 180
-              ? []
-              : [{ label: `Complete HTML heading "${baseTitle}" & button "${btnText}"`, scope: 'html', req: `<h[1-6][^>]*>[^<]*${hWord}[\\s\\S]*?<button` }];
+          const starterHtml = targetHtml;
           const checks = [
-            ...htmlChecks,
             { label: 'Card padding, radius & dark background styling', scope: 'css', req: 'padding\\s*:&&border-radius\\s*:&&background' },
             { label: 'Button background & text styling', scope: 'css', req: 'color\\s*:&&(\\.cta|button)' },
           ];
@@ -210,30 +200,20 @@ function buildHtmlCssQuestions() {
             dur.secs === 180
               ? 'HTML is 100% pre-filled — write style.css only.'
               : dur.secs === 300
-                ? '85% HTML is pre-filled — add the CTA button + write full style.css.'
-                : '50% HTML is pre-filled — finish remaining HTML + write full style.css.';
+                ? 'HTML is 100% pre-filled — style card padding, radius, badge & button.'
+                : 'HTML is 100% pre-filled — complete full responsive style.css design.';
           list.push(makeWebClash({
             id, title, difficulty: diff, durationSecs: dur.secs, stackTags: ['html', 'css'],
             description: `Style the ${themeName} card (${scopeHint}):\n- Container background ${darkBg}, 20px padding, 14px radius\n- Pill badge + Heading "${baseTitle}" + subtitle "${subtitle}"\n- Accent button (${accent}) labeled "${btnText}"`,
             starterHtml,
-            starterCss: `.${slug}-card {\n  /* Write card & button CSS styling */\n}\n`,
+            starterCss: `body { background: ${lightTint}; display: flex; justify-content: center; align-items: center; min-height: 100vh; }\n.${slug}-card {\n  background: ${darkBg};\n  color: #ffffff;\n  /* Add card padding, border-radius and .cta button styling */\n}\n`,
             targetHtml, targetCss, checks,
           }));
         } else if (diff === 'medium') {
           const targetHtml = `<div class="${slug}-row">\n  <div class="tile"><h3>${items[0]}</h3><p>${subtitle}</p></div>\n  <div class="tile highlight"><h3>${items[1]}</h3><p>${sectionTitle}</p></div>\n  <div class="tile"><h3>${items[2]}</h3><button class="btn">${btnText}</button></div>\n</div>`;
           const targetCss = `body { background: #f8fafc; padding: 16px; }\n.${slug}-row { display: flex; gap: 12px; align-items: stretch; justify-content: center; }\n.tile { flex: 1; background: ${darkBg}; color: #fff; padding: 16px; border-radius: 12px; border: 1px solid #334155; }\n.tile.highlight { border-color: ${accent}; background: #1e293b; }\n.tile h3 { margin: 0 0 6px; font-size: 14px; }\n.tile p { margin: 0; font-size: 12px; color: #94a3b8; }\n.btn { margin-top: 8px; background: ${accent}; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 700; }`;
-          const starterHtml =
-            dur.secs === 180
-              ? targetHtml
-              : dur.secs === 300
-                ? `<div class="${slug}-row">\n  <div class="tile"><h3>${items[0]}</h3><p>${subtitle}</p></div>\n  <div class="tile highlight"><h3>${items[1]}</h3><p>${sectionTitle}</p></div>\n  <!-- Add 3rd .tile with ${items[2]} & button.btn -->\n</div>`
-                : `<div class="${slug}-row">\n  <div class="tile"><h3>${items[0]}</h3><p>${subtitle}</p></div>\n  <!-- Add .tile.highlight (${items[1]}) & 3rd .tile (${items[2]} + button) -->\n</div>`;
-          const htmlChecks =
-            dur.secs === 180
-              ? []
-              : [{ label: 'Complete all 3 HTML tiles & button matching Blueprint', scope: 'html', req: `<h[1-6][^>]*>[^<]*${items[0].split(' ')[0].toLowerCase()}[\\s\\S]*?<h[1-6][^>]*>[^<]*${items[2].split(' ')[0].toLowerCase()}[\\s\\S]*?<button` }];
+          const starterHtml = targetHtml;
           const checks = [
-            ...htmlChecks,
             { label: 'Flexbox or Grid horizontal alignment with gap', scope: 'css', req: 'display\\s*:\\s*(flex|grid)&&gap\\s*:' },
             { label: 'Tile card borders, padding & radius', scope: 'css', req: 'border-radius\\s*:&&padding\\s*:&&background' },
           ];
@@ -241,30 +221,20 @@ function buildHtmlCssQuestions() {
             dur.secs === 180
               ? 'HTML is 100% pre-filled — write style.css only.'
               : dur.secs === 300
-                ? '85% HTML is pre-filled — add 3rd tile & button + write full style.css.'
-                : '50% HTML is pre-filled — add remaining tiles + write full style.css.';
+                ? 'HTML is 100% pre-filled — style tile cards, highlight state & button.'
+                : 'HTML is 100% pre-filled — complete responsive flex/grid multi-tile layout.';
           list.push(makeWebClash({
             id, title, difficulty: diff, durationSecs: dur.secs, stackTags: ['html', 'css'],
             description: `Build responsive multi-tile ${themeName} Flex/Grid bar (${scopeHint}):\n- Use display: flex or grid with 12px gap\n- Render tiles: ${items.join(', ')}\n- Dark background ${darkBg}, highlighted border ${accent}, 12px rounded cards`,
             starterHtml,
-            starterCss: `.${slug}-row {\n  /* Use display: flex or grid with gap */\n}\n`,
+            starterCss: `body { background: #f8fafc; padding: 16px; }\n.${slug}-row {\n  /* Use display: flex or grid with gap: 12px */\n}\n.tile {\n  background: ${darkBg};\n  color: #fff;\n  /* Add padding, border-radius, and border */\n}\n`,
             targetHtml, targetCss, checks,
           }));
         } else {
           const targetHtml = `<section class="${slug}-dash">\n  <header class="dash-top"><h2>${baseTitle}</h2><button class="pill-btn">${btnText}</button></header>\n  <div class="metrics-grid">\n    <div class="stat"><span>${items[0]}</span><strong>94%</strong></div>\n    <div class="stat"><span>${items[1]}</span><strong>12ms</strong></div>\n    <div class="stat"><span>${items[2]}</span><strong>Live</strong></div>\n  </div>\n</section>`;
           const targetCss = `body { background: #090d16; padding: 14px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }\n.${slug}-dash { width: 100%; max-width: 400px; background: ${darkBg}; border: 1px solid #334155; border-radius: 16px; padding: 16px; color: #f8fafc; }\n.dash-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }\n.dash-top h2 { margin: 0; font-size: 16px; }\n.pill-btn { background: ${accent}; color: #fff; border: none; padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; }\n.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }\n.stat { background: rgba(255,255,255,0.06); padding: 10px; border-radius: 10px; text-align: center; }\n.stat span { display: block; font-size: 10px; color: #94a3b8; }\n.stat strong { font-size: 16px; color: #ffffff; }`;
-          const starterHtml =
-            dur.secs === 180
-              ? targetHtml
-              : dur.secs === 300
-                ? `<section class="${slug}-dash">\n  <header class="dash-top"><h2>${baseTitle}</h2><button class="pill-btn">${btnText}</button></header>\n  <div class="metrics-grid">\n    <div class="stat"><span>${items[0]}</span><strong>94%</strong></div>\n    <div class="stat"><span>${items[1]}</span><strong>12ms</strong></div>\n    <!-- Add 3rd .stat tile (${items[2]} / Live) -->\n  </div>\n</section>`
-                : `<section class="${slug}-dash">\n  <header class="dash-top"><h2>${baseTitle}</h2><!-- Add pill-btn --></header>\n  <div class="metrics-grid">\n    <div class="stat"><span>${items[0]}</span><strong>94%</strong></div>\n    <!-- Add remaining 2 .stat tiles -->\n  </div>\n</section>`;
-          const htmlChecks =
-            dur.secs === 180
-              ? []
-              : [{ label: `Complete dashboard header & all 3 .stat metrics`, scope: 'html', req: `<header[\\s\\S]*?<h[1-6][^>]*>[^<]*${hWord}[\\s\\S]*?<button[\\s\\S]*?${items[2].split(' ')[0].toLowerCase()}` }];
+          const starterHtml = targetHtml;
           const checks = [
-            ...htmlChecks,
             { label: 'Flex header alignment (space-between)', scope: 'css', req: 'display\\s*:\\s*flex&&justify-content\\s*:\\s*space-between' },
             { label: 'CSS Grid 3-column metrics strip', scope: 'css', req: 'display\\s*:\\s*grid&&grid-template-columns' },
           ];
@@ -272,13 +242,13 @@ function buildHtmlCssQuestions() {
             dur.secs === 180
               ? 'HTML is 100% pre-filled — write style.css only.'
               : dur.secs === 300
-                ? '85% HTML is pre-filled — add 3rd metric tile + write full style.css.'
-                : '50% HTML is pre-filled — add header button & metric tiles + write full style.css.';
+                ? 'HTML is 100% pre-filled — style dashboard header & 3-column metrics grid.'
+                : 'HTML is 100% pre-filled — complete dashboard header, 3-column metrics grid & styling.';
           list.push(makeWebClash({
             id, title, difficulty: diff, durationSecs: dur.secs, stackTags: ['html', 'css'],
             description: `Craft a crisp ${themeName} Dashboard panel (${scopeHint}):\n- Top flex bar: justify-content: space-between with "${baseTitle}" + "${btnText}" pill button\n- 3-column CSS Grid (.metrics-grid) showing ${items.join(', ')}\n- Obsidian card (${darkBg}), 16px radius & rounded stat tiles`,
             starterHtml,
-            starterCss: `.${slug}-dash {\n  /* Style panel, header flex, and 3-column metrics grid */\n}\n`,
+            starterCss: `body { background: #090d16; padding: 14px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }\n.${slug}-dash {\n  background: ${darkBg};\n  color: #f8fafc;\n  /* Add padding, border-radius, and header/grid layout */\n}\n`,
             targetHtml, targetCss, checks,
           }));
         }

@@ -378,7 +378,7 @@ export const DEFAULT_MASTER_CONTROL_CONFIG: MasterControlConfig = {
   banner: {
     enabled: true,
     text: '🚀 Kollabrix is live on campus! Assemble your hackathon dream team & showcase projects.',
-    linkText: 'Explore Projects →',
+    linkText: 'Explore Projects',
     linkUrl: '/explore',
     theme: 'gradient',
     dismissible: true,

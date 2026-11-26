@@ -110,7 +110,7 @@ export function GlobalBroadcastBanner() {
 
   const themeStyle = THEME_STYLES[banner.theme] || THEME_STYLES.gradient;
   const bannerText = banner.text ? banner.text.replace(/Linkora/gi, 'Kollabrix') : '';
-  const bannerLinkText = banner.linkText ? banner.linkText.replace(/Linkora/gi, 'Kollabrix') : '';
+  const bannerLinkText = banner.linkText ? banner.linkText.replace(/Linkora/gi, 'Kollabrix').replace(/(\s*→|\s*->)+$/g, '').trim() : '';
 
   const handleDismiss = () => {
     setIsDismissed(true);

@@ -17,10 +17,6 @@ import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { MandatoryOnboardingModal } from '@/components/profile/MandatoryOnboardingModal';
 import { AnalyticsProvider } from '@/components/analytics/AnalyticsProvider';
 import { NetworkResilienceProvider } from '@/components/providers/NetworkResilienceProvider';
-// Lazy‑load Vercel analytics and SpeedInsights to avoid blocking first paint
-import dynamic from 'next/dynamic';
-const Analytics = dynamic(() => import('@vercel/analytics/next').then(mod => mod.Analytics), { ssr: false });
-const SpeedInsights = dynamic(() => import('@vercel/speed-insights/next').then(mod => mod.SpeedInsights), { ssr: false });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -412,8 +408,6 @@ export default function RootLayout({
           </AnalyticsProvider>
         </AuthProvider>
       </NetworkResilienceProvider>
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );
