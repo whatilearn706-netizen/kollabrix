@@ -69,11 +69,10 @@ export interface SparkBlueprintResponse {
 
 // Active models to try in order of speed, quota availability and capability
 const GEMINI_MODELS = [
-  'gemini-3.1-flash-lite',
-  'gemini-3.8-flash',
-  'gemini-3.7-flash',
-  'gemini-flash-latest',
-  'gemma-4-31b-it',
+  'gemini-3-flash-preview',
+  'gemini-3.5-flash-lite',
+  'gemini-4-hydrogen',
+  'gemini-3.1-pro-preview',
 ];
 
 function toTitleCase(str: string): string {
@@ -470,7 +469,19 @@ export async function POST(request: NextRequest) {
       customSystemPrompt: '',
     });
 
-    const geminiKey = sparkSettings.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const isValidGeminiKey = (k?: string) => {
+      const trimmed = (k || '').trim();
+      return trimmed.startsWith('AIza') || trimmed.startsWith('AQ.');
+    };
+    const validSettingsGeminiKey =
+      sparkSettings.geminiApiKey && isValidGeminiKey(sparkSettings.geminiApiKey)
+        ? sparkSettings.geminiApiKey.trim()
+        : '';
+    const geminiKey =
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      (process.env.GEMINI_API_KEYS || '').split(',').map((k) => k.trim()).find((k) => isValidGeminiKey(k)) ||
+      validSettingsGeminiKey;
     const openaiKey = sparkSettings.openaiApiKey || process.env.OPENAI_API_KEY;
     const preferredEngine = sparkSettings.engine || 'auto';
 
@@ -627,7 +638,7 @@ Return ONLY a valid JSON object matching this exact schema:
                 desired_roles: roles.length > 0 ? roles : ['Full-Stack Lead', 'Backend Specialist', 'UI/UX Designer'],
                 skillGaps,
                 hackathonTrack: track || 'Open Innovation Track',
-                engine: `Google Gemini (${model})`,
+                engine: 'KΛ-Pro',
               };
               break; // Success! Exit model loop
             }

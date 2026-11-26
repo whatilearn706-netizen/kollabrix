@@ -59,7 +59,12 @@ export function Footer() {
     };
   }, [isFooterDark, pathname]);
 
-  if (pathname?.startsWith('/resources') || pathname?.startsWith('/arena')) {
+  if (
+    pathname?.startsWith('/resources') ||
+    pathname?.startsWith('/arena') ||
+    pathname?.startsWith('/spark') ||
+    pathname?.startsWith('/ai-spark')
+  ) {
     return null;
   }
 

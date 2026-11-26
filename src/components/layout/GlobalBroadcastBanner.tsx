@@ -101,6 +101,8 @@ export function GlobalBroadcastBanner() {
     pathname?.startsWith('/resources') ||
     pathname?.startsWith('/arena') ||
     pathname?.startsWith('/icpc') ||
+    pathname?.startsWith('/spark') ||
+    pathname?.startsWith('/ai-spark') ||
     isExamMode ||
     !banner.enabled ||
     isDismissed

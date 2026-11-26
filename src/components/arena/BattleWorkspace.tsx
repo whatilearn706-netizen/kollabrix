@@ -26,6 +26,7 @@ import { buildWebPreviewDoc, FOG_SYNTAX_LINES } from './arenaHelpers';
 import { EditorHintItem, getEditorHints } from './editorSnippets';
 import { useArenaEngine } from './useArenaEngine';
 import { useResizableSplit } from './useResizableSplit';
+import { SparkExplainErrorButton } from '@/components/spark/SparkExplainErrorButton';
 
 interface BattleWorkspaceProps {
   engine: ReturnType<typeof useArenaEngine>;
@@ -422,6 +423,27 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                           <pre className="whitespace-pre-wrap break-words text-red-300 bg-red-950/30 border border-red-500/20 rounded p-2 text-[10px] leading-relaxed">
                             {verdict.stderr}
                           </pre>
+                        )}
+                        {failed && (
+                          <SparkExplainErrorButton
+                            code={
+                              isWeb
+                                ? `<!-- HTML -->\n${engine.htmlCode}\n/* CSS */\n${engine.cssCode}\n// JS\n${engine.jsCode}`
+                                : engine.algoLanguage === 'java'
+                                  ? engine.javaCode
+                                  : engine.algoLanguage === 'cpp'
+                                    ? engine.cppCode
+                                    : engine.pythonCode
+                            }
+                            language={isWeb ? 'html/css/js' : engine.algoLanguage}
+                            problemTitle={q.title}
+                            problemDescription={q.description}
+                            verdict={verdict.status}
+                            errorOutput={verdict.stderr || verdict.stdout || verdict.status}
+                            stdin={!isHidden && !isWeb ? tc?.input : undefined}
+                            expectedOutput={!isHidden && !isWeb ? tc?.expectedOutput : undefined}
+                            yourOutput={verdict.stdout}
+                          />
                         )}
                       </div>
                     )}

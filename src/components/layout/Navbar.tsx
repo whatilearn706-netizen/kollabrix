@@ -102,8 +102,14 @@ export function Navbar() {
     setUserDropdownOpen(false);
   }, [pathname]);
 
-  // Dedicated Resource Hub, Battle Arena, and Active Exam Mode run in their own focused workspace without global navbar
-  if (pathname.startsWith('/resources') || pathname.startsWith('/arena') || isExamMode) {
+  // Dedicated Resource Hub, Battle Arena, AI Spark Studio, and Active Exam Mode run in their own focused workspace without global navbar
+  if (
+    pathname.startsWith('/resources') ||
+    pathname.startsWith('/arena') ||
+    pathname.startsWith('/spark') ||
+    pathname.startsWith('/ai-spark') ||
+    isExamMode
+  ) {
     return null;
   }
 

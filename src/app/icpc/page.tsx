@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { CreateIcpcContestModal } from '@/components/icpc/CreateIcpcContestModal';
 import { CURATED_ICPC_CONTESTS } from '@/data/mockIcpcContests';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { SparkExplainErrorButton } from '@/components/spark/SparkExplainErrorButton';
 import {
   Terminal,
   Trophy,
@@ -2107,6 +2108,18 @@ export default function IcpcCollegiateArenaPage() {
                         >
                           {consoleOutput.message}
                         </div>
+                        {consoleOutput.status === 'error' && activeProblem && (
+                          <SparkExplainErrorButton
+                            code={userCode}
+                            language={selectedLanguage}
+                            problemTitle={activeProblem.title}
+                            problemDescription={activeProblem.description}
+                            verdict="Failed Testcase / Error"
+                            errorOutput={consoleOutput.message}
+                            stdin={activeProblem.sampleInput}
+                            expectedOutput={activeProblem.sampleOutput}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
