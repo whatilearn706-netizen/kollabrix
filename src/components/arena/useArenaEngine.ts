@@ -139,6 +139,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   // Active Battle HUD + Code Buffers
   const questionPoolRef = useRef<DuelQuestion[]>([]);
   const previewInteractUntilRef = useRef<number>(0);
+  const queueTicketIdRef = useRef<string | null>(null);
   const markPreviewInteraction = useCallback(() => {
     previewInteractUntilRef.current = Date.now() + 2000;
   }, []);
@@ -465,44 +466,81 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     }
 
     if (audioEnabled) playBattleSlamSound();
-    const code = `KBX-${Math.floor(1000 + Math.random() * 9000)}`;
-    setRoomCode(code);
+    const fallbackCode = `KBX-${Math.floor(1000 + Math.random() * 9000)}`;
+    setRoomCode(fallbackCode);
     setIsHost(true);
     setTeamSize('1v1');
-    setIsGhostDuel(ghostOnly);
-    setRivalProfile(pickRivalProfile());
     setEloBefore(stats.elo);
     setRoundNumber(1);
     setRoundWins({ you: 0, rival: 0 });
     loadQuestionIntoWorkspace(chosenQ, duration, algoLanguage, combatMode);
-    setFaceOffStatus(ghostOnly ? 'locked' : 'scanning');
+
+    if (ghostOnly) {
+      setIsGhostDuel(true);
+      setRivalProfile(pickRivalProfile());
+      setFaceOffStatus('locked');
+      setStage('faceoff');
+      trackEvent('arena_match_started', { mode: combatMode, ghostOnly: true, language: algoLanguage });
+      return;
+    }
+
+    // Ranked Matchmaking: Scan for real human contender first!
+    setRivalProfile(pickRivalProfile());
+    setFaceOffStatus('scanning');
     setStage('faceoff');
 
-    const { arena, bugDomain, tags } = mapModeToConfig(combatMode, algoLanguage, webTags);
-    fetch('/api/arena/rooms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code,
-        hostName: playerName,
-        hostId: myPlayerId,
-        format: '1v1',
-        arena,
-        bugDomain,
-        selectedTags: tags,
-        difficulty,
-        timeLimit: duration,
-        isBotEnabled: ghostOnly,
-        question: chosenQ,
-      }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.room) setRoomData(d.room);
-      })
-      .catch(() => {});
+    try {
+      const res = await fetch('/api/arena/matchmake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'join',
+          playerId: myPlayerId,
+          playerName,
+          college: playerCollege || 'Campus Contender',
+          avatarIdx: Math.max(0, PROVING_GROUNDS_AVATARS.findIndex((a) => a.id === selectedAvatarId)),
+          elo: stats.elo,
+          combatMode,
+          algoLanguage,
+          webTags,
+          difficulty,
+          timeLimit: duration,
+          question: chosenQ,
+        }),
+      });
 
-    trackEvent('arena_match_started', { mode: combatMode, ghostOnly, language: algoLanguage });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.matched && data?.roomInfo) {
+          // Immediately paired with another real waiting player!
+          const info = data.roomInfo;
+          setIsGhostDuel(false);
+          setRoomCode(info.code);
+          setIsHost(info.isHost);
+          setRivalProfile({
+            name: info.opponent.name,
+            college: info.opponent.college || 'Campus Contender',
+            branch: 'Live Contender',
+            tag: (info.opponent.college || 'ONLINE').slice(0, 12).toUpperCase(),
+            avatarIdx: info.opponent.avatarIdx ?? 1,
+            avatarEmoji: '⚡',
+            baseWpm: 66,
+            elo: info.opponent.elo || 1200,
+          });
+          if (!info.isHost && info.question) {
+            loadQuestionIntoWorkspace(info.question, info.timeLimit, algoLanguage, combatMode);
+          }
+          setFaceOffStatus('locked');
+          if (audioEnabled) playArcadeCoinSound();
+          trackEvent('arena_match_started', { mode: combatMode, ghostOnly: false, humanPvP: true });
+          return;
+        } else if (data?.ticketId) {
+          queueTicketIdRef.current = data.ticketId;
+        }
+      }
+    } catch (_) {}
+
+    trackEvent('arena_match_started', { mode: combatMode, ghostOnly: false, language: algoLanguage });
   };
 
   // Launch Custom / 2v2 Private Room Lobby
@@ -605,16 +643,65 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     }).catch(() => {});
   };
 
-  // Face-off Queue Scanner (max 3.5s) -> Lock -> 3-2-1-COMPILE Countdown -> Battle
+  // Face-off Queue Scanner (max 4.2s) -> Real PvP match OR seamless bot fallback -> Lock -> 3-2-1-COMPILE Countdown -> Battle
   useEffect(() => {
     if (stage !== 'faceoff') return;
     if (faceOffStatus === 'scanning') {
+      let isSubscribed = true;
+      const ticketId = queueTicketIdRef.current;
+
+      // Fast polling loop to check if matched with another human contender
+      const pollInterval = setInterval(async () => {
+        if (!ticketId || !isSubscribed) return;
+        try {
+          const res = await fetch(`/api/arena/matchmake?ticketId=${ticketId}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data?.matched && data?.roomInfo && isSubscribed) {
+            clearInterval(pollInterval);
+            clearTimeout(scanTimer);
+            queueTicketIdRef.current = null;
+            const info = data.roomInfo;
+            setIsGhostDuel(false);
+            setRoomCode(info.code);
+            setIsHost(info.isHost);
+            setRivalProfile({
+              name: info.opponent.name,
+              college: info.opponent.college || 'Campus Contender',
+              branch: 'Live Contender',
+              tag: (info.opponent.college || 'ONLINE').slice(0, 12).toUpperCase(),
+              avatarIdx: info.opponent.avatarIdx ?? 1,
+              avatarEmoji: '⚡',
+              baseWpm: 66,
+              elo: info.opponent.elo || 1200,
+            });
+            if (!info.isHost && info.question) {
+              loadQuestionIntoWorkspace(info.question, info.timeLimit, algoLanguage, combatMode);
+            }
+            setFaceOffStatus('locked');
+            if (audioEnabled) playArcadeCoinSound();
+          }
+        } catch (_) {}
+      }, 500);
+
+      // Fallback to simulated collegiate bot rival if no human found within 4.2s
       const scanTimer = setTimeout(() => {
+        if (!isSubscribed) return;
+        clearInterval(pollInterval);
+        if (ticketId) {
+          fetch(`/api/arena/matchmake?ticketId=${ticketId}`, { method: 'DELETE' }).catch(() => {});
+          queueTicketIdRef.current = null;
+        }
         setIsGhostDuel(true);
         setFaceOffStatus('locked');
         if (audioEnabled) playArcadeCoinSound();
-      }, 3200);
-      return () => clearTimeout(scanTimer);
+      }, 4200);
+
+      return () => {
+        isSubscribed = false;
+        clearInterval(pollInterval);
+        clearTimeout(scanTimer);
+      };
     }
     if (faceOffStatus === 'locked') {
       const lockTimer = setTimeout(() => {
@@ -946,13 +1033,6 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       cppCode,
     });
 
-    if (matchFormat === 'bo3' && winnerSide && winnerSide !== 'draw') {
-      setRoundWins((prev) => ({
-        you: prev.you + (winnerSide === 'you' ? 1 : 0),
-        rival: prev.rival + (winnerSide === 'rival' ? 1 : 0),
-      }));
-    }
-
     const outcome = winnerSide === 'you' ? 'win' : winnerSide === 'rival' ? 'loss' : 'draw';
     const optimisticDelta = outcome === 'win' ? 24 : outcome === 'loss' ? -16 : 0;
     const optimisticElo = Math.max(800, eloBefore + optimisticDelta);
@@ -997,11 +1077,6 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   const rollCallsign = () => {
     if (audioEnabled) playTacticalSelectSound();
     setPlayerName(RANDOM_CALLSIGNS[Math.floor(Math.random() * RANDOM_CALLSIGNS.length)]);
-  };
-
-  const handleNextBo3Round = async () => {
-    setRoundNumber((r) => r + 1);
-    await launchInstantMatch(isGhostDuel);
   };
 
   const handleForfeit = () => {
@@ -1103,7 +1178,6 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     startCustomRoomMatch,
     runOrSubmit,
     markPreviewInteraction,
-    handleNextBo3Round,
     handleForfeit,
   };
 }

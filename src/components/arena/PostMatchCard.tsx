@@ -44,9 +44,6 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
     engine.rivalSolution.htmlCode ||
     `# ${engine.rivalProfile.name}'s ${engine.isGhostDuel ? 'Ghost Replay' : 'Live'} Attempt\n# ${engine.rivalTestsPassed}/${engine.totalTests} test cases verified at ${engine.rivalWpm || engine.rivalProfile.baseWpm} WPM`;
 
-  const bo3Over = engine.matchFormat === 'bo3' && (engine.roundWins.you >= 2 || engine.roundWins.rival >= 2);
-  const showNextBo3 = engine.matchFormat === 'bo3' && !bo3Over && engine.roundNumber < 3;
-
   return (
     <div className="relative z-10 min-h-screen w-full flex flex-col justify-between p-4 sm:p-6">
       <div className="font-mono text-xs font-bold text-slate-500 tracking-wider">
@@ -59,17 +56,14 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
           <div className="text-center space-y-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/15 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-300">
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
-              <span>
-                MATCH COMPLETE &bull; ROUND {engine.roundNumber}
-                {engine.matchFormat === 'bo3' ? ` (BO3 SCORE ${engine.roundWins.you}-${engine.roundWins.rival})` : ' KNOCKOUT'}
-              </span>
+              <span>MATCH COMPLETE &bull; KNOCKOUT</span>
             </span>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">
               {isDraw
-                ? 'TIME EXPIRED — DRAW ROUND'
+                ? 'TIME EXPIRED — DRAW MATCH'
                 : didWin
-                  ? `VICTORY — ${winningCollege.toUpperCase()} TAKES THE ROUND`
-                  : `DEFEAT — ${winningCollege.toUpperCase()} TAKES THE ROUND`}
+                  ? `VICTORY — ${winningCollege.toUpperCase()} TAKES THE DUEL`
+                  : `DEFEAT — ${winningCollege.toUpperCase()} TAKES THE DUEL`}
             </h1>
           </div>
 
@@ -235,25 +229,14 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
 
         {/* Bottom Action Bar */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          {showNextBo3 ? (
-            <button
-              type="button"
-              onClick={engine.handleNextBo3Round}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-slate-100 via-white to-slate-200 hover:brightness-105 text-slate-950 font-mono text-xs font-black flex items-center gap-2 cursor-pointer border border-white/50 shadow-[0_0_24px_rgba(255,255,255,0.2)]"
-            >
-              <span>Next BO3 Round ({engine.roundNumber + 1}/3)</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => engine.launchInstantMatch(false)}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-slate-100 via-white to-slate-200 hover:brightness-105 text-slate-950 font-mono text-xs font-black flex items-center gap-2 cursor-pointer border border-white/50 shadow-[0_0_24px_rgba(255,255,255,0.2)]"
-            >
-              <span>⚡ Next Ranked Duel</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => engine.launchInstantMatch(false)}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-slate-100 via-white to-slate-200 hover:brightness-105 text-slate-950 font-mono text-xs font-black flex items-center gap-2 cursor-pointer border border-white/50 shadow-[0_0_24px_rgba(255,255,255,0.2)]"
+          >
+            <span>⚡ Next Ranked Duel</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
 
           <button
             type="button"

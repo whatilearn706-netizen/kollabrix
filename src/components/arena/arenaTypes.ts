@@ -2,7 +2,7 @@ import { ArenaCategory, DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/ar
 
 export type ArenaStage = 'lobby' | 'room' | 'faceoff' | 'battle' | 'results';
 export type CombatModeId = 'blitz' | 'bug_hunt' | 'web_clash' | 'custom';
-export type MatchFormat = 'single' | 'bo3';
+export type MatchFormat = 'single';
 export type EditorTab = 'html' | 'css' | 'js' | 'python' | 'java' | 'cpp';
 export type AlgoLanguage = 'python' | 'cpp' | 'java';
 export type StackLanguage = AlgoLanguage | 'web';

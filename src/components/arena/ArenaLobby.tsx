@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import {
   CombatModeId,
-  MatchFormat,
   PROVING_GROUNDS_AVATARS,
   StackLanguage,
   sanitizeCallsign,
@@ -284,10 +283,10 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                   })}
                 </div>
 
-                {/* Inline Configuration Pills: Language/Web, Difficulty, Duration (hidden on 60s Bug Hunt), Format/Squad */}
+                {/* Inline Configuration Pills: Language/Web, Difficulty, Duration (hidden on 60s Bug Hunt), Squad Size (Custom only) */}
                 <div
                   className={`grid grid-cols-1 gap-2.5 pt-1 ${
-                    isBugHunt ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-4'
+                    isBugHunt ? 'sm:grid-cols-2' : isCustomMode ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'
                   }`}
                 >
                   {/* Language / Web Stack */}
@@ -392,12 +391,10 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                     </div>
                   )}
 
-                  {/* Match Format (Single vs Best of 3) or Squad Size (1v1 / 2v2) */}
-                  <div>
-                    <span className="block text-[11px] font-mono text-slate-400 mb-1.5">
-                      {isCustomMode ? 'Squad Size' : 'Match Format'}
-                    </span>
-                    {isCustomMode ? (
+                  {/* Squad Size (1v1 / 2v2) — Custom Mode Only */}
+                  {isCustomMode && (
+                    <div>
+                      <span className="block text-[11px] font-mono text-slate-400 mb-1.5">Squad Size</span>
                       <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
                         {(['1v1', '2v2'] as const).map((sz) => (
                           <button
@@ -412,26 +409,8 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                           </button>
                         ))}
                       </div>
-                    ) : (
-                      <div className="inline-flex gap-1 p-1 rounded-xl bg-[#05080F] border border-white/10 w-full">
-                        {([
-                          { id: 'single', label: 'Single' },
-                          { id: 'bo3', label: 'Best of 3' },
-                        ] as Array<{ id: MatchFormat; label: string }>).map((fmt) => (
-                          <button
-                            key={fmt.id}
-                            type="button"
-                            onClick={() => engine.setMatchFormat(fmt.id)}
-                            className={`flex-1 py-1 px-1 rounded-lg font-mono text-[10px] font-bold cursor-pointer truncate ${
-                              engine.matchFormat === fmt.id ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950' : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            {fmt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sub-options when Custom -> Web is selected */}

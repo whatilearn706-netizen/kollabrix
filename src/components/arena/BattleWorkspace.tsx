@@ -190,7 +190,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
           <div className="px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/15 font-mono text-[11px] font-bold tracking-wider truncate">
             <span className="text-white">KOLLΛBRIX</span>
             <span className="text-slate-500 mx-1.5">/</span>
-            <span className="text-slate-300 uppercase">ROUND {engine.roundNumber} &bull; {q.title}</span>
+            <span className="text-slate-300 uppercase">{q.title}</span>
           </div>
           <span className="hidden md:inline-block px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 font-mono text-[10px] capitalize text-slate-300">
             {q.difficulty}

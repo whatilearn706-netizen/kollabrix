@@ -26,6 +26,8 @@ export function persistSeenQuestionId(newQuestionId: string, matchingQuestionIds
 
 /**
  * Generates an isolated HTML srcDoc for Web Dev target previews and live sandbox previews.
+ * Injects case-insensitive DOM element resolution so standard student typos (e.g. #incbtn vs #incBtn)
+ * work seamlessly in the interactive preview sandbox without silent null reference crashes.
  */
 export function buildWebPreviewDoc(html: string, css: string, js: string): string {
   return `<!DOCTYPE html>
@@ -40,10 +42,98 @@ export function buildWebPreviewDoc(html: string, css: string, js: string): strin
 </head>
 <body>
   ${html || ''}
+  <div id="__kbx_err_banner__" style="display:none;position:fixed;bottom:6px;left:6px;right:6px;background:#7f1d1d;color:#fecaca;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;padding:5px 8px;border-radius:6px;border:1px solid #f87171;z-index:999999;box-shadow:0 4px 14px rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
   <script>
-    try {
+    (function() {
+      function showErr(msg) {
+        try {
+          var b = document.getElementById('__kbx_err_banner__');
+          if (b) {
+            b.textContent = '⚠️ JS Error: ' + msg;
+            b.style.display = 'block';
+          }
+        } catch (_) {}
+      }
+      window.addEventListener('error', function(ev) {
+        if (ev && ev.message) showErr(ev.message);
+      });
+
+      // 1. Case-insensitive forgiving getElementById
+      var _origGetElementById = document.getElementById.bind(document);
+      document.getElementById = function(id) {
+        if (!id) return null;
+        var el = _origGetElementById(id);
+        if (el) return el;
+        var target = String(id).toLowerCase().trim();
+        var all = document.querySelectorAll('[id]');
+        for (var i = 0; i < all.length; i++) {
+          if (all[i].id && all[i].id.toLowerCase().trim() === target) {
+            return all[i];
+          }
+        }
+        return null;
+      };
+
+      // 2. Case-insensitive forgiving querySelector
+      var _origQuerySelector = document.querySelector.bind(document);
+      document.querySelector = function(sel) {
+        if (!sel) return null;
+        try {
+          var direct = _origQuerySelector(sel);
+          if (direct) return direct;
+        } catch (e) {}
+        if (typeof sel === 'string') {
+          var trimmed = sel.trim();
+          if (trimmed.startsWith('#')) {
+            return document.getElementById(trimmed.slice(1));
+          }
+          var idMatch = trimmed.match(/^\\[id=['"]?([^'"\\]]+)['"]?\\]$/i);
+          if (idMatch) {
+            return document.getElementById(idMatch[1]);
+          }
+          var tagAndId = trimmed.match(/^([a-z0-9_-]+)#([a-z0-9_-]+)$/i);
+          if (tagAndId) {
+            var elem = document.getElementById(tagAndId[2]);
+            if (elem && elem.tagName.toLowerCase() === tagAndId[1].toLowerCase()) return elem;
+          }
+        }
+        return null;
+      };
+
+      // 3. Case-insensitive forgiving querySelectorAll
+      var _origQuerySelectorAll = document.querySelectorAll.bind(document);
+      document.querySelectorAll = function(sel) {
+        if (!sel) return [];
+        try {
+          var direct = _origQuerySelectorAll(sel);
+          if (direct && direct.length > 0) return direct;
+        } catch (e) {}
+        if (typeof sel === 'string' && sel.trim().startsWith('#')) {
+          var el = document.getElementById(sel.trim().slice(1));
+          return el ? [el] : [];
+        }
+        return [];
+      };
+
+      // 4. Safe DOMContentLoaded trigger if registered after DOM ready
+      var _origAddEvt = EventTarget.prototype.addEventListener;
+      document.addEventListener = function(type, listener, options) {
+        if ((type === 'DOMContentLoaded' || type === 'load') && document.readyState !== 'loading') {
+          try {
+            if (typeof listener === 'function') setTimeout(function() { listener(new Event(type)); }, 0);
+          } catch (err) { console.error(err); }
+        }
+        return _origAddEvt.call(this, type, listener, options);
+      };
+
+      // 5. Run student script safely
+      try {
 ${js || ''}
-    } catch (e) { console.error(e); }
+      } catch (err) {
+        console.error(err);
+        showErr(err && err.message ? err.message : String(err));
+      }
+    })();
   </script>
 </body>
 </html>`;

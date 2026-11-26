@@ -128,7 +128,7 @@ export function MatchmakingFaceOff({ engine }: MatchmakingFaceOffProps) {
       <div className="w-full max-w-3xl rounded-3xl bg-[#0A0E17]/95 border border-white/15 shadow-[0_28px_80px_rgba(0,0,0,0.92)] backdrop-blur-2xl p-6 sm:p-10 space-y-8">
         <div className="flex items-center justify-between">
           <span className="px-3 py-1 rounded-full bg-white/[0.06] border border-white/15 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-300">
-            ROUND {engine.roundNumber} &bull; {engine.activeQuestion.title.toUpperCase()}
+            {engine.activeQuestion.title.toUpperCase()}
           </span>
           <span className="font-mono text-xs text-slate-400">
             Stake: <strong className="text-emerald-400">+24</strong> / <strong className="text-red-400">-14</strong> ELO
