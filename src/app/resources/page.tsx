@@ -1,90 +1,100 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  BookOpen,
-  Sparkles,
-  Play,
-  Code2,
-  GraduationCap,
-  Layers,
-  Search,
-  CheckCircle2,
-  ChevronRight,
-  Clock,
-  ArrowRight,
-  Compass,
-  Trophy,
-  Zap,
-  Terminal,
-  FileCode,
-  HelpCircle,
-  FileText,
-  RotateCcw,
-  Check,
   ArrowLeft,
+  ArrowUpRight,
+  Bookmark,
+  Code2,
+  Gift,
+  Rocket,
+  Search,
+  Sparkles,
+  Swords,
+  X,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { ResourceLanguage, ResourceTrack, LANGUAGE_META } from '@/types/resources';
-import { LanguageCurriculum } from '@/types/curriculum';
-import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
+import {
+  CODEX_BOOKS,
+  CODEX_LANGUAGE_TRACKS,
+  CODEX_PATTERNS,
+  type CodexBookVolume,
+  type CodexLanguageTrack,
+  type CodexLevel,
+  type CodexPatternVolume,
+  type CodexSection,
+} from '@/data/codexCatalog';
+import { CodexRail } from '@/components/codex/CodexRail';
+import {
+  CodexSpotlightCarousel,
+  type CodexVolume,
+} from '@/components/codex/CodexSpotlightCarousel';
+import { CodexTrackModal } from '@/components/codex/CodexTrackModal';
+import { CodexReaderModal } from '@/components/codex/CodexReaderModal';
 import { StepLearningWorkspace } from '@/components/resources/StepLearningWorkspace';
-import { CircularSkillsShowcase } from '@/components/resources/CircularSkillsShowcase';
-import { ResourcesSubNav } from '@/components/resources/ResourcesSubNav';
-import { BrandLogo } from '@/components/ui/BrandLogo';
+import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
+import type { LanguageCurriculum } from '@/types/curriculum';
 import { useAuth } from '@/components/auth/AuthProvider';
 
+const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
+const COMPLETED_STORAGE_KEY = 'kollabrix_codex_completed_lessons';
+const CONTINUE_STORAGE_KEY = 'kollabrix_codex_last_track';
+
+const ALL_VOLUMES: CodexVolume[] = [
+  ...CODEX_LANGUAGE_TRACKS,
+  ...CODEX_BOOKS,
+  ...CODEX_PATTERNS,
+];
+
 export default function ResourcesPage() {
-  const { user, openAuthModal } = useAuth();
-  // Whether the user has chosen their level: null = first visit/unselected, 'beginner' | 'learning' = level selected
-  const [selectedTrack, setSelectedTrack] = useState<ResourceTrack | null>(null);
-  // Selected Curriculum ID (e.g. 'java-beginner') - when non-null, shows the step-by-step workspace
-  const [activeCurriculumId, setActiveCurriculumId] = useState<string | null>(null);
-  const [curriculaMap, setCurriculaMap] = useState<Record<string, LanguageCurriculum>>(DEFAULT_CURRICULA);
+  const { user } = useAuth();
+
+  const [activeSection, setActiveSection] = useState<CodexSection>('home');
+  const [carouselIndices, setCarouselIndices] = useState<Record<'home' | 'books' | 'solving', number>>({
+    home: 0,
+    books: 0,
+    solving: 0,
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [lastVisitedId, setLastVisitedId] = useState<string | null>(null);
 
-  // Resume pending track once user authenticates
-  useEffect(() => {
-    if (user) {
-      try {
-        const pending = localStorage.getItem('kollabrix_pending_resource_track') as ResourceTrack | null;
-        if (pending === 'beginner' || pending === 'learning') {
-          setSelectedTrack(pending);
-          localStorage.removeItem('kollabrix_pending_resource_track');
-          localStorage.setItem('linkora_resource_track', pending);
-        }
-      } catch {}
-    }
-  }, [user]);
+  const [activeModalVolume, setActiveModalVolume] = useState<CodexVolume | null>(null);
+  const [curriculaMap, setCurriculaMap] =
+    useState<Record<string, LanguageCurriculum>>(DEFAULT_CURRICULA);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
 
-  // Load saved track preference and fetch dynamic curricula from Supabase
+  // Hydrate bookmarks, progress, and dynamic curricula
   useEffect(() => {
     try {
-      const savedTrack = localStorage.getItem('linkora_resource_track') as ResourceTrack | null;
-      if (savedTrack === 'beginner' || savedTrack === 'learning') {
-        setSelectedTrack(savedTrack);
+      const rawSaved = localStorage.getItem(SAVED_STORAGE_KEY);
+      if (rawSaved) {
+        const parsed = JSON.parse(rawSaved);
+        if (Array.isArray(parsed)) setSavedIds(parsed);
       }
-      const savedCurriculum = localStorage.getItem('linkora_active_curriculum');
-      if (savedCurriculum) {
-        setActiveCurriculumId(savedCurriculum);
+      const rawCompleted = localStorage.getItem(COMPLETED_STORAGE_KEY);
+      if (rawCompleted) {
+        const parsed = JSON.parse(rawCompleted);
+        if (Array.isArray(parsed)) setCompletedLessons(parsed);
       }
+      const last = localStorage.getItem(CONTINUE_STORAGE_KEY);
+      if (last) setLastVisitedId(last);
     } catch {}
 
-    // Fetch dynamic curricula from API
     async function loadCurricula() {
       try {
         const res = await fetch(`/api/curriculum?_t=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         if (data.success && data.curricula && Object.keys(data.curricula).length > 0) {
-          let loaded = data.curricula;
+          let loaded = data.curricula as Record<string, LanguageCurriculum>;
           try {
             const localDel = JSON.parse(localStorage.getItem('tf_deleted_curricula_ids') || '[]');
             if (Array.isArray(localDel) && localDel.length > 0) {
               const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase()));
               const filtered: Record<string, LanguageCurriculum> = {};
-              for (const [k, v] of Object.entries(loaded as Record<string, LanguageCurriculum>)) {
+              for (const [k, v] of Object.entries(loaded)) {
                 if (!delSet.has(k.toLowerCase()) && !delSet.has((v.id || '').toLowerCase())) {
                   filtered[k] = v;
                 }
@@ -92,303 +102,438 @@ export default function ResourcesPage() {
               loaded = filtered;
             }
           } catch {}
-
           setCurriculaMap(loaded);
-          // Clean up local reference if the selected curriculum was deleted by admin
-          const localCurriculum = localStorage.getItem('linkora_active_curriculum');
-          if (localCurriculum && !loaded[localCurriculum]) {
-            try {
-              localStorage.removeItem('linkora_active_curriculum');
-            } catch {}
-            setActiveCurriculumId(null);
-          }
         }
-      } catch (e) {
-        console.warn('Using default curricula fallback:', e);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch {}
     }
+
     loadCurricula();
   }, []);
 
-  const handleSelectTrack = (track: ResourceTrack) => {
-    // If not authenticated, require student to create account / sign in first
-    if (!user) {
+  const toggleSave = (id: string) => {
+    setSavedIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
       try {
-        localStorage.setItem('kollabrix_pending_resource_track', track);
+        localStorage.setItem(SAVED_STORAGE_KEY, JSON.stringify(next));
       } catch {}
-      openAuthModal('signup');
-      return;
-    }
-
-    setSelectedTrack(track);
-    setActiveCurriculumId(null);
-    try {
-      localStorage.setItem('linkora_resource_track', track);
-      localStorage.removeItem('linkora_active_curriculum');
-    } catch {}
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSwitchLevel = () => {
-    setSelectedTrack(null);
-    setActiveCurriculumId(null);
-    try {
-      localStorage.removeItem('linkora_resource_track');
-      localStorage.removeItem('linkora_active_curriculum');
-    } catch {}
-  };
-
-  const handleBeginCurriculum = (curriculumId: string) => {
-    setActiveCurriculumId(curriculumId);
-    try {
-      localStorage.setItem('linkora_active_curriculum', curriculumId);
-    } catch {}
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleBackToLanguages = () => {
-    setActiveCurriculumId(null);
-    try {
-      localStorage.removeItem('linkora_active_curriculum');
-    } catch {}
-  };
-
-  // Get active curriculum object if open
-  const activeCurriculum = activeCurriculumId ? curriculaMap[activeCurriculumId] : null;
-
-  // Curricula available under selected track (Excludes Draft / Not Live items from student view)
-  const availableCurricula = useMemo(() => {
-    if (!selectedTrack) return [];
-    return Object.values(curriculaMap).filter((c) => {
-      if (c.track !== selectedTrack) return false;
-      // Filter out Drafts (Not Live) from student hub
-      if (c.isLive === false) return false;
-      return true;
+      return next;
     });
-  }, [curriculaMap, selectedTrack]);
+  };
+
+  const toggleLessonComplete = (lessonId: string) => {
+    setCompletedLessons((prev) => {
+      const next = prev.includes(lessonId)
+        ? prev.filter((x) => x !== lessonId)
+        : [...prev, lessonId];
+      try {
+        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleOpenVolume = (vol: CodexVolume) => {
+    setActiveModalVolume(vol);
+    setLastVisitedId(vol.id);
+    try {
+      localStorage.setItem(CONTINUE_STORAGE_KEY, vol.id);
+    } catch {}
+  };
+
+  const handleResumeContinue = () => {
+    if (!lastVisitedId) return;
+    const found = ALL_VOLUMES.find((v) => v.id === lastVisitedId);
+    if (found) setActiveModalVolume(found);
+  };
+
+  const handleLaunchFullWorkspace = (track: CodexLanguageTrack, level: CodexLevel) => {
+    const targetKey = track.curriculumKeys[level] || track.curriculumKeys.beginner;
+    if (targetKey && curriculaMap[targetKey]) {
+      setActiveModalVolume(null);
+      setActiveWorkspaceId(targetKey);
+    }
+  };
+
+  // Search filtering across current tab
+  const filteredVolumes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const match = (v: CodexVolume) => {
+      if (!q) return true;
+      return (
+        v.title.toLowerCase().includes(q) ||
+        v.subtitle.toLowerCase().includes(q) ||
+        v.spotlightAuthor.toLowerCase().includes(q) ||
+        v.badgeText.toLowerCase().includes(q)
+      );
+    };
+
+    if (activeSection === 'home') {
+      const res = CODEX_LANGUAGE_TRACKS.filter(match);
+      return res.length > 0 ? res : CODEX_LANGUAGE_TRACKS;
+    }
+    if (activeSection === 'books') {
+      const res = CODEX_BOOKS.filter(match);
+      return res.length > 0 ? res : CODEX_BOOKS;
+    }
+    if (activeSection === 'solving') {
+      const res = CODEX_PATTERNS.filter(match);
+      return res.length > 0 ? res : CODEX_PATTERNS;
+    }
+    return [];
+  }, [activeSection, searchQuery]);
+
+  const savedVolumes = useMemo(
+    () => ALL_VOLUMES.filter((v) => savedIds.includes(v.id)),
+    [savedIds]
+  );
+
+  const rawName =
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
+    user?.email?.split('@')[0] ||
+    '';
+  const firstName = rawName.trim().split(/\s+/)[0] || '';
+  const continueVolume = useMemo(
+    () => (lastVisitedId ? ALL_VOLUMES.find((v) => v.id === lastVisitedId) || null : null),
+    [lastVisitedId]
+  );
+
+  // Full interactive step workspace mode if user explicitly drilled into a curriculum
+  if (activeWorkspaceId && curriculaMap[activeWorkspaceId]) {
+    return (
+      <StepLearningWorkspace
+        curriculum={curriculaMap[activeWorkspaceId]}
+        onBack={() => setActiveWorkspaceId(null)}
+        onTrackChange={() => setActiveWorkspaceId(null)}
+      />
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-amber-500/30 relative">
-      {/* Cosmic Warp Hyperspace Ambient Background (Derived from Image 2 with airship cleanly removed) */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-40 mix-blend-screen scale-105 transition-transform duration-1000"
-          style={{ backgroundImage: `url('/images/resources-cosmic-bg.jpg')` }}
-        />
-        {/* Warm Cosmic Vignette Overlay for Crisp Typography & Contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/85 via-slate-950/80 to-slate-950/95" />
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-amber-500/10 rounded-full blur-[140px]" />
-        <div className="absolute top-1/3 -right-40 w-96 h-96 bg-orange-600/10 rounded-full blur-[140px]" />
-        <div className="absolute -bottom-40 left-1/3 w-96 h-96 bg-cyan-600/10 rounded-full blur-[140px]" />
-      </div>
+    <div className="min-h-screen bg-[#07090E] text-white flex flex-col lg:flex-row relative overflow-x-hidden">
+      {/* Two-Tone Obsidian Editorial Backdrop (Left #07090E / Right #0B0F18 Split on Desktop) */}
+      <div
+        aria-hidden="true"
+        className="fixed inset-y-0 right-0 w-full lg:w-1/2 bg-[#0B0F18] pointer-events-none z-0 border-l border-white/[0.03]"
+      />
+      <div
+        aria-hidden="true"
+        className="fixed top-[-140px] left-1/2 -translate-x-1/2 w-[780px] h-[360px] rounded-full bg-sky-500/[0.06] blur-[130px] pointer-events-none z-0"
+      />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        {/* Dedicated Standalone Resources Hub Header (Clean & Focused) */}
-        <header className="flex items-center justify-between pb-4 border-b border-stone-800/80 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="hover:opacity-95 transition-opacity">
-              <BrandLogo size="md" wordmarkColor="light" />
-            </Link>
-            <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold hidden sm:inline-block">
-              Resources Hub
-            </span>
-          </div>
+      {/* Left Vertical Editorial Icon Rail */}
+      <CodexRail
+        activeSection={activeSection}
+        onSelectSection={(sec) => {
+          setActiveSection(sec);
+          setSearchQuery('');
+        }}
+        savedCount={savedIds.length}
+      />
 
+      {/* Main Editorial Workspace */}
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+        {/* Minimal Studio Top Strip */}
+        <header className="h-[72px] px-5 sm:px-10 lg:px-14 flex items-center justify-between gap-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="text-xs font-mono text-stone-300 hover:text-white transition-colors flex items-center gap-1.5 py-1.5 px-3.5 rounded-xl bg-stone-900/90 border border-stone-800 hover:border-amber-500/40 shadow-sm"
+              className="inline-flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
             >
-              <span>← Back to Campus</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Campus</span>
+            </Link>
+            <span className="text-zinc-700">/</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-black tracking-[0.22em] uppercase text-white">
+                KOLLΛBRIX <span className="text-sky-300 font-semibold">CODEX</span>
+              </span>
+              <span className="hidden md:inline-block px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-[9px] font-mono uppercase tracking-widest text-zinc-400">
+                Library & Tracks
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Search Input (for Home / Books / Problem Solving) */}
+            {(activeSection === 'home' || activeSection === 'books' || activeSection === 'solving') && (
+              <div className="relative hidden sm:block">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search stack, book, pattern..."
+                  className="w-48 lg:w-64 pl-8 pr-7 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-sky-400/50 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Quick KΛ ΛI New-Tab Studio Launcher */}
+            <Link
+              href="/spark"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open KΛ ΛI Studio in a new tab"
+              className="group relative inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/15 hover:border-sky-400/50 transition-all"
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-sky-300" fill="none">
+                <path
+                  d="M12 3L4.5 20.5H8.5L12 11.8L15.5 20.5H19.5L12 3Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <span className="text-[11px] font-black tracking-[0.14em] text-white">KΛ</span>
+              <ArrowUpRight className="w-3 h-3 text-zinc-400 group-hover:text-sky-300 transition-colors" />
             </Link>
           </div>
         </header>
 
-        {/* Resources Hub Sub-Navigation (Roadmaps, Perks, Starter Kits) */}
-        <ResourcesSubNav />
-
-        {/* VIEW 1: Active Step Learning Workspace */}
-        {activeCurriculum ? (
-          <StepLearningWorkspace
-            curriculum={activeCurriculum}
-            onBack={handleBackToLanguages}
-            onTrackChange={handleSwitchLevel}
-          />
-        ) : selectedTrack === null ? (
-          /* VIEW 2: First Gate Screen - Absolute Beginner & Active Learner Stunning Cards */
-          <div className="min-h-[70vh] flex flex-col items-center justify-center text-center space-y-6 max-w-5xl mx-auto py-4">
-            {!user && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono shadow-sm animate-fadeIn">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Account required to access learning paths & track progress. Tap either track below to create your account or sign in!</span>
-              </div>
-            )}
-            {/* Beginner vs Active Learner Cards - Direct Access */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl pt-2">
-              {/* CARD 1: Absolute Beginner */}
-              <button
-                type="button"
-                onClick={() => handleSelectTrack('beginner')}
-                className="group relative text-left rounded-3xl p-8 transition-all duration-300 backdrop-blur-2xl bg-gradient-to-b from-stone-900/85 via-slate-950/90 to-slate-950/95 border-2 border-stone-800/80 hover:border-amber-400/80 shadow-2xl hover:shadow-[0_0_50px_rgba(245,158,11,0.22)] hover:-translate-y-2 flex flex-col justify-between overflow-hidden cursor-pointer"
-              >
-                {/* Ambient Corner Glow */}
-                <div className="absolute -top-24 -left-24 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-amber-500/25 transition-all" />
-
-                <div className="space-y-6 relative z-10">
-                  {/* Top Badge & Icon Row */}
-                  <div className="flex items-center justify-between">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/10 border border-amber-500/40 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/10 group-hover:scale-110 group-hover:rotate-2 transition-transform">
-                      🐣
-                    </div>
-                    <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1.5 shadow-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                      {!user ? 'Login / Signup Required' : 'Start From Day 0'}
-                    </span>
-                  </div>
-
-                  {/* Title & Human-Friendly Explanation */}
-                  <div>
-                    <h3 className="text-2xl font-black text-white group-hover:text-amber-300 transition-colors">
-                      Absolute Beginner
-                    </h3>
-                    <p className="text-xs font-mono text-amber-400/90 mt-1 font-semibold">
-                      Zero coding experience needed
-                    </p>
-                    <p className="text-xs sm:text-sm text-stone-300 leading-relaxed mt-3">
-                      Never written code before? Perfect. We teach you programming in simple, human language. Understand how computers run software, write your first lines of code in 5 minutes, and build the confidence to join your first student squad.
-                    </p>
-                  </div>
-
-                  {/* Student Milestone Checklist */}
-                  <div className="space-y-2 pt-2 border-t border-stone-800/80 text-xs text-stone-300">
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-400 font-bold">✓</span>
-                      <span>Learn logic, variables, loops & functions from scratch</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-400 font-bold">✓</span>
-                      <span>Run code immediately in your browser (no installs)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-emerald-400 font-bold">✓</span>
-                      <span>Build small mini-projects to showcase on Kollabrix</span>
-                    </div>
-                  </div>
-
-                  {/* Available Topics Pills */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {['Python Basics', 'Java 101', 'Web Dev Intro', 'DSA Foundations'].map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-stone-900 border border-stone-800 text-stone-300"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom Action Footer */}
-                <div className="pt-6 mt-6 border-t border-stone-800/80 flex items-center justify-between text-xs font-bold text-amber-300 font-mono relative z-10">
-                  <span className="flex items-center gap-1.5">
-                    <span>{!user ? 'Create Account & Enter' : 'Enter Beginner Track'}</span>
-                    <span className="text-[10px] text-stone-400 font-normal">~15 Hours</span>
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 group-hover:translate-x-1.5 group-hover:bg-amber-500 group-hover:text-slate-950 transition-all">
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </div>
-              </button>
-
-              {/* CARD 2: Active Learner */}
-              <button
-                type="button"
-                onClick={() => handleSelectTrack('learning')}
-                className="group relative text-left rounded-3xl p-8 transition-all duration-300 backdrop-blur-2xl bg-gradient-to-b from-stone-900/85 via-slate-950/90 to-slate-950/95 border-2 border-stone-800/80 hover:border-cyan-400/80 shadow-2xl hover:shadow-[0_0_50px_rgba(6,182,212,0.22)] hover:-translate-y-2 flex flex-col justify-between overflow-hidden cursor-pointer"
-              >
-                {/* Ambient Corner Glow */}
-                <div className="absolute -top-24 -right-24 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-cyan-500/25 transition-all" />
-
-                <div className="space-y-6 relative z-10">
-                  {/* Top Badge & Icon Row */}
-                  <div className="flex items-center justify-between">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 border border-cyan-500/40 flex items-center justify-center text-3xl shadow-lg shadow-cyan-500/10 group-hover:scale-110 group-hover:-rotate-2 transition-transform">
-                      🚀
-                    </div>
-                    <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 shadow-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                      {!user ? 'Login / Signup Required' : 'Hackathon & Squad Ready'}
-                    </span>
-                  </div>
-
-                  {/* Title & Human-Friendly Explanation */}
-                  <div>
-                    <h3 className="text-2xl font-black text-white group-hover:text-cyan-300 transition-colors">
-                      Active Learner
-                    </h3>
-                    <p className="text-xs font-mono text-cyan-400/90 mt-1 font-semibold">
-                      Level up for production & hackathons
-                    </p>
-                    <p className="text-xs sm:text-sm text-stone-300 leading-relaxed mt-3">
-                      Already comfortable with syntax? Time to build real software. Master modern web frameworks, backend APIs, graph algorithms, and architectural patterns so you can assemble a dream team and lead winning hackathon squads.
-                    </p>
-                  </div>
-
-                  {/* Student Milestone Checklist */}
-                  <div className="space-y-2 pt-2 border-t border-stone-800/80 text-xs text-stone-300">
-                    <div className="flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">✓</span>
-                      <span>Master Next.js, FastAPI, Spring Boot & REST APIs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">✓</span>
-                      <span>Crack high-frequency interview & placement algorithms</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-cyan-400 font-bold">✓</span>
-                      <span>Ship hackathon-grade MVPs and lead project squads</span>
-                    </div>
-                  </div>
-
-                  {/* Available Topics Pills */}
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {['Full-Stack Next.js', 'Spring Boot API', 'FastAPI Backends', 'Advanced DSA'].map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-stone-900 border border-stone-800 text-stone-300"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bottom Action Footer */}
-                <div className="pt-6 mt-6 border-t border-stone-800/80 flex items-center justify-between text-xs font-bold text-cyan-300 font-mono relative z-10">
-                  <span className="flex items-center gap-1.5">
-                    <span>{!user ? 'Create Account & Enter' : 'Enter Active Learner Track'}</span>
-                    <span className="text-[10px] text-stone-400 font-normal">~35 Hours</span>
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-300 group-hover:translate-x-1.5 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-all">
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* VIEW 3: Dribbble-inspired Purple Rectangle Hero with Continuous Circular Scrolling Skills! */
-          <CircularSkillsShowcase
-            skills={availableCurricula}
-            selectedTrack={selectedTrack}
-            onSelectSkill={handleBeginCurriculum}
-            onSwitchTrack={handleSelectTrack}
-            onBackToLevelSelect={handleSwitchLevel}
+        {/* Active Rail Content */}
+        {activeSection === 'home' && (
+          <CodexSpotlightCarousel
+            sectionLabel="01 · LANGUAGE VIDEO & GUIDED TRACKS"
+            headline={firstName ? `Keep building, ${firstName}.` : 'Choose your stack.'}
+            headlineAccent="Master every language."
+            volumes={filteredVolumes}
+            activeIndex={carouselIndices.home}
+            onChangeIndex={(next) => setCarouselIndices((prev) => ({ ...prev, home: next }))}
+            onOpenVolume={handleOpenVolume}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+            continueNote={continueVolume ? `Resume ${continueVolume.title}` : null}
+            onResumeContinue={continueVolume ? handleResumeContinue : undefined}
           />
         )}
+
+        {activeSection === 'books' && (
+          <CodexSpotlightCarousel
+            sectionLabel="02 · TECHNICAL BOOKSHELF & VOLUMES"
+            headline="Read the manuals."
+            headlineAccent="Built for engineers."
+            volumes={filteredVolumes}
+            activeIndex={carouselIndices.books}
+            onChangeIndex={(next) => setCarouselIndices((prev) => ({ ...prev, books: next }))}
+            onOpenVolume={handleOpenVolume}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+          />
+        )}
+
+        {activeSection === 'solving' && (
+          <CodexSpotlightCarousel
+            sectionLabel="03 · PROBLEM SOLVING & OA PLAYBOOKS"
+            headline="Spot the pattern."
+            headlineAccent="Win the arena."
+            volumes={filteredVolumes}
+            activeIndex={carouselIndices.solving}
+            onChangeIndex={(next) => setCarouselIndices((prev) => ({ ...prev, solving: next }))}
+            onOpenVolume={handleOpenVolume}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+          />
+        )}
+
+        {activeSection === 'saved' && (
+          <div className="flex-1 px-5 sm:px-10 lg:px-14 py-8 space-y-6">
+            <div>
+              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-amber-300">
+                04 · PERSONAL ARCHIVE
+              </p>
+              <h1 className="text-3xl sm:text-4xl font-serif font-semibold text-white mt-1">
+                Saved Codex Volumes
+              </h1>
+              <p className="text-sm text-zinc-400 mt-1">
+                Your bookmarked tracks, manuals, and OA playbooks for instant revision.
+              </p>
+            </div>
+
+            {savedVolumes.length === 0 ? (
+              <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-10 text-center max-w-xl space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/25 flex items-center justify-center mx-auto">
+                  <Bookmark className="w-5 h-5 text-amber-300" />
+                </div>
+                <h2 className="text-lg font-semibold text-white">No saved volumes yet</h2>
+                <p className="text-sm text-zinc-400">
+                  Tap <strong>Save</strong> on any language track, technical manual, or problem-solving playbook to pin it here.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveSection('home')}
+                  className="px-5 py-2.5 rounded-full bg-white text-slate-950 text-xs font-semibold cursor-pointer hover:bg-sky-50"
+                >
+                  Browse Tracks →
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                {savedVolumes.map((vol) => (
+                  <div
+                    key={vol.id}
+                    className={`rounded-3xl border border-white/12 bg-gradient-to-br ${vol.coverGradient} p-6 flex flex-col justify-between gap-5 shadow-2xl`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                          {vol.edition}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleSave(vol.id)}
+                          className="text-amber-300 hover:text-amber-200 cursor-pointer"
+                          title="Remove bookmark"
+                        >
+                          <Bookmark className="w-4 h-4 fill-amber-300" />
+                        </button>
+                      </div>
+                      <h3 className="text-xl font-serif font-semibold text-white">{vol.title}</h3>
+                      <p className="text-xs text-zinc-300/90 leading-relaxed">{vol.subtitle}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenVolume(vol)}
+                      className="w-full py-2.5 rounded-full bg-white text-slate-950 text-xs font-semibold hover:bg-sky-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>{vol.ctaLabel}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'vault' && (
+          <div className="flex-1 px-5 sm:px-10 lg:px-14 py-8 space-y-8">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-sky-300">
+                05 · STUDENT PERKS & HACKATHON ARSENAL
+              </p>
+              <h1 className="text-3xl sm:text-5xl font-serif font-semibold text-white mt-1 leading-tight">
+                Perks & Starter Kits
+              </h1>
+              <p className="text-sm sm:text-base text-zinc-400 mt-2">
+                Unlock $14,000+ in student cloud credits, production hackathon templates, and jump straight into live coding arenas.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
+              <Link
+                href="/perks"
+                className="group rounded-3xl border border-white/12 bg-gradient-to-br from-[#1b1509] via-[#0d0b08] to-[#08090e] p-7 hover:border-amber-400/50 transition-all flex flex-col justify-between gap-6 shadow-2xl"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center">
+                      <Gift className="w-6 h-6 text-amber-300" />
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[10px] font-mono font-bold text-amber-200 uppercase tracking-wider">
+                      $14,000+ Value
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-serif font-semibold text-white group-hover:text-amber-200 transition-colors">
+                    Student Perks Vault
+                  </h2>
+                  <p className="text-sm text-zinc-300/90 leading-relaxed">
+                    Claim verified campus software credits across cloud hosting, GitHub developer packs, vector databases, and AI API tiers.
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                  <span>Open Perks Vault</span>
+                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              <Link
+                href="/starter-kits"
+                className="group rounded-3xl border border-white/12 bg-gradient-to-br from-[#0b1929] via-[#080d17] to-[#07090e] p-7 hover:border-sky-400/50 transition-all flex flex-col justify-between gap-6 shadow-2xl"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-400/30 flex items-center justify-center">
+                      <Rocket className="w-6 h-6 text-sky-300" />
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-sky-400/15 border border-sky-400/30 text-[10px] font-mono font-bold text-sky-200 uppercase tracking-wider">
+                      Hackathon Ready
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-serif font-semibold text-white group-hover:text-sky-200 transition-colors">
+                    Hackathon Starter Kits
+                  </h2>
+                  <p className="text-sm text-zinc-300/90 leading-relaxed">
+                    Production-ready Next.js, FastAPI, AI Agent, and Web3 scaffolds pre-configured with auth, database schemas, and deploy scripts.
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-sky-300 uppercase tracking-wider">
+                  <span>Browse Starter Kits</span>
+                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </Link>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                href="/icpc"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
+              >
+                <Code2 className="w-3.5 h-3.5 text-sky-300" />
+                <span>Open Practice IDE</span>
+              </Link>
+              <Link
+                href="/arena"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
+              >
+                <Swords className="w-3.5 h-3.5 text-amber-300" />
+                <span>Enter 1v1 Battle Arena</span>
+              </Link>
+              <Link
+                href="/spark"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                <span>Launch KΛ ΛI Studio ↗</span>
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Active Modals */}
+      {activeModalVolume && activeModalVolume.kind === 'track' && (
+        <CodexTrackModal
+          track={activeModalVolume as CodexLanguageTrack}
+          completedLessons={completedLessons}
+          onToggleLessonComplete={toggleLessonComplete}
+          isSaved={savedIds.includes(activeModalVolume.id)}
+          onToggleSave={() => toggleSave(activeModalVolume.id)}
+          onLaunchFullWorkspace={(lvl) =>
+            handleLaunchFullWorkspace(activeModalVolume as CodexLanguageTrack, lvl)
+          }
+          onClose={() => setActiveModalVolume(null)}
+        />
+      )}
+
+      {activeModalVolume &&
+        (activeModalVolume.kind === 'book' || activeModalVolume.kind === 'solving') && (
+          <CodexReaderModal
+            volume={activeModalVolume as CodexBookVolume | CodexPatternVolume}
+            isSaved={savedIds.includes(activeModalVolume.id)}
+            onToggleSave={() => toggleSave(activeModalVolume.id)}
+            onClose={() => setActiveModalVolume(null)}
+          />
+        )}
     </div>
   );
 }

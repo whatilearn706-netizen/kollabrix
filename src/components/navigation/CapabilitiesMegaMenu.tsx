@@ -115,18 +115,6 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
     icon: Sparkles,
   },
   {
-    id: 'planner',
-    label: 'AI Project Planner',
-    group: 'build',
-    href: '/planner',
-    badge: 'ROADMAP',
-    dotColor: 'bg-sky-400 shadow-[0_0_8px_#38bdf8]',
-    badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/35',
-    description: 'Turn a project idea into sprint milestones, roles & task lists.',
-    ctaLabel: 'Plan Project',
-    icon: Bot,
-  },
-  {
     id: 'problems',
     label: 'Faculty Problems',
     group: 'build',
@@ -140,14 +128,14 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   },
   {
     id: 'resources',
-    label: 'Starter Kits & Resources',
+    label: 'KΛ Codex · Resources',
     group: 'build',
     href: '/resources',
-    badge: 'TEMPLATES',
-    dotColor: 'bg-slate-300',
-    badgeClass: 'bg-white/10 text-slate-200 border-white/20',
-    description: 'Curated tech boilerplates, learning roadmaps & interactive tracks.',
-    ctaLabel: 'Open Resources',
+    badge: 'CODEX LIBRARY',
+    dotColor: 'bg-amber-300 shadow-[0_0_8px_#fcd34d]',
+    badgeClass: 'bg-amber-500/15 text-amber-200 border-amber-400/35',
+    description: 'Language video tracks, 3D technical volumes & problem-solving playbooks.',
+    ctaLabel: 'Open KΛ Codex',
     openInNewTab: true,
     icon: BookOpen,
   },
@@ -359,34 +347,15 @@ function PreviewVisual({ item }: { item: CapabilityItem }) {
     );
   }
 
-  if (item.id === 'planner') {
-    return (
-      <div className="rounded-xl bg-[#05070c] border border-white/10 p-3 space-y-2 font-mono text-[9.5px]">
-        <div className="text-sky-300 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" />
-          <span>Sprint Plan Generated</span>
-        </div>
-        <div className="space-y-1 text-slate-300">
-          <div className="px-2 py-1 rounded bg-white/[0.03] border border-white/[0.05]">
-            &bull; Next.js + FastAPI + Postgres
-          </div>
-          <div className="px-2 py-1 rounded bg-white/[0.03] border border-white/[0.05]">
-            &bull; 4 Milestones &bull; 3 Team Roles Ready
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-xl bg-[#05070c] border border-white/10 p-3 space-y-2 font-mono text-[9.5px]">
       <div className="text-cyan-300 font-bold">
-        {item.id === 'problems' ? 'VERIFIED CAMPUS BRIEF' : 'STARTER KITS READY'}
+        {item.id === 'problems' ? 'VERIFIED CAMPUS BRIEF' : 'KΛ CODEX VOLUMES'}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {(item.id === 'problems'
           ? ['AI Health Triage', 'Zero-Trust Auth', 'Campus Transit']
-          : ['Next.js 14', 'FastAPI', 'PyTorch', 'Solidity']
+          : ['Java Mastery', 'C++ STL', '3D Tech Books', 'OA Patterns']
         ).map((tag) => (
           <span
             key={tag}
