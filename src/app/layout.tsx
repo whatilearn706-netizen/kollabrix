@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import '@/styles/globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { Navbar } from '@/components/layout/Navbar';
@@ -21,10 +22,24 @@ import dynamic from 'next/dynamic';
 const Analytics = dynamic(() => import('@vercel/analytics/next').then(mod => mod.Analytics), { ssr: false });
 const SpeedInsights = dynamic(() => import('@vercel/speed-insights/next').then(mod => mod.SpeedInsights), { ssr: false });
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-jetbrains',
+  display: 'swap',
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.kollabrix.in';
 
 export const viewport: Viewport = {
-  themeColor: '#FF7A00',
+  themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
 };
@@ -42,10 +57,8 @@ export const metadata: Metadata = {
     'kollabrix',
     'Kollabrix platform',
     'kollabrix collegiate network',
-    'kollabrix.com',
     'kollabrix.in',
     'kollabrix online',
-    'Linkora',
     'student projects',
     'college collaboration',
     'hackathon teams',
@@ -60,16 +73,16 @@ export const metadata: Metadata = {
   applicationName: 'Kollabrix',
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-144x144.png', sizes: '144x144', type: 'image/png' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/kollabrix-favicon-v2.ico', sizes: 'any' },
+      { url: '/kollabrix-icon-48.png', sizes: '48x48', type: 'image/png' },
+      { url: '/kollabrix-icon-96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/kollabrix-icon-144.png', sizes: '144x144', type: 'image/png' },
+      { url: '/kollabrix-icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/kollabrix-icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/kollabrix-favicon-v2.ico',
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/kollabrix-apple-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
   manifest: '/manifest.json',
@@ -86,10 +99,10 @@ export const metadata: Metadata = {
     siteName: 'Kollabrix',
     images: [
       {
-        url: `${siteUrl}/icon-512.png`,
+        url: `${siteUrl}/kollabrix-icon-512.png`,
         width: 512,
         height: 512,
-        alt: 'Kollabrix Official Emblem',
+        alt: 'Kollabrix Official Metallic Emblem',
       },
       {
         url: `${siteUrl}/brand/kollabrix-logo.min.svg`,
@@ -104,7 +117,7 @@ export const metadata: Metadata = {
     title: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
     description:
       'Kollabrix is the student innovation network to discover collegiate projects, assemble hackathon dream teams, showcase engineering portfolios, and solve campus challenges together.',
-    images: [`${siteUrl}/icon-512.png`],
+    images: [`${siteUrl}/kollabrix-icon-512.png`],
   },
   robots: {
     index: true,
@@ -135,7 +148,7 @@ const jsonLd = {
       '@id': `${siteUrl}/#website`,
       url: `${siteUrl}/`,
       name: 'Kollabrix',
-      alternateName: ['KOLLABRIX', 'kollabrix.in', 'www.kollabrix.in', 'KOLLΛBRIX'],
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
       description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
       inLanguage: 'en-US',
       potentialAction: {
@@ -214,7 +227,7 @@ const jsonLd = {
       '@id': `${siteUrl}/#organization`,
       name: 'Kollabrix',
       legalName: 'Kollabrix Technologies',
-      alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'Kollabrix India', 'kollabrix.in'],
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'Kollabrix India'],
       url: `${siteUrl}/`,
       foundingDate: '2024',
       founder: {
@@ -240,16 +253,15 @@ const jsonLd = {
       logo: {
         '@type': 'ImageObject',
         '@id': `${siteUrl}/#logo`,
-        url: `${siteUrl}/icon-512.png`,
+        url: `${siteUrl}/kollabrix-icon-512.png`,
         caption: 'Kollabrix Official Dual Ascent Aerospace Emblem',
         inLanguage: 'en-US',
         width: 512,
         height: 512,
       },
-      image: `${siteUrl}/icon-512.png`,
+      image: `${siteUrl}/kollabrix-icon-512.png`,
       sameAs: [
         siteUrl,
-        'https://kollabrix.in',
         'https://github.com/goyalmayank142-pixel/kollabrix',
       ],
     },
@@ -310,22 +322,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" style={{ colorScheme: 'dark', backgroundColor: '#000000' }}>
+    <html
+      lang="en"
+      className={`dark ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
+      style={{ colorScheme: 'dark', backgroundColor: '#000000' }}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
-        />
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
-        <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/kollabrix-favicon-v2.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="48x48" href="/kollabrix-icon-48.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/kollabrix-icon-96.png" />
+        <link rel="icon" type="image/png" sizes="144x144" href="/kollabrix-icon-144.png" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/kollabrix-icon-192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/kollabrix-apple-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="application-name" content="Kollabrix" />
         <meta name="apple-mobile-web-app-title" content="Kollabrix" />
@@ -336,7 +346,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="min-h-screen bg-black text-slate-100 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative overflow-x-hidden">
+      <body className={`${plusJakartaSans.className} min-h-screen bg-black text-slate-100 flex flex-col antialiased selection:bg-amber-500/25 selection:text-amber-950 relative overflow-x-hidden`}>
         <NetworkResilienceProvider>
           <AuthProvider>
           <AnalyticsProvider>

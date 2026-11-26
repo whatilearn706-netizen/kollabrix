@@ -45,10 +45,11 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          'Inter',
+          'var(--font-jakarta)',
+          '"Plus Jakarta Sans"',
           '-apple-system',
           'BlinkMacSystemFont',
-          'Segoe UI',
+          '"Segoe UI"',
           'Roboto',
           'Oxygen',
           'Ubuntu',
@@ -56,13 +57,14 @@ const config: Config = {
           'sans-serif',
         ],
         heading: [
-          'Space Grotesk',
-          'Inter',
+          'var(--font-jakarta)',
+          '"Plus Jakarta Sans"',
           '-apple-system',
           'sans-serif',
         ],
         mono: [
-          'Fira Code',
+          'var(--font-jetbrains)',
+          '"JetBrains Mono"',
           'ui-monospace',
           'SFMono-Regular',
           'Menlo',

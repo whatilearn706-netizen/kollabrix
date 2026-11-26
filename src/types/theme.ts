@@ -79,8 +79,8 @@ export const DEFAULT_SITE_THEME: SiteThemeConfig = {
   headingColor: '#F8FAFC',
   bodyTextColor: '#CBD5E1',
   mutedTextColor: '#94A3B8',
-  headingFont: 'Space Grotesk',
-  bodyFont: 'Inter',
+  headingFont: 'Plus Jakarta Sans',
+  bodyFont: 'Plus Jakarta Sans',
   headingWeight: '900',
   letterSpacing: '-0.03em',
   borderRadius: '16px',
@@ -151,7 +151,7 @@ export const THEME_PRESETS: ThemePreset[] = [
       brandColor: '#EA580C',
       brandHoverColor: '#C2410C',
       accentColor: '#F59E0B',
-      headingFont: 'Space Grotesk',
+      headingFont: 'Plus Jakarta Sans',
       borderRadius: '16px',
       buttonShape: 'rounded-2xl',
       navbarStyle: 'dark',
@@ -281,11 +281,11 @@ export const THEME_PRESETS: ThemePreset[] = [
 ];
 
 export const AVAILABLE_FONTS = [
+  { id: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans (Precision Hardware — Default)', googleFont: 'Plus+Jakarta+Sans:wght@400;500;600;700;800' },
+  { id: 'JetBrains Mono', label: 'JetBrains Mono (Code & Telemetry Mono)', googleFont: 'JetBrains+Mono:wght@400;500;600;700' },
   { id: 'Inter', label: 'Inter (Clean & Modern Sans)', googleFont: 'Inter:wght@400;600;700;800;900' },
-  { id: 'Plus Jakarta Sans', label: 'Plus Jakarta Sans (Contemporary Tech)', googleFont: 'Plus+Jakarta+Sans:wght@400;600;700;800' },
   { id: 'Outfit', label: 'Outfit (Geometric & Friendly)', googleFont: 'Outfit:wght@400;600;700;800;900' },
   { id: 'Space Grotesk', label: 'Space Grotesk (Distinctive Developer/Cyber)', googleFont: 'Space+Grotesk:wght@400;600;700' },
   { id: 'Syne', label: 'Syne (Avant-Garde & High Fashion)', googleFont: 'Syne:wght@600;700;800' },
   { id: 'Poppins', label: 'Poppins (Smooth & Balanced)', googleFont: 'Poppins:wght@400;600;700;800' },
-  { id: 'JetBrains Mono', label: 'JetBrains Mono (Technical / Code Mono)', googleFont: 'JetBrains+Mono:wght@400;600;700;800' },
 ];

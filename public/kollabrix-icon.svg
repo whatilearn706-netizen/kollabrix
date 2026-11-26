@@ -1,0 +1,87 @@
+<svg viewBox="0 0 512 512" width="512" height="512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Deep radial metallic backdrop lift behind emblem so dark steel bevels separate from pure #000000 -->
+    <radialGradient id="kb-icon-halo" cx="256" cy="256" r="205" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E2E8F0" stop-opacity="0.24"/>
+      <stop offset="42%" stop-color="#94A3B8" stop-opacity="0.11"/>
+      <stop offset="75%" stop-color="#475569" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Platinum-Silver Vertical Needle Spark -->
+    <linearGradient id="kb-silver-spark" x1="256" y1="32" x2="256" y2="468" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#CBD5E1"/>
+      <stop offset="22%" stop-color="#F1F5F9"/>
+      <stop offset="50%" stop-color="#FFFFFF"/>
+      <stop offset="78%" stop-color="#E2E8F0"/>
+      <stop offset="100%" stop-color="#94A3B8"/>
+    </linearGradient>
+
+    <!-- Brushed Silver Wing Bevel Border -->
+    <linearGradient id="kb-silver-border" x1="256" y1="60" x2="256" y2="430" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="45%" stop-color="#CBD5E1"/>
+      <stop offset="100%" stop-color="#64748B"/>
+    </linearGradient>
+
+    <!-- Left Wing (Brushed Gunmetal Titanium) -->
+    <linearGradient id="kb-wing-l" x1="115" y1="74" x2="232" y2="424" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B475C"/>
+      <stop offset="45%" stop-color="#1E2736"/>
+      <stop offset="100%" stop-color="#0B0F17"/>
+    </linearGradient>
+
+    <!-- Right Wing (Brushed Gunmetal Titanium) -->
+    <linearGradient id="kb-wing-r" x1="397" y1="74" x2="280" y2="424" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="45%" stop-color="#222C3D"/>
+      <stop offset="100%" stop-color="#0D121C"/>
+    </linearGradient>
+
+    <filter id="kb-silver-bloom" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Pure #000000 Black Canvas -->
+  <rect width="512" height="512" fill="#000000"/>
+
+  <!-- Subtle Silver Aura behind the mark -->
+  <circle cx="256" cy="256" r="196" fill="url(#kb-icon-halo)"/>
+
+  <!-- Centered Emblem scaled to 76% (~18% safe padding around top/bottom/sides) -->
+  <g transform="translate(256, 256) scale(0.76) translate(-256, -250)">
+    <!-- Left Metallic Wing -->
+    <polygon
+      points="232,74 108,388 166,424 232,248"
+      fill="url(#kb-wing-l)"
+      stroke="url(#kb-silver-border)"
+      stroke-width="6.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Right Metallic Wing -->
+    <polygon
+      points="280,74 404,388 346,424 280,248"
+      fill="url(#kb-wing-r)"
+      stroke="url(#kb-silver-border)"
+      stroke-width="6.5"
+      stroke-linejoin="round"
+    />
+
+    <!-- Platinum-Silver Vertical Needle Spark -->
+    <polygon
+      points="256,32 269,246 256,468 243,246"
+      fill="url(#kb-silver-spark)"
+      filter="url(#kb-silver-bloom)"
+    />
+    <polygon points="256,32 268,246 256,468 244,246" fill="url(#kb-silver-spark)"/>
+
+    <!-- Pure White Luminous Core -->
+    <polygon points="256,68 263,246 256,412 249,246" fill="#FFFFFF"/>
+  </g>
+</svg>

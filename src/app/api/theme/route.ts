@@ -48,6 +48,14 @@ export async function GET() {
     if (theme.brandHoverColor === '#4F46E5' || theme.brandHoverColor === '#4f46e5') theme.brandHoverColor = '#C2410C';
     if (theme.accentColor === '#EC4899' || theme.accentColor === '#ec4899') theme.accentColor = '#F59E0B';
 
+    // Upgrade legacy template fonts to Precision Hardware (Plus Jakarta Sans)
+    if (!theme.headingFont || theme.headingFont === 'Inter' || theme.headingFont === 'Space Grotesk') {
+      theme.headingFont = 'Plus Jakarta Sans';
+    }
+    if (!theme.bodyFont || theme.bodyFont === 'Inter') {
+      theme.bodyFont = 'Plus Jakarta Sans';
+    }
+
     // Auto-migrate brand strings from legacy Linkora to Kollabrix
     if (!theme.siteTitle || theme.siteTitle === 'Linkora') {
       theme.siteTitle = 'Kollabrix';

@@ -54,6 +54,15 @@ export function sanitizeTheme(t: SiteThemeConfig): SiteThemeConfig {
   const darkBodyText = !isColorDark(t.bodyTextColor) ? t.bodyTextColor : '#CBD5E1';
   const darkMutedText = !isColorDark(t.mutedTextColor) ? t.mutedTextColor : '#94A3B8';
 
+  const resolvedHeadingFont =
+    !t.headingFont || t.headingFont === 'Inter' || t.headingFont === 'Space Grotesk'
+      ? 'Plus Jakarta Sans'
+      : t.headingFont;
+  const resolvedBodyFont =
+    !t.bodyFont || t.bodyFont === 'Inter' || t.bodyFont === 'Roboto' || t.bodyFont === 'Open Sans'
+      ? 'Plus Jakarta Sans'
+      : t.bodyFont;
+
   return {
     ...t,
     backgroundColor: darkBg,
@@ -62,6 +71,8 @@ export function sanitizeTheme(t: SiteThemeConfig): SiteThemeConfig {
     headingColor: darkHeading,
     bodyTextColor: darkBodyText,
     mutedTextColor: darkMutedText,
+    headingFont: resolvedHeadingFont,
+    bodyFont: resolvedBodyFont,
     navbarStyle: 'dark',
     cardShadow: t.cardShadow === 'none' ? 'none' : 'glow',
     siteTitle: (!t.siteTitle || t.siteTitle.trim() === 'Linkora') ? 'Kollabrix' : t.siteTitle.replace(/Linkora/g, 'Kollabrix'),
@@ -103,15 +114,26 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--site-heading', currentTheme.headingColor);
     root.style.setProperty('--site-text', currentTheme.bodyTextColor);
     root.style.setProperty('--site-text-muted', currentTheme.mutedTextColor);
-    root.style.setProperty('--site-font-heading', `"${currentTheme.headingFont}", sans-serif`);
-    root.style.setProperty('--site-font-body', `"${currentTheme.bodyFont}", sans-serif`);
+    const toCssFontStack = (name: string) => {
+      if (name === 'Plus Jakarta Sans') {
+        return `var(--font-jakarta), "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif`;
+      }
+      if (name === 'JetBrains Mono') {
+        return `var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace`;
+      }
+      return `"${name}", var(--font-jakarta), -apple-system, BlinkMacSystemFont, sans-serif`;
+    };
+
+    root.style.setProperty('--site-font-heading', toCssFontStack(currentTheme.headingFont));
+    root.style.setProperty('--site-font-body', toCssFontStack(currentTheme.bodyFont));
+    root.style.setProperty('--site-font-mono', `var(--font-jetbrains), "JetBrains Mono", ui-monospace, monospace`);
     root.style.setProperty('--site-radius', currentTheme.borderRadius);
     root.style.setProperty('--site-heading-weight', currentTheme.headingWeight || '900');
     root.style.setProperty('--site-letter-spacing', currentTheme.letterSpacing || '-0.03em');
 
-    // 3. Dynamic Google Fonts Loader
+    // 3. Dynamic Google Fonts Loader (only needed for optional admin custom presets not pre-bundled via next/font)
     const fontObj = AVAILABLE_FONTS.find((f) => f.id === currentTheme.headingFont);
-    if (fontObj && fontObj.id !== 'Inter') {
+    if (fontObj && !['Plus Jakarta Sans', 'JetBrains Mono', 'Inter'].includes(fontObj.id)) {
       const linkId = 'dynamic-google-font-heading';
       let linkEl = document.getElementById(linkId) as HTMLLinkElement | null;
       if (!linkEl) {
@@ -148,6 +170,18 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
         font-family: var(--site-font-body) !important;
       }
 
+      h1:not(.font-mono),
+      h2:not(.font-mono),
+      h3:not(.font-mono),
+      h4:not(.font-mono),
+      h5:not(.font-mono),
+      h6:not(.font-mono),
+      .font-heading:not(.font-mono) {
+        font-family: var(--site-font-heading) !important;
+        font-weight: var(--site-heading-weight) !important;
+        letter-spacing: var(--site-letter-spacing) !important;
+      }
+
       h1:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
       h2:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
       h3:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
@@ -155,9 +189,6 @@ export function SiteThemeProvider({ children }: { children: React.ReactNode }) {
       h5:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
       h6:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white),
       .font-heading:not(.text-transparent):not(.begin-colorful):not(.text-white):not(.site-heading-white) {
-        font-family: var(--site-font-heading) !important;
-        font-weight: var(--site-heading-weight) !important;
-        letter-spacing: var(--site-letter-spacing) !important;
         color: var(--site-heading) !important;
       }
 

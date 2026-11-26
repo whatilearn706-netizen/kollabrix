@@ -16,9 +16,9 @@
   --site-heading: #FAF7F2;
   --site-text: #E2E8F0;
   --site-text-muted: #94A3B8;
-  --site-font-heading: 'Space Grotesk', 'Inter', sans-serif;
-  --site-font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --site-font-mono: 'Fira Code', ui-monospace, monospace;
+  --site-font-heading: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --site-font-body: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --site-font-mono: var(--font-jetbrains), 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --site-radius: 16px;
 }
 
@@ -77,6 +77,10 @@ img {
 
 h1, h2, h3, h4, h5, h6, .font-heading {
   font-family: var(--site-font-heading);
+}
+
+code, pre, kbd, samp, .font-mono {
+  font-family: var(--site-font-mono);
 }
 
 /* Custom sleek dark scrollbar */
