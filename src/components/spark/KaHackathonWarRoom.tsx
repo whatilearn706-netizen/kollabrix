@@ -14,6 +14,8 @@ import {
   Sparkles,
   CheckCircle2,
   XCircle,
+  Globe,
+  Link2,
 } from 'lucide-react';
 import {
   ScreeningDeckView,
@@ -41,7 +43,11 @@ export function KaHackathonWarRoom({
   const [activeTab, setActiveTab] = useState<WarRoomTab>('ppt_deck');
   const [hackathons, setHackathons] = useState<Array<{ id: string; title: string }>>([]);
   const [selectedHackathonId, setSelectedHackathonId] = useState('');
+  const [hackathonUrl, setHackathonUrl] = useState('');
+  const [useExternalHackathonUrl, setUseExternalHackathonUrl] = useState(false);
+
   const [repoUrl, setRepoUrl] = useState('');
+  const [liveDemoUrl, setLiveDemoUrl] = useState('');
   const [psInput, setPsInput] = useState('');
   const [notesInput, setNotesInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,6 +60,7 @@ export function KaHackathonWarRoom({
   const [demoQa, setDemoQa] = useState<any>(blueprint?.warRoom?.demoQa || null);
   const [repoPack, setRepoPack] = useState<any>(blueprint?.warRoom?.repoPack || null);
   const [repoMeta, setRepoMeta] = useState<any>(blueprint?.warRoom?.repoMeta || null);
+  const [liveDemoStatus, setLiveDemoStatus] = useState<any>(blueprint?.warRoom?.liveDemoStatus || null);
 
   // Judge Re-Audit loop state
   const [audit, setAudit] = useState<any>(blueprint?.warRoom?.audit || null);
@@ -61,6 +68,7 @@ export function KaHackathonWarRoom({
     Array.isArray(blueprint?.warRoom?.scoreHistory) ? blueprint.warRoom.scoreHistory : []
   );
   const [lastAuditSha, setLastAuditSha] = useState<string>(blueprint?.warRoom?.lastAuditSha || '');
+  const [lastAuditDemoUrl, setLastAuditDemoUrl] = useState<string>(blueprint?.warRoom?.lastAuditDemoUrl || '');
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
 
   useEffect(() => {
@@ -68,7 +76,7 @@ export function KaHackathonWarRoom({
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         const list = Array.isArray(d?.hackathons) ? d.hackathons : [];
-        setHackathons(list.slice(0, 10).map((h: any) => ({ id: h.id, title: h.title })));
+        setHackathons(list.slice(0, 12).map((h: any) => ({ id: h.id, title: h.title })));
       })
       .catch(() => {});
   }, []);
@@ -84,11 +92,13 @@ export function KaHackathonWarRoom({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          hackathonId: selectedHackathonId,
-          hackathonTitle: selH?.title || '',
+          hackathonId: useExternalHackathonUrl ? '' : selectedHackathonId,
+          hackathonTitle: useExternalHackathonUrl ? '' : selH?.title || '',
+          hackathonUrl: useExternalHackathonUrl ? hackathonUrl : '',
           problemStatement: notesInput || blueprint?.summary || '',
           statements: psInput,
-          repoUrl,
+          repoUrl: action === 'pick_ps' ? '' : repoUrl,
+          liveDemoUrl: action === 'demo_qa' || action === 'repo_pack' ? liveDemoUrl : '',
           pitchNotes: notesInput,
           blueprint,
         }),
@@ -104,12 +114,13 @@ export function KaHackathonWarRoom({
       }
 
       if (data.repoScanned) setRepoMeta(data.repoScanned);
+      if (data.liveDemoStatus !== undefined) setLiveDemoStatus(data.liveDemoStatus);
       if (action === 'ppt_deck' && data.deck) setDeck(data.deck);
       if (action === 'pick_ps' && data.analysis) setPsAnalysis(data.analysis);
       if (action === 'demo_qa' && data.demoQa) setDemoQa(data.demoQa);
       if (action === 'repo_pack' && data.pack) setRepoPack(data.pack);
     } catch {
-      setErrorMsg('Network error running Hackathon Sprint tool.');
+      setErrorMsg('Network error running Hackathon Sprint tool. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -127,12 +138,15 @@ export function KaHackathonWarRoom({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           repoUrl,
+          liveDemoUrl,
           pitchText: notesInput,
-          hackathonId: selectedHackathonId,
-          hackathonTitle: selH?.title || '',
+          hackathonId: useExternalHackathonUrl ? '' : selectedHackathonId,
+          hackathonTitle: useExternalHackathonUrl ? '' : selH?.title || '',
+          hackathonUrl: useExternalHackathonUrl ? hackathonUrl : '',
           blueprint,
           previousScore: previous ?? undefined,
           previousCommitSha: isReaudit ? lastAuditSha : '',
+          previousLiveDemoUrl: isReaudit ? lastAuditDemoUrl : '',
           isReaudit,
         }),
       });
@@ -141,7 +155,8 @@ export function KaHackathonWarRoom({
 
       if (data?.unchanged) {
         if (data.repoScanned) setRepoMeta(data.repoScanned);
-        setNoticeMsg(data.error || 'No new commits detected since last audit.');
+        if (data.liveDemoStatus !== undefined) setLiveDemoStatus(data.liveDemoStatus);
+        setNoticeMsg(data.error || 'No new commits or live demo updates detected since last audit.');
         return;
       }
 
@@ -158,12 +173,16 @@ export function KaHackathonWarRoom({
         setRepoMeta(data.repoScanned);
         if (data.repoScanned.sha) setLastAuditSha(data.repoScanned.sha);
       }
+      if (data.liveDemoStatus !== undefined) {
+        setLiveDemoStatus(data.liveDemoStatus);
+      }
+      setLastAuditDemoUrl(liveDemoUrl.trim());
       if (data.audit?.totalScore !== undefined) {
         setScoreHistory((prev) => [...prev, Number(data.audit.totalScore)].slice(-6));
       }
       setAudit(data.audit);
     } catch {
-      setErrorMsg('Network error running Judge Audit.');
+      setErrorMsg('Network error running Judge Audit. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -178,6 +197,7 @@ export function KaHackathonWarRoom({
   ];
 
   const signals = repoMeta?.signals;
+  const needsLiveDemoInput = activeTab === 'demo_qa' || activeTab === 'repo_pack' || activeTab === 'judge_share';
 
   return (
     <div className="p-5 sm:p-6 rounded-3xl bg-[#0D1018] border border-cyan-500/25 space-y-5 shadow-2xl">
@@ -187,30 +207,6 @@ export function KaHackathonWarRoom({
           <span>Hackathon Sprint Pass Toolkit · KΛ-Pro</span>
         </div>
         <h3 className="text-lg font-black text-white">Submission-Ready Assets &amp; Repo War-Room</h3>
-      </div>
-
-      {/* Shared Context Bar: Target Hackathon + GitHub Repo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <select
-          value={selectedHackathonId}
-          onChange={(e) => setSelectedHackathonId(e.target.value)}
-          className="px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-cyan-400"
-        >
-          <option value="">Target Hackathon (Optional — Live from Kollabrix)</option>
-          {hackathons.map((h) => (
-            <option key={h.id} value={h.id}>
-              {h.title}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="url"
-          value={repoUrl}
-          onChange={(e) => setRepoUrl(e.target.value)}
-          placeholder="GitHub Repo URL (e.g. https://github.com/user/project)"
-          className="px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-400"
-        />
       </div>
 
       {/* 5 Tool Tabs */}
@@ -240,6 +236,81 @@ export function KaHackathonWarRoom({
         })}
       </div>
 
+      {/* Context Inputs — hidden on Pick Winning PS (Image 2), tailored per active tab */}
+      {activeTab !== 'pick_ps' && (
+        <div className="space-y-2.5 p-3.5 rounded-2xl bg-black/40 border border-white/10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* 1. Target Hackathon (Kollabrix Picker OR External Hackathon URL) */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 px-1">
+                <span className="font-semibold uppercase tracking-wider">1. Link Hackathon</span>
+                <button
+                  type="button"
+                  onClick={() => setUseExternalHackathonUrl(!useExternalHackathonUrl)}
+                  className="text-cyan-300 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Link2 className="w-3 h-3" />
+                  <span>{useExternalHackathonUrl ? 'Pick from Kollabrix' : 'Paste Hackathon Link'}</span>
+                </button>
+              </div>
+              {useExternalHackathonUrl ? (
+                <input
+                  type="url"
+                  value={hackathonUrl}
+                  onChange={(e) => setHackathonUrl(e.target.value)}
+                  placeholder="Hackathon URL or Name (e.g. https://devfolio.co/... or SIH 2026)"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-400"
+                />
+              ) : (
+                <select
+                  value={selectedHackathonId}
+                  onChange={(e) => setSelectedHackathonId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white focus:outline-none focus:border-cyan-400"
+                >
+                  <option value="">Target Hackathon (Optional — Live from Kollabrix)</option>
+                  {hackathons.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* 2. GitHub Repo / Profile URL */}
+            <div className="space-y-1">
+              <div className="text-[10px] text-zinc-400 px-1 font-semibold uppercase tracking-wider">
+                2. GitHub Repo or Profile URL
+              </div>
+              <input
+                type="url"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+                placeholder="https://github.com/user/project (or profile link)"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+          </div>
+
+          {/* 3. Live Demo URL (Required/Shown for 2-Min Demo & Q&A, README + Schema, Judge Re-Audit) */}
+          {needsLiveDemoInput && (
+            <div className="space-y-1">
+              <div className="text-[10px] text-zinc-400 px-1 font-semibold uppercase tracking-wider flex items-center gap-1">
+                <Globe className="w-3 h-3 text-emerald-400" />
+                <span>3. Live Deployed Demo URL (Vercel / Netlify / Render / Custom Link)</span>
+              </div>
+              <input
+                type="url"
+                value={liveDemoUrl}
+                onChange={(e) => setLiveDemoUrl(e.target.value)}
+                placeholder="https://your-project-demo.vercel.app (Gemini 4 Hydrogen inspects live routes & UI)"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-black/60 border border-emerald-500/25 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-emerald-400"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {noticeMsg && (
         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/35 text-xs text-amber-200 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -261,7 +332,7 @@ export function KaHackathonWarRoom({
             rows={4}
             value={psInput}
             onChange={(e) => setPsInput(e.target.value)}
-            placeholder="Paste 2 or 3 problem statements from the hackathon (numbered 1, 2, 3) to rank & find the cut list..."
+            placeholder="Paste 2 or 3 problem statements from your hackathon (numbered 1, 2, 3) to score & get the 36-hour cut list..."
             className="w-full p-3.5 rounded-2xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-400"
           />
           <button
@@ -291,8 +362,8 @@ export function KaHackathonWarRoom({
             onChange={(e) => setNotesInput(e.target.value)}
             placeholder={
               activeTab === 'ppt_deck'
-                ? 'Paste your problem statement or hackathon project idea (auto-uses your Blueprint above if generated)...'
-                : 'Add pitch highlights, target track, or recent fixes pushed to GitHub...'
+                ? 'Paste your problem statement or hackathon project description (auto-reads linked hackathon + GitHub codebase)...'
+                : 'Add pitch highlights, target track, or recent fixes pushed to GitHub / Live Demo...'
             }
             className="w-full p-3.5 rounded-2xl bg-black/60 border border-white/15 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-cyan-400"
           />
@@ -307,7 +378,7 @@ export function KaHackathonWarRoom({
                   className="px-5 py-2.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white text-xs font-extrabold flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gavel className="w-3.5 h-3.5" />}
-                  <span>{loading ? 'Scanning Full Repo & Rubric...' : 'Run Strict Judge Audit'}</span>
+                  <span>{loading ? 'Auditing Repo, Live Demo & Rubric...' : 'Run Strict Judge Audit'}</span>
                 </button>
                 {audit && (
                   <button
@@ -331,20 +402,24 @@ export function KaHackathonWarRoom({
                 {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 <span>
                   {loading
-                    ? 'Generating Finished Asset...'
+                    ? 'Inspecting Code & Building Asset...'
                     : activeTab === 'ppt_deck'
-                    ? 'Generate 7-Slide Screening Deck (.pptx)'
+                    ? 'Generate Bespoke 7-Slide Deck (.pptx)'
                     : activeTab === 'demo_qa'
-                    ? 'Scan Repo & Build 2-Min Demo + Tough Q&A'
-                    : 'Scan Repo & Generate README + Architecture + SQL'}
+                    ? 'Scan Repo & Live Demo → 2-Min Script + Q&A'
+                    : 'Scan Repo & Live Demo → README + Schema'}
                 </span>
               </button>
             )}
           </div>
 
           {activeTab === 'ppt_deck' && deck && <ScreeningDeckView deck={deck} />}
-          {activeTab === 'demo_qa' && demoQa && <DemoQaView demoQa={demoQa} repoScanned={repoMeta} />}
-          {activeTab === 'repo_pack' && repoPack && <RepoPackView pack={repoPack} repoScanned={repoMeta} />}
+          {activeTab === 'demo_qa' && demoQa && (
+            <DemoQaView demoQa={demoQa} repoScanned={repoMeta} liveDemoStatus={liveDemoStatus} />
+          )}
+          {activeTab === 'repo_pack' && repoPack && (
+            <RepoPackView pack={repoPack} repoScanned={repoMeta} liveDemoStatus={liveDemoStatus} />
+          )}
           {activeTab === 'judge_share' && audit && (
             <div className="p-5 rounded-2xl bg-black/60 border border-violet-500/35 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -370,26 +445,41 @@ export function KaHackathonWarRoom({
                 </div>
               </div>
 
-              {signals && (
+              {(signals || liveDemoStatus) && (
                 <div className="flex flex-wrap gap-2 text-[11px]">
-                  {[
-                    { label: 'Backend API', ok: signals.hasBackendApi },
-                    { label: 'Real Database', ok: signals.hasDatabase },
-                    { label: 'AI / Agent SDK', ok: signals.hasAiIntegration },
-                    { label: 'Tests', ok: signals.hasTests },
-                  ].map((sig) => (
+                  {liveDemoStatus && (
                     <span
-                      key={sig.label}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border ${
-                        sig.ok
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        liveDemoStatus.reachable
+                          ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
                           : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
                       }`}
                     >
-                      {sig.ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                      <span>{sig.label}</span>
+                      {liveDemoStatus.reachable ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                      <span>
+                        Live Demo: {liveDemoStatus.reachable ? `200 OK · ${liveDemoStatus.latencyMs}ms` : `Failed (${liveDemoStatus.statusCode || 'Unreachable'})`}
+                      </span>
                     </span>
-                  ))}
+                  )}
+                  {signals &&
+                    [
+                      { label: 'Backend API', ok: signals.hasBackendApi },
+                      { label: 'Real Database', ok: signals.hasDatabase },
+                      { label: 'AI / Agent SDK', ok: signals.hasAiIntegration },
+                      { label: 'Tests', ok: signals.hasTests },
+                    ].map((sig) => (
+                      <span
+                        key={sig.label}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border ${
+                          sig.ok
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                        }`}
+                      >
+                        {sig.ok ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                        <span>{sig.label}</span>
+                      </span>
+                    ))}
                 </div>
               )}
 

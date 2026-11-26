@@ -154,12 +154,20 @@ export async function callSparkLLM(opts: CallSparkLLMOptions): Promise<{ text: s
       parts: [{ text: userPrompt }],
     });
 
+    const overallStart = Date.now();
+    // Try primary billed keys first without letting multi-key retries exceed reverse-proxy timeout
+    const activeKeys = geminiKeys.slice(0, 2);
+
     for (const model of modelChain) {
-      for (const apiKey of geminiKeys) {
+      if (Date.now() - overallStart > 70000) break;
+      for (const apiKey of activeKeys) {
+        if (Date.now() - overallStart > 70000) break;
         try {
           const controller = new AbortController();
-          const isDeep = model.includes('4-') || model.includes('pro');
-          const timer = setTimeout(() => controller.abort(), isDeep ? 45000 : timeoutMs);
+          const isHydrogen = model.includes('4-');
+          const isPro = model.includes('pro');
+          const attemptTimeout = isHydrogen ? 35000 : isPro ? 28000 : Math.min(timeoutMs, 18000);
+          const timer = setTimeout(() => controller.abort(), attemptTimeout);
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
           const generationConfig: Record<string, any> = { temperature: temp };
@@ -185,9 +193,13 @@ export async function callSparkLLM(opts: CallSparkLLMOptions): Promise<{ text: s
               const label = tier === 'deep' ? 'KΛ-Pro' : 'KΛ-1';
               return { text: text.trim(), engine: label };
             }
+          } else if (res.status === 400) {
+            // Schema/request issue on this model variant; skip trying more keys for same model
+            break;
           }
         } catch {
-          // Try next key/model in cascade
+          // If Hydrogen/Pro timed out on the primary billed key, jump straight to next model in chain
+          break;
         }
       }
     }

@@ -229,7 +229,15 @@ export function ProblemAnalyzerView({
   );
 }
 
-export function DemoQaView({ demoQa, repoScanned }: { demoQa: any; repoScanned: any }) {
+export function DemoQaView({
+  demoQa,
+  repoScanned,
+  liveDemoStatus,
+}: {
+  demoQa: any;
+  repoScanned: any;
+  liveDemoStatus?: any;
+}) {
   const [elapsedSec, setElapsedSec] = useState(0);
   const [running, setRunning] = useState(false);
   const [revealedQs, setRevealedQs] = useState<Record<number, boolean>>({});
@@ -262,6 +270,15 @@ export function DemoQaView({ demoQa, repoScanned }: { demoQa: any; repoScanned: 
           {repoScanned && (
             <div className="text-[11px] text-emerald-300 font-mono">
               Grounded in {repoScanned.repoName} ({repoScanned.sha || 'HEAD'})
+            </div>
+          )}
+          {liveDemoStatus && (
+            <div
+              className={`text-[11px] font-mono ${
+                liveDemoStatus.reachable ? 'text-cyan-300' : 'text-rose-300'
+              }`}
+            >
+              Live Demo: {liveDemoStatus.reachable ? `200 OK · ${liveDemoStatus.latencyMs}ms (${liveDemoStatus.detectedFramework})` : `Failed (${liveDemoStatus.statusCode || 'Unreachable'})`}
             </div>
           )}
         </div>
@@ -368,7 +385,15 @@ export function DemoQaView({ demoQa, repoScanned }: { demoQa: any; repoScanned: 
   );
 }
 
-export function RepoPackView({ pack, repoScanned }: { pack: any; repoScanned: any }) {
+export function RepoPackView({
+  pack,
+  repoScanned,
+  liveDemoStatus,
+}: {
+  pack: any;
+  repoScanned: any;
+  liveDemoStatus?: any;
+}) {
   const [copiedKey, setCopiedKey] = useState('');
   const copy = (k: string, val: string) => {
     navigator.clipboard.writeText(val || '');
@@ -387,9 +412,18 @@ export function RepoPackView({ pack, repoScanned }: { pack: any; repoScanned: an
 
   return (
     <div className="space-y-4">
-      {repoScanned && (
-        <div className="text-[11px] text-emerald-300 font-mono">
-          Matched to live GitHub repo {repoScanned.repoName} ({repoScanned.sha || 'HEAD'})
+      {(repoScanned || liveDemoStatus) && (
+        <div className="flex flex-wrap gap-3 text-[11px] font-mono">
+          {repoScanned && (
+            <span className="text-emerald-300">
+              Matched to GitHub {repoScanned.repoName} ({repoScanned.sha || 'HEAD'})
+            </span>
+          )}
+          {liveDemoStatus && (
+            <span className={liveDemoStatus.reachable ? 'text-cyan-300' : 'text-rose-300'}>
+              Live Demo: {liveDemoStatus.reachable ? `200 OK · ${liveDemoStatus.latencyMs}ms` : `Failed (${liveDemoStatus.statusCode || 'Unreachable'})`}
+            </span>
+          )}
         </div>
       )}
 
