@@ -236,7 +236,8 @@ export function filterAndRankQuestions(
   allQuestions: DuelQuestion[],
   criteria: QuestionMatchCriteria
 ): DuelQuestion[] {
-  const list = Array.isArray(allQuestions) && allQuestions.length > 0 ? allQuestions : DEFAULT_ARENA_QUESTIONS;
+  if (!Array.isArray(allQuestions) || allQuestions.length === 0) return [];
+  const list = allQuestions;
 
   const matchDuration = Number(criteria.timeLimit) || 300;
 

@@ -90,6 +90,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   const [timeLimit, setTimeLimit] = useState<number>(300);
 
   const selectCombatMode = (nextMode: CombatModeId) => {
+    setLobbyNotice('');
     setCombatMode(nextMode);
     let nextStack = algoLanguage;
     if (nextMode === 'blitz' && nextStack === 'web') {
@@ -102,6 +103,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   };
 
   const selectDifficulty = (nextDiff: 'easy' | 'medium' | 'hard') => {
+    setLobbyNotice('');
     setDifficulty(nextDiff);
     const smartSecs = getSmartDurationSeconds(combatMode, nextDiff, algoLanguage);
     setTimeLimit(smartSecs);
@@ -109,6 +111,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   };
 
   const selectStackLanguage = (nextStack: StackLanguage) => {
+    setLobbyNotice('');
     setAlgoLanguage(nextStack);
     if (combatMode === 'custom') {
       const smartSecs = getSmartDurationSeconds(combatMode, difficulty, nextStack);
@@ -133,8 +136,10 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   const [roundWins, setRoundWins] = useState<{ you: number; rival: number }>({ you: 0, rival: 0 });
 
   // Active Battle HUD + Code Buffers
-  const questionPoolRef = useRef<DuelQuestion[]>(DEFAULT_ARENA_QUESTIONS);
-  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(enrichQuestion(initialQuestion || DEFAULT_ARENA_QUESTIONS[0]));
+  const questionPoolRef = useRef<DuelQuestion[]>([]);
+  const [availableQuestionsCount, setAvailableQuestionsCount] = useState<number | null>(null);
+  const [lobbyNotice, setLobbyNotice] = useState<string>('');
+  const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(enrichQuestion(initialQuestion));
   const [activeTab, setActiveTab] = useState<EditorTab>('python');
   const [htmlCode, setHtmlCode] = useState<string>('');
   const [cssCode, setCssCode] = useState<string>('');
@@ -215,11 +220,12 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       })
       .catch(() => {});
 
-    fetch('/api/arena/questions', { cache: 'no-store' })
+    fetch('/api/arena/questions?all=true', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (Array.isArray(d?.questions) && d.questions.length > 0) {
+        if (Array.isArray(d?.questions)) {
           questionPoolRef.current = d.questions;
+          setAvailableQuestionsCount(d.questions.length);
         }
       })
       .catch(() => {});
@@ -288,9 +294,9 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     []
   );
 
-  // Pick next question based on current Lobby configuration (prioritizes Admin Control Center questions)
+  // Pick next question based on current Lobby configuration (returns null if Admin bank has no matching question)
   const pickQuestionForConfig = useCallback(
-    async (mode: CombatModeId, lang: StackLanguage, diff: 'easy' | 'medium' | 'hard', secs: number) => {
+    async (mode: CombatModeId, lang: StackLanguage, diff: 'easy' | 'medium' | 'hard', secs: number): Promise<DuelQuestion | null> => {
       if (initialQuestion) return enrichQuestion(initialQuestion);
       const { arena, bugDomain, tags } = mapModeToConfig(mode, lang, webTags);
       const seenIds = getStoredSeenQuestionIds();
@@ -306,8 +312,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         });
         const res = await fetch(`/api/arena/questions?${qs.toString()}`, { cache: 'no-store' });
         const d = await res.json();
-        if (d?.questions?.length) {
-          questionPoolRef.current = d.questions;
+        if (Array.isArray(d?.questions) && d.questions.length > 0) {
           chosen = selectBestQuestion(d.questions, {
             arena,
             bugDomain,
@@ -318,17 +323,28 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
           });
         }
       } catch {}
-      if (!chosen) {
-        chosen = selectBestQuestion(questionPoolRef.current, {
-          arena,
-          bugDomain,
-          selectedTags: tags,
-          difficulty: diff,
-          timeLimit: mode === 'bug_hunt' ? undefined : secs,
-          seenQuestionIds: seenIds,
+      if (!chosen && questionPoolRef.current.length > 0) {
+        const hasMatch = questionPoolRef.current.some((q) => {
+          if (q.arena !== arena) return false;
+          if (arena === 'bug_hunt' && bugDomain) {
+            const qIsWeb = q.bugDomain === 'web' || Boolean(q.targetComponentHtml);
+            return bugDomain === 'web' ? qIsWeb : !qIsWeb;
+          }
+          return true;
         });
+        if (hasMatch) {
+          chosen = selectBestQuestion(questionPoolRef.current, {
+            arena,
+            bugDomain,
+            selectedTags: tags,
+            difficulty: diff,
+            timeLimit: mode === 'bug_hunt' ? undefined : secs,
+            seenQuestionIds: seenIds,
+          });
+        }
       }
-      if (chosen?.id) persistSeenQuestionId(chosen.id);
+      if (!chosen) return null;
+      if (chosen.id) persistSeenQuestionId(chosen.id);
       return enrichQuestion(chosen);
     },
     [initialQuestion, webTags]
@@ -420,10 +436,16 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   // Launch 1-click Quick Blitz / Bug Hunt / Web Clash OR Warmup vs Ghost
   const launchInstantMatch = async (ghostOnly: boolean) => {
     if (usernameStatus === 'taken') return;
-    if (audioEnabled) playBattleSlamSound();
-
-    const code = `KBX-${Math.floor(1000 + Math.random() * 9000)}`;
+    setLobbyNotice('');
     const duration = combatMode === 'bug_hunt' ? 60 : (timeLimit || getSmartDurationSeconds(combatMode, difficulty, algoLanguage));
+    const chosenQ = await pickQuestionForConfig(combatMode, algoLanguage, difficulty, duration);
+    if (!chosenQ) {
+      setLobbyNotice('No questions published yet for this selection. Add challenges in Admin Control Center → Battle Arena.');
+      return;
+    }
+
+    if (audioEnabled) playBattleSlamSound();
+    const code = `KBX-${Math.floor(1000 + Math.random() * 9000)}`;
     setRoomCode(code);
     setIsHost(true);
     setTeamSize('1v1');
@@ -432,11 +454,9 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setEloBefore(stats.elo);
     setRoundNumber(1);
     setRoundWins({ you: 0, rival: 0 });
+    loadQuestionIntoWorkspace(chosenQ, duration, algoLanguage, combatMode);
     setFaceOffStatus(ghostOnly ? 'locked' : 'scanning');
     setStage('faceoff');
-
-    const chosenQ = await pickQuestionForConfig(combatMode, algoLanguage, difficulty, duration);
-    loadQuestionIntoWorkspace(chosenQ, duration, algoLanguage, combatMode);
 
     const { arena, bugDomain, tags } = mapModeToConfig(combatMode, algoLanguage, webTags);
     fetch('/api/arena/rooms', {
@@ -468,17 +488,21 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
   // Launch Custom / 2v2 Private Room Lobby
   const createCustomRoom = async () => {
     if (usernameStatus === 'taken') return;
-    if (audioEnabled) playArcadeCoinSound();
+    setLobbyNotice('');
+    const chosenQ = await pickQuestionForConfig(combatMode, algoLanguage, difficulty, timeLimit);
+    if (!chosenQ) {
+      setLobbyNotice('No questions published yet for this Custom selection. Add challenges in Admin Control Center → Battle Arena.');
+      return;
+    }
 
+    if (audioEnabled) playArcadeCoinSound();
     const code = `KBX-${Math.floor(1000 + Math.random() * 9000)}`;
     setRoomCode(code);
     setIsHost(true);
     setIsGhostDuel(false);
     setEloBefore(stats.elo);
-    setStage('room');
-
-    const chosenQ = await pickQuestionForConfig(combatMode, algoLanguage, difficulty, timeLimit);
     loadQuestionIntoWorkspace(chosenQ, timeLimit, algoLanguage, combatMode);
+    setStage('room');
 
     const { arena, bugDomain, tags } = mapModeToConfig(combatMode, algoLanguage, webTags);
     try {
@@ -663,14 +687,14 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       setRivalActivityText('TYPING');
       setRivalLine(Math.min(14, 2 + Math.floor((elapsed - 5) / 4)));
 
-      if (elapsed >= t1 && passed < 1 && totalTests >= 1) {
+      if (elapsed >= t1 && passed < 1 && totalTests >= 2) {
         passed = 1;
         setRivalTestsPassed(1);
         setRivalToast(`🔥 ${rivalProfile.name} passed Case 1/${totalTests}`);
-      } else if (elapsed >= t2 && passed < Math.min(2, totalTests)) {
-        passed = Math.min(2, totalTests);
-        setRivalTestsPassed(passed);
-        setRivalToast(`🔥 ${rivalProfile.name} passed Case ${passed}/${totalTests}`);
+      } else if (elapsed >= t2 && passed < Math.min(2, Math.max(1, totalTests - 1)) && totalTests >= 3) {
+        passed = 2;
+        setRivalTestsPassed(2);
+        setRivalToast(`🔥 ${rivalProfile.name} passed Case 2/${totalTests}`);
       } else if (elapsed >= tFinish && passed < totalTests) {
         passed = totalTests;
         setRivalTestsPassed(totalTests);
@@ -678,7 +702,14 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       }
     }, 1200);
     return () => clearInterval(iv);
-  }, [stage, isGhostDuel, timeLimit, rivalProfile, totalTests]);
+  }, [stage, isGhostDuel, timeLimit, rivalProfile, totalTests, finalizeMatchResult]);
+
+  // Immediate match termination invariant: as soon as Rival completes ALL tests, Rival wins
+  useEffect(() => {
+    if (stage === 'battle' && totalTests > 0 && rivalTestsPassed >= totalTests) {
+      finalizeMatchResult('rival');
+    }
+  }, [stage, rivalTestsPassed, totalTests, finalizeMatchResult]);
 
   // Anti-cheat tab/window focus sentinel during active battle
   useEffect(() => {
@@ -954,6 +985,9 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     selectStackLanguage,
     matchFormat,
     setMatchFormat,
+    availableQuestionsCount,
+    lobbyNotice,
+    setLobbyNotice,
     teamSize,
     setTeamSize,
     timeLimit,

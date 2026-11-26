@@ -98,27 +98,8 @@ export async function POST(request: NextRequest) {
     const matchDuration = Number(timeLimit) || 300;
     let finalQuestion = question;
     try {
-      const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
-        'arena_duel_questions',
-        DEFAULT_ARENA_QUESTIONS
-      );
-      const rawDeleted = await getMasterControlSubkey<string[]>('deleted_arena_question_ids', []);
-      const deletedSet = new Set<string>(
-        Array.isArray(rawDeleted) ? rawDeleted.map((id) => String(id).trim().toLowerCase()) : []
-      );
-
-      const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
-      const combined: DuelQuestion[] = [];
-      for (const q of adminList) {
-        if (q && q.id && !deletedSet.has(q.id.toLowerCase())) {
-          combined.push(q);
-        }
-      }
-      for (const defQ of DEFAULT_ARENA_QUESTIONS) {
-        if (!deletedSet.has(defQ.id.toLowerCase()) && !combined.some((q) => q.id === defQ.id)) {
-          combined.push(defQ);
-        }
-      }
+      const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>('arena_duel_questions', []);
+      const combined: DuelQuestion[] = Array.isArray(storedQuestions) ? storedQuestions.filter((q) => Boolean(q && q.id)) : [];
 
       // Check if client provided a valid question that strictly matches the user's selected options
       const clientTags = (question?.tags || []).map((t: string) => t.toLowerCase().trim());

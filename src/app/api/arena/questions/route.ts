@@ -8,10 +8,11 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-// GET: Fetch questions filtered by arena, difficulty, duration & tags
+// GET: Fetch Admin-curated Battle Arena questions (empty by default until Admin adds questions)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const listAll = searchParams.get('all') === 'true';
     const arena = searchParams.get('arena') || undefined;
     const bugDomain = (searchParams.get('bugDomain') as 'web' | 'logic') || undefined;
     const difficulty = (searchParams.get('difficulty') as 'easy' | 'medium' | 'hard') || undefined;
@@ -21,45 +22,24 @@ export async function GET(request: NextRequest) {
     const seenParam = searchParams.get('seenIds');
     const seenQuestionIds = seenParam ? seenParam.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean) : [];
 
-    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
-      'arena_duel_questions',
-      DEFAULT_ARENA_QUESTIONS
-    );
+    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>('arena_duel_questions', []);
+    const combined: DuelQuestion[] = Array.isArray(storedQuestions) ? storedQuestions.filter((q) => Boolean(q && q.id)) : [];
 
-    const rawDeleted = await getMasterControlSubkey<string[]>('deleted_arena_question_ids', []);
-    const deletedSet = new Set<string>(
-      Array.isArray(rawDeleted) ? rawDeleted.map((id) => String(id).trim().toLowerCase()) : []
-    );
+    const outputList = listAll || !arena
+      ? combined
+      : filterAndRankQuestions(combined, {
+          arena,
+          bugDomain,
+          selectedTags: requestedTags,
+          difficulty,
+          timeLimit,
+          seenQuestionIds,
+        });
 
-    const adminList = Array.isArray(storedQuestions) ? storedQuestions : [];
-    // Filter out deleted questions
-    const combined: DuelQuestion[] = [];
-    for (const q of adminList) {
-      if (q && q.id && !deletedSet.has(q.id.toLowerCase())) {
-        combined.push(q);
-      }
-    }
-
-    // Append non-deleted default questions (deduped)
-    for (const defQ of DEFAULT_ARENA_QUESTIONS) {
-      if (!deletedSet.has(defQ.id.toLowerCase()) && !combined.some((q) => q.id === defQ.id)) {
-        combined.push(defQ);
-      }
-    }
-
-    const filtered = filterAndRankQuestions(combined, {
-      arena: arena || '',
-      bugDomain,
-      selectedTags: requestedTags,
-      difficulty,
-      timeLimit,
-      seenQuestionIds,
-    });
-
-    const sanitized = filtered.map((q) => ({
+    const sanitized = outputList.map((q) => ({
       ...q,
       testCases: (q.testCases || []).map((tc) => {
-        if (tc.isHidden) {
+        if (tc.isHidden && !listAll) {
           return {
             ...tc,
             input: '[Hidden Test Case]',
@@ -85,7 +65,7 @@ export async function GET(request: NextRequest) {
     );
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err.message, questions: DEFAULT_ARENA_QUESTIONS },
+      { success: false, error: err.message, questions: [] },
       { status: 200 }
     );
   }
@@ -100,10 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
-      'arena_duel_questions',
-      DEFAULT_ARENA_QUESTIONS
-    );
+    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>('arena_duel_questions', []);
 
     const newQuestion: DuelQuestion = {
       id: body.id || `q-${Date.now()}`,
@@ -131,7 +108,7 @@ export async function POST(request: NextRequest) {
       validationCriteria: Array.isArray(body.validationCriteria) ? body.validationCriteria : [],
     };
 
-    const currentList = Array.isArray(storedQuestions) ? [...storedQuestions] : [...DEFAULT_ARENA_QUESTIONS];
+    const currentList = Array.isArray(storedQuestions) ? [...storedQuestions] : [];
     const existingIndex = currentList.findIndex((q) => q.id === newQuestion.id);
 
     if (existingIndex >= 0) {
@@ -153,7 +130,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: Admin deletes a question by ID
+// DELETE: Admin deletes a single question by ID or clears all questions (?all=true)
 export async function DELETE(request: NextRequest) {
   try {
     const auth = await verifyAdminSession(request);
@@ -162,25 +139,27 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+    const deleteAll = searchParams.get('all') === 'true';
     const questionId = searchParams.get('id');
+
+    if (deleteAll) {
+      await updateMasterControlSubkey('arena_duel_questions', []);
+      return NextResponse.json({
+        success: true,
+        message: 'All Battle Arena questions removed from server',
+        remaining: 0,
+      });
+    }
 
     if (!questionId) {
       return NextResponse.json({ error: 'Question ID is required' }, { status: 400 });
     }
 
-    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>(
-      'arena_duel_questions',
-      DEFAULT_ARENA_QUESTIONS
-    );
-
-    const currentList = Array.isArray(storedQuestions) ? [...storedQuestions] : [...DEFAULT_ARENA_QUESTIONS];
+    const storedQuestions = await getMasterControlSubkey<DuelQuestion[]>('arena_duel_questions', []);
+    const currentList = Array.isArray(storedQuestions) ? [...storedQuestions] : [];
     const updatedList = currentList.filter((q) => q.id !== questionId);
 
     await updateMasterControlSubkey('arena_duel_questions', updatedList);
-
-    const deletedIds = await getMasterControlSubkey<string[]>('deleted_arena_question_ids', []);
-    const updatedDeletedIds = Array.from(new Set([...(Array.isArray(deletedIds) ? deletedIds : []), questionId]));
-    await updateMasterControlSubkey('deleted_arena_question_ids', updatedDeletedIds);
 
     return NextResponse.json({
       success: true,

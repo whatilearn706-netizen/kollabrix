@@ -449,7 +449,13 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                 )}
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons & Empty Bank Notice */}
+              {engine.lobbyNotice && (
+                <div className="px-4 py-2.5 rounded-xl bg-amber-950/50 border border-amber-500/40 text-xs font-mono text-amber-200">
+                  {engine.lobbyNotice}
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
                 <button
                   type="button"

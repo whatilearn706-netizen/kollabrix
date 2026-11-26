@@ -1,143 +1,69 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Zap,
-  Sparkles,
-  Plus,
-  Save,
-  RotateCw,
-  Code2,
-  Layers,
-  Terminal,
-  Check,
-  Flame,
-  Clock,
-  Play,
-  FileCode,
-  Tag,
   AlertCircle,
-  HelpCircle,
-  Trash2,
-  Eye,
+  Check,
+  Code2,
+  Play,
   Power,
   Radio,
-  CheckCircle2,
-  XCircle,
+  RotateCw,
   ShieldCheck,
   Trophy,
-  Swords,
-  Settings,
-  Bug,
+  Zap,
 } from 'lucide-react';
-import { DEFAULT_ARENA_QUESTIONS, DuelQuestion, ArenaCategory } from '@/types/arenaDuel';
+import { DuelQuestion } from '@/types/arenaDuel';
 import { supabase } from '@/lib/supabase/client';
-import { CinematicArenaTransition } from '@/components/arena/CinematicArenaTransition';
 import { FullArenaExperience } from '@/components/arena/FullArenaExperience';
 import { AdminTournamentGenerator } from './arena/AdminTournamentGenerator';
 import { AdminActiveDuelsList } from './arena/AdminActiveDuelsList';
 import { AdminSecretSpectatorView } from './arena/AdminSecretSpectatorView';
+import { AdminQuestionStudio } from './arena/AdminQuestionStudio';
 
 interface AdminArenaTabProps {
   authToken?: string;
 }
 
+/**
+ * Redesigned Obsidian Titanium Battle Arena controller for Admin Control Center.
+ * Syncs live challenges directly with the 4-stage /arena experience.
+ */
 export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
-  const [arenaActiveSubTab, setArenaActiveSubTab] = useState<'tournament' | 'questions' | 'maintenance'>('tournament');
-  const [spectatingRoomCode, setSpectatingRoomCode] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<DuelQuestion[]>(DEFAULT_ARENA_QUESTIONS);
+  const [subTab, setSubTab] = useState<'questions' | 'tournament' | 'maintenance'>('questions');
+  const [questions, setQuestions] = useState<DuelQuestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedArena, setSelectedArena] = useState<ArenaCategory | 'all'>('all');
-  const [selectedTag, setSelectedTag] = useState<string>('all');
-  const [selectedDuration, setSelectedDuration] = useState<number | 'all'>('all');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | 'all'>('all');
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [spectatingRoomCode, setSpectatingRoomCode] = useState<string | null>(null);
 
-  // Live test transition states
-  const [isTestTransitionActive, setIsTestTransitionActive] = useState(false);
   const [isTestLobbyOpen, setIsTestLobbyOpen] = useState(false);
   const [selectedTestQuestion, setSelectedTestQuestion] = useState<DuelQuestion | null>(null);
 
-  // Arena Live / Maintenance Status
   const [isArenaLive, setIsArenaLive] = useState(true);
   const [maintenanceMsg, setMaintenanceMsg] = useState(
-    'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
+    'Battle Arena is temporarily offline for challenge updates. Please check back shortly!'
   );
-  const [statusUpdatedAt, setStatusUpdatedAt] = useState<string>('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  // New question form state
-  const [newTitle, setNewTitle] = useState('');
-  const [newArena, setNewArena] = useState<ArenaCategory>('web_dev');
-  const [newTags, setNewTags] = useState<string>('html,css');
-  const [newDifficulty, setNewDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
-  const [newTimeLimit, setNewTimeLimit] = useState(300);
-  const [newDesc, setNewDesc] = useState('');
-  const [newBugDomain, setNewBugDomain] = useState<'web' | 'logic'>('web');
-  const [newStarterHtml, setNewStarterHtml] = useState('<div class="hero-banner">\n  <!-- Build your component here -->\n</div>');
-  const [newStarterCss, setNewStarterCss] = useState('.hero-banner {\n  /* Add styling here */\n}');
-  const [newStarterJs, setNewStarterJs] = useState('// Event listener code\n');
-  const [newStarterPython, setNewStarterPython] = useState('# Python starter code\n');
-  const [newStarterJava, setNewStarterJava] = useState('// Java starter code\n');
-  const [newStarterCpp, setNewStarterCpp] = useState('// C++ starter code\n');
-  const [newSampleInput, setNewSampleInput] = useState('');
-  const [newSampleOutput, setNewSampleOutput] = useState('');
-  const [newCodeWithBug, setNewCodeWithBug] = useState('// Enter code with bug here\n');
-  const [newTargetHtml, setNewTargetHtml] = useState('<div class="target-card">\n  <h3>Target Card</h3>\n  <p>Design blueprint</p>\n</div>');
-  const [newTargetCss, setNewTargetCss] = useState('.target-card {\n  background: #0f172a;\n  padding: 16px;\n  border-radius: 10px;\n  color: #fff;\n}');
-  const [newTargetJs, setNewTargetJs] = useState('// Target interaction or event handler\n');
-
-  // Dynamic interactive test cases list
-  const [testCasesList, setTestCasesList] = useState<Array<{ input: string; expectedOutput: string; description: string }>>([
-    { input: 'nums = [3, 1, 2, 4]', expectedOutput: '[2, 4, 3, 1]', description: 'Even and odd parity separation' },
-    { input: 'nums = [0, 1, 2]', expectedOutput: '[0, 2, 1]', description: 'Boundary and single digit check' },
-  ]);
-
-  const handleAddTestCase = () => {
-    setTestCasesList((prev) => [
-      ...prev,
-      { input: '', expectedOutput: '', description: `Test Case ${prev.length + 1}` },
-    ]);
-  };
-
-  const handleRemoveTestCase = (index: number) => {
-    setTestCasesList((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUpdateTestCase = (index: number, field: 'input' | 'expectedOutput' | 'description', val: string) => {
-    setTestCasesList((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: val };
-      return updated;
-    });
+  const getAuthHeaders = async (): Promise<Record<string, string>> => {
+    let token = authToken;
+    if (!token) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        token = data.session?.access_token;
+      } catch {}
+    }
+    return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
   const fetchQuestions = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/arena/questions?_t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/arena/questions?all=true&_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
-        if (data.questions && Array.isArray(data.questions)) {
-          let qList = data.questions;
-          try {
-            const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
-            if (Array.isArray(localDel) && localDel.length > 0) {
-              const delSet = new Set(localDel.map((x: string) => String(x).toLowerCase().trim()));
-              qList = qList.filter(
-                (q: any) =>
-                  !delSet.has((q.id || '').toLowerCase().trim()) &&
-                  !delSet.has((q.title || '').toLowerCase().trim())
-              );
-            }
-          } catch {}
-          setQuestions(qList);
-        }
+        setQuestions(Array.isArray(data?.questions) ? data.questions : []);
       }
-    } catch (err) {
-      console.error('Failed to load arena questions:', err);
     } finally {
       setIsLoading(false);
     }
@@ -150,96 +76,8 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         const data = await res.json();
         setIsArenaLive(data.isLive !== false);
         if (data.maintenanceMessage) setMaintenanceMsg(data.maintenanceMessage);
-        if (data.updatedAt) setStatusUpdatedAt(data.updatedAt);
       }
-    } catch (err) {
-      console.error('Failed to load arena status:', err);
-    }
-  };
-
-  const toggleArenaLiveStatus = async (targetLive: boolean) => {
-    setIsUpdatingStatus(true);
-    setStatusMsg(null);
-    try {
-      let token = authToken;
-      if (!token) {
-        try {
-          const { supabase } = await import('@/lib/supabase/client');
-          const { data } = await supabase.auth.getSession();
-          token = data.session?.access_token;
-        } catch {}
-      }
-
-      const res = await fetch('/api/arena/status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          isLive: targetLive,
-          maintenanceMessage: maintenanceMsg,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setIsArenaLive(data.isLive);
-        setStatusUpdatedAt(data.updatedAt);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('kollabrix:arena_status_changed', { detail: { isLive: data.isLive } }));
-          try {
-            localStorage.setItem('kollabrix_arena_is_live', String(data.isLive));
-          } catch {}
-        }
-        setStatusMsg({
-          text: data.message || `Arena status updated to ${data.isLive ? 'LIVE' : 'MAINTENANCE'}`,
-          type: 'success',
-        });
-      } else {
-        setStatusMsg({ text: data.error || 'Failed to update arena status', type: 'error' });
-      }
-    } catch (err: any) {
-      setStatusMsg({ text: err.message || 'Network error updating arena status', type: 'error' });
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
-  const saveMaintenanceNotice = async () => {
-    setIsUpdatingStatus(true);
-    setStatusMsg(null);
-    try {
-      let token = authToken;
-      if (!token) {
-        try {
-          const { supabase } = await import('@/lib/supabase/client');
-          const { data } = await supabase.auth.getSession();
-          token = data.session?.access_token;
-        } catch {}
-      }
-
-      const res = await fetch('/api/arena/status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          isLive: isArenaLive,
-          maintenanceMessage: maintenanceMsg,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setStatusMsg({ text: 'Maintenance message saved successfully!', type: 'success' });
-      } else {
-        setStatusMsg({ text: data.error || 'Failed to save maintenance message', type: 'error' });
-      }
-    } catch (err: any) {
-      setStatusMsg({ text: err.message || 'Network error saving notice', type: 'error' });
-    } finally {
-      setIsUpdatingStatus(false);
-    }
+    } catch {}
   };
 
   useEffect(() => {
@@ -247,307 +85,111 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
     fetchArenaStatus();
   }, []);
 
-  const handleSaveNewQuestion = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim()) {
-      setStatusMsg({ text: 'Please provide a title for the duel question.', type: 'error' });
-      return;
-    }
-
-    setIsSaving(true);
+  const updateArenaStatus = async (nextLive: boolean, msg: string) => {
+    setIsUpdatingStatus(true);
     setStatusMsg(null);
-
-    const isWeb = newArena === 'web_dev' || (newArena === 'bug_hunt' && newBugDomain === 'web');
-    const parsedTags = newTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
-    const hasAnyWebTag = parsedTags.some((t) => ['html', 'css', 'javascript', 'js'].includes(t));
-    const showHtml = hasAnyWebTag ? parsedTags.includes('html') : true;
-    const showCss = hasAnyWebTag ? parsedTags.includes('css') : true;
-    const showJs = hasAnyWebTag ? (parsedTags.includes('javascript') || parsedTags.includes('js')) : false;
-
-    const hasAnyAlgoTag = parsedTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
-    const showPython = hasAnyAlgoTag ? parsedTags.includes('python') : true;
-    const showJava = hasAnyAlgoTag ? parsedTags.includes('java') : true;
-    const showCpp = hasAnyAlgoTag ? (parsedTags.includes('cpp') || parsedTags.includes('c++')) : true;
-
-    // For Web Dev, automated test cases are derived strictly from active tags
-    let finalTestCases = testCasesList.filter((tc) => tc.input.trim() || tc.expectedOutput.trim());
-    if (isWeb) {
-      finalTestCases = [];
-      if (showHtml) {
-        finalTestCases.push({
-          input: 'htmlWordsAndStructure',
-          expectedOutput: 'true',
-          description: 'Semantic HTML Structure & Content / Word Spelling Alignment',
-        });
-      }
-      if (showCss) {
-        finalTestCases.push({
-          input: 'cssCoordinatesAndLayout',
-          expectedOutput: 'true',
-          description: 'CSS Spatial Coordinates & Layout Graph (±30% Tolerance)',
-        });
-      }
-      if (showJs) {
-        finalTestCases.push({
-          input: 'jsInteractiveBehavior',
-          expectedOutput: 'true',
-          description: 'JavaScript DOM Interactivity & Event Handlers',
-        });
-      }
-      if (finalTestCases.length === 0) {
-        finalTestCases.push({
-          input: 'htmlWordsAndStructure',
-          expectedOutput: 'true',
-          description: 'Semantic HTML Structure & Content / Word Spelling Alignment',
-        });
-      }
-    } else if (finalTestCases.length === 0) {
-      finalTestCases = [
-        {
-          input: newSampleInput || 'sampleInput',
-          expectedOutput: newSampleOutput || 'sampleOutput',
-          description: 'Automated evaluation check',
-        },
-      ];
-    }
-
-    const questionPayload: DuelQuestion = {
-      id: `q-${Date.now()}`,
-      arena: newArena,
-      title: newTitle.trim(),
-      description: newDesc.trim(),
-      tags: parsedTags,
-      difficulty: newDifficulty,
-      timeLimitSeconds: Number(newTimeLimit) || 300,
-      bugDomain: newArena === 'bug_hunt' ? newBugDomain : undefined,
-      codeWithBug: newArena === 'bug_hunt' ? newCodeWithBug : undefined,
-      targetPreviewTitle: newTitle.trim(),
-      targetComponentHtml: showHtml ? newTargetHtml : '',
-      targetComponentCss: showCss ? newTargetCss : '',
-      targetComponentJs: showJs ? newTargetJs : '',
-      starterHtml: showHtml ? newStarterHtml : '',
-      starterCss: showCss ? newStarterCss : '',
-      starterJs: showJs ? newStarterJs : '',
-      starterPython: showPython ? newStarterPython : '',
-      starterJava: showJava ? newStarterJava : '',
-      starterCpp: showCpp ? newStarterCpp : '',
-      sampleInput: newSampleInput,
-      sampleOutput: newSampleOutput,
-      testCases: finalTestCases,
-      validationCriteria: isWeb
-        ? [
-            showHtml && 'Word & spelling fidelity',
-            showCss && 'Bounding box coordinate match (±30%)',
-            showJs && 'Interactive DOM event execution',
-            'Zero console syntax crash',
-          ].filter(Boolean) as string[]
-        : ['Clean code structure', 'Zero runtime crash', 'Test cases passed'],
-    };
-
     try {
-      let activeToken = authToken;
-      if (!activeToken) {
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          activeToken = sessionData?.session?.access_token;
-        } catch {}
-      }
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-
-      const res = await fetch('/api/arena/questions', {
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/arena/status', {
         method: 'POST',
-        headers,
-        body: JSON.stringify(questionPayload),
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({ isLive: nextLive, maintenanceMessage: msg }),
       });
-
       const data = await res.json();
-      if (data.success) {
-        setStatusMsg({ text: 'Question published to server live question bank!', type: 'success' });
-        setQuestions((prev) => [questionPayload, ...prev]);
-        setIsAddingNew(false);
-        setNewTitle('');
-        setNewDesc('');
+      if (res.ok && data.success) {
+        setIsArenaLive(data.isLive);
+        setStatusMsg({
+          text: data.message || `Arena set to ${data.isLive ? 'LIVE' : 'MAINTENANCE'}`,
+          type: 'success',
+        });
       } else {
-        setStatusMsg({ text: data.error || 'Failed to save question', type: 'error' });
+        setStatusMsg({ text: data?.error || 'Failed to update Arena status', type: 'error' });
       }
     } catch (err: any) {
-      setStatusMsg({ text: err.message || 'Network error saving question', type: 'error' });
+      setStatusMsg({ text: err.message || 'Network error updating status', type: 'error' });
     } finally {
-      setIsSaving(false);
+      setIsUpdatingStatus(false);
     }
   };
-
-  const handleDeleteQuestion = async (questionId: string) => {
-    if (!confirm('Are you sure you want to permanently delete this duel question from the server?')) return;
-    try {
-      // 1. Immediately persist deletion in localStorage so it never reappears on refresh
-      try {
-        const localDel = JSON.parse(localStorage.getItem('tf_deleted_arena_q_ids') || '[]');
-        if (!localDel.includes(questionId)) {
-          localDel.push(questionId);
-          localStorage.setItem('tf_deleted_arena_q_ids', JSON.stringify(localDel));
-        }
-      } catch {}
-
-      // 2. Remove from state immediately
-      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
-      setStatusMsg({ text: 'Question removed from live arena question bank!', type: 'success' });
-
-      // 3. Sync deletion to server
-      let activeToken = authToken;
-      if (!activeToken) {
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          activeToken = sessionData?.session?.access_token;
-        } catch {}
-      }
-
-      const headers: Record<string, string> = {};
-      if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-
-      await fetch(`/api/arena/questions?id=${encodeURIComponent(questionId)}`, {
-        method: 'DELETE',
-        headers,
-      });
-    } catch (err: any) {
-      console.warn('Network notice on server delete:', err);
-    }
-  };
-
-  const filteredQuestions = questions.filter((q) => {
-    if (selectedArena !== 'all' && q.arena !== selectedArena) return false;
-    if (selectedTag !== 'all') {
-      const qTags = (q.tags || []).map((t) => t.toLowerCase().trim());
-      if (selectedTag === 'bug_html') {
-        if (!(q.arena === 'bug_hunt' && qTags.includes('html') && !qTags.includes('css') && !qTags.includes('javascript'))) {
-          return false;
-        }
-      } else if (selectedTag === 'bug_css') {
-        if (!(q.arena === 'bug_hunt' && qTags.includes('css') && !qTags.includes('javascript'))) {
-          return false;
-        }
-      } else if (selectedTag === 'bug_html_css_js') {
-        if (!(q.arena === 'bug_hunt' && qTags.includes('css') && qTags.includes('javascript'))) {
-          return false;
-        }
-      } else if (selectedTag === 'bug_html_js') {
-        if (!(q.arena === 'bug_hunt' && qTags.includes('javascript') && !qTags.includes('css'))) {
-          return false;
-        }
-      } else if (selectedTag === 'bug_web') {
-        if (!(q.arena === 'bug_hunt' && (q.bugDomain === 'web' || qTags.includes('bug_web') || Boolean(q.targetComponentHtml)))) {
-          return false;
-        }
-      } else if (!qTags.includes(selectedTag.toLowerCase().trim())) {
-        return false;
-      }
-    }
-    if (selectedDuration !== 'all' && Number(q.timeLimitSeconds) !== Number(selectedDuration)) {
-      return false;
-    }
-    if (
-      selectedDifficulty !== 'all' &&
-      (q.difficulty || 'medium').toLowerCase() !== selectedDifficulty.toLowerCase()
-    ) {
-      return false;
-    }
-    return true;
-  });
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-rose-950/40 via-purple-950/30 to-charcoal-900 border border-rose-500/20 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header */}
+      <div className="p-6 rounded-2xl bg-[#0A0E17] border border-white/15 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-white/[0.06] border border-white/15 text-white">
               <Zap className="w-5 h-5" />
             </span>
-            <h2 className="text-xl font-bold text-white tracking-tight">
-              2v2 Multiplayer Battleground & Question Engine
-            </h2>
+            <div>
+              <h2 className="text-lg font-black text-white tracking-tight">
+                Battle Arena Studio &amp; Challenge Engine
+              </h2>
+              <p className="text-xs text-slate-400">
+                Manage 1v1 Quick Blitz, 60s Bug Hunt, Web Pixel Clash &amp; Custom arena questions.
+              </p>
+            </div>
           </div>
-          <p className="mt-1 text-xs text-slate-300">
-            Real-time code duels ("Chess.com for Developers") with live fighting laptop in navbar, voxel shatter transition, and anti-cheat Fog of War.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* Test Trigger */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsTestLobbyOpen(true)}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white font-mono text-xs font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center gap-2"
+            onClick={() => {
+              setSelectedTestQuestion(null);
+              setIsTestLobbyOpen(true);
+            }}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-slate-100 via-white to-slate-200 text-slate-950 font-mono text-xs font-black flex items-center gap-1.5 cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Test Live Battle Arena</span>
+            <span>Preview Live Arena</span>
           </button>
-
           <button
             type="button"
             onClick={() => {
               fetchQuestions();
               fetchArenaStatus();
             }}
-            disabled={isLoading}
-            className="p-2 rounded-xl bg-charcoal-800 border border-charcoal-700 text-slate-300 hover:text-white transition-colors"
-            title="Refresh questions & arena status"
+            className="p-2 rounded-xl bg-[#05080F] border border-white/15 text-slate-300 hover:text-white cursor-pointer"
+            title="Refresh"
           >
             <RotateCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* ================= SUB-NAVIGATION TABS ================= */}
-      <div className="flex items-center gap-2 border-b border-charcoal-800 pb-2 overflow-x-auto">
-        <button
-          type="button"
-          onClick={() => setArenaActiveSubTab('tournament')}
-          className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-            arenaActiveSubTab === 'tournament'
-              ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-md shadow-rose-950/40'
-              : 'bg-charcoal-900 text-slate-400 hover:text-white border border-charcoal-800'
-          }`}
-        >
-          <Trophy className="w-3.5 h-3.5" />
-          <span>🏆 Tournament Desk & Secret Spectator</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setArenaActiveSubTab('questions')}
-          className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-            arenaActiveSubTab === 'questions'
-              ? 'bg-charcoal-800 text-white border border-charcoal-600 shadow-sm'
-              : 'bg-charcoal-900 text-slate-400 hover:text-white border border-charcoal-800'
-          }`}
-        >
-          <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-          <span>📝 Question & Challenge Engine</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setArenaActiveSubTab('maintenance')}
-          className={`px-4 py-2 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-            arenaActiveSubTab === 'maintenance'
-              ? 'bg-charcoal-800 text-white border border-charcoal-600 shadow-sm'
-              : 'bg-charcoal-900 text-slate-400 hover:text-white border border-charcoal-800'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>⚙️ Platform Status & Maintenance</span>
-        </button>
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-white/10 pb-2 overflow-x-auto">
+        {([
+          { id: 'questions', label: 'Question Studio', icon: Code2 },
+          { id: 'tournament', label: 'Live Rooms & Spectator', icon: Trophy },
+          { id: 'maintenance', label: 'Arena Status', icon: ShieldCheck },
+        ] as const).map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setSubTab(t.id)}
+              className={`px-4 py-2 rounded-xl font-mono text-xs font-bold flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                subTab === t.id
+                  ? 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950'
+                  : 'bg-[#0A0E17] text-slate-400 hover:text-white border border-white/10'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {statusMsg && (
         <div
-          className={`p-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 ${
+          className={`p-3 rounded-xl border text-xs font-mono flex items-center gap-2 ${
             statusMsg.type === 'success'
               ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
-              : 'bg-rose-950/50 border-rose-500/40 text-rose-300'
+              : 'bg-red-950/50 border-red-500/40 text-red-300'
           }`}
         >
           {statusMsg.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -555,1426 +197,82 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
         </div>
       )}
 
-      {/* ================= TAB 1: TOURNAMENT DESK & SECRET SPECTATOR ================= */}
-      {arenaActiveSubTab === 'tournament' && (
-        <div className="space-y-6 animate-fadeIn">
+      {subTab === 'questions' && (
+        <AdminQuestionStudio
+          questions={questions}
+          isLoading={isLoading}
+          authHeaders={getAuthHeaders}
+          onRefresh={fetchQuestions}
+          onStatus={setStatusMsg}
+          onTestQuestion={(q) => {
+            setSelectedTestQuestion(q);
+            setIsTestLobbyOpen(true);
+          }}
+        />
+      )}
+
+      {subTab === 'tournament' && (
+        <div className="space-y-6">
           {spectatingRoomCode && (
-            <AdminSecretSpectatorView
-              roomCode={spectatingRoomCode}
-              onClose={() => setSpectatingRoomCode(null)}
-            />
+            <AdminSecretSpectatorView roomCode={spectatingRoomCode} onClose={() => setSpectatingRoomCode(null)} />
           )}
-
-          <AdminTournamentGenerator
-            questions={questions}
-            onSpectateRoom={(code) => setSpectatingRoomCode(code)}
-          />
-
-          <AdminActiveDuelsList
-            activeSpectatingCode={spectatingRoomCode}
-            onSpectateRoom={(code) => setSpectatingRoomCode(code)}
-          />
+          <AdminTournamentGenerator questions={questions} onSpectateRoom={(c) => setSpectatingRoomCode(c)} />
+          <AdminActiveDuelsList activeSpectatingCode={spectatingRoomCode} onSpectateRoom={(c) => setSpectatingRoomCode(c)} />
         </div>
       )}
 
-      {/* ================= TAB 3: ARENA LIVE / MAINTENANCE CONTROLLER ================= */}
-      {arenaActiveSubTab === 'maintenance' && (
-      <div
-        className={`p-6 rounded-2xl border backdrop-blur-md transition-all shadow-xl animate-fadeIn ${
-          isArenaLive
-            ? 'bg-gradient-to-br from-emerald-950/30 via-slate-900/90 to-charcoal-900 border-emerald-500/40 shadow-emerald-950/30'
-            : 'bg-gradient-to-br from-rose-950/40 via-slate-900/90 to-charcoal-900 border-rose-500/50 shadow-rose-950/40'
-        }`}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          {/* Left: Master Status Indicator & Action */}
-          <div className="space-y-3 max-w-xl">
-            <div className="flex items-center gap-3">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-2 ${
-                  isArenaLive
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                }`}
-              >
-                <span
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    isArenaLive ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500 animate-ping'
-                  }`}
-                />
-                {isArenaLive ? 'BATTLE ARENA: LIVE (PUBLIC)' : 'BATTLE ARENA: OFFLINE (MAINTENANCE)'}
-              </span>
-              {statusUpdatedAt && (
-                <span className="text-[11px] font-mono text-slate-400">
-                  Updated: {new Date(statusUpdatedAt).toLocaleTimeString()}
-                </span>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">
-                {isArenaLive
-                  ? 'Battle Arena is Live for All Students'
-                  : 'Battle Arena is Suspended in Maintenance Mode'}
-              </h3>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                {isArenaLive
-                  ? 'Students can launch 1v1 and 2v2 duels from the navbar arcade laptop and direct /arena link. Matchmaking and compiler clusters are publicly active.'
-                  : 'Public access is restricted. Visitors to /arena see the high-tech maintenance screen with your custom announcement message.'}
-              </p>
-            </div>
-
-            {/* Master Action Button */}
-            <div className="pt-1 flex items-center gap-3">
-              {isArenaLive ? (
-                <button
-                  type="button"
-                  disabled={isUpdatingStatus}
-                  onClick={() => toggleArenaLiveStatus(false)}
-                  className="px-4 py-2.5 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white font-mono text-xs font-bold transition-all flex items-center gap-2 shadow-lg hover:shadow-rose-500/20 active:scale-95 disabled:opacity-50"
-                >
-                  <Power className="w-4 h-4" />
-                  <span>{isUpdatingStatus ? 'Updating...' : 'Set Arena to Maintenance Mode (Take Offline)'}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={isUpdatingStatus}
-                  onClick={() => toggleArenaLiveStatus(true)}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-slate-950 font-mono text-xs font-black transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/30 active:scale-95 disabled:opacity-50"
-                >
-                  <Power className="w-4 h-4 fill-current" />
-                  <span>{isUpdatingStatus ? 'Updating...' : '⚡ Bring Battle Arena Live to Public Now'}</span>
-                </button>
-              )}
-            </div>
+      {subTab === 'maintenance' && (
+        <div className="p-6 rounded-2xl bg-[#0A0E17] border border-white/15 flex flex-col lg:flex-row justify-between gap-6">
+          <div className="space-y-3">
+            <span
+              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-mono text-xs font-bold border ${
+                isArenaLive
+                  ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                  : 'bg-red-950/50 border-red-500/40 text-red-300'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${isArenaLive ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'}`} />
+              {isArenaLive ? 'BATTLE ARENA: LIVE' : 'BATTLE ARENA: MAINTENANCE'}
+            </span>
+            <p className="text-xs text-slate-400 max-w-md">
+              Toggle public visibility for /arena. Admins can still preview questions directly from Admin Control Center.
+            </p>
+            <button
+              type="button"
+              disabled={isUpdatingStatus}
+              onClick={() => updateArenaStatus(!isArenaLive, maintenanceMsg)}
+              className={`px-4 py-2 rounded-xl font-mono text-xs font-black flex items-center gap-2 cursor-pointer ${
+                isArenaLive
+                  ? 'bg-red-950/70 border border-red-500/40 text-red-200'
+                  : 'bg-gradient-to-r from-slate-100 to-slate-200 text-slate-950'
+              }`}
+            >
+              <Power className="w-3.5 h-3.5" />
+              <span>{isArenaLive ? 'Take Offline (Maintenance)' : 'Bring Arena Live'}</span>
+            </button>
           </div>
 
-          {/* Right: Maintenance Notice Configuration */}
-          <div className="lg:w-96 p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Radio className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Maintenance Notice</span>
-              </label>
-              <button
-                type="button"
-                disabled={isUpdatingStatus}
-                onClick={saveMaintenanceNotice}
-                className="px-2.5 py-1 rounded-lg bg-cyan-600/80 hover:bg-cyan-600 text-white font-mono text-[11px] font-bold transition-all disabled:opacity-50"
-              >
-                {isUpdatingStatus ? 'Saving...' : 'Save Notice'}
-              </button>
-            </div>
+          <div className="lg:w-96 space-y-2">
+            <label className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5" />
+              <span>Maintenance Notice</span>
+            </label>
             <textarea
               rows={2}
               value={maintenanceMsg}
               onChange={(e) => setMaintenanceMsg(e.target.value)}
-              placeholder="Enter message shown to visitors when offline..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-200 font-mono focus:border-cyan-400 focus:outline-none resize-none"
+              className="w-full p-2.5 rounded-xl bg-[#05080F] border border-white/15 font-mono text-xs text-white outline-none"
             />
-            <p className="text-[10px] text-slate-400 font-mono">
-              This message appears in the terminal modal when students attempt to access Battle Arena while offline.
-            </p>
-          </div>
-        </div>
-      </div>
-      )}
-
-      {/* ================= TAB 2: QUESTIONS & CHALLENGE ENGINE ================= */}
-      {arenaActiveSubTab === 'questions' && (
-        <div className="space-y-6 animate-fadeIn">
-      {/* Choose Options, Presets & Filter Bar */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-charcoal-900 border border-charcoal-800 space-y-4">
-        {/* Header & Quick Action */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-charcoal-800">
-          <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Choose Options & Match Presets</span>
-            </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Filter questions by duration, difficulty, and tags, or click a calibrated HTML challenge preset.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                setSelectedArena('all');
-                setSelectedTag('all');
-                setSelectedDuration('all');
-                setSelectedDifficulty('all');
-              }}
-              className="px-3 py-1.5 rounded-lg bg-charcoal-800 hover:bg-charcoal-750 text-slate-300 text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Reset all filters"
+              disabled={isUpdatingStatus}
+              onClick={() => updateArenaStatus(isArenaLive, maintenanceMsg)}
+              className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/15 font-mono text-xs font-bold text-white cursor-pointer"
             >
-              <RotateCw className="w-3 h-3" />
-              <span>Reset Options</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsAddingNew(!isAddingNew)}
-              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-sm cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>{isAddingNew ? 'Close Form' : 'Add New Duel Question'}</span>
+              Save Notice
             </button>
           </div>
         </div>
-
-        {/* Quick Presets for the 30 HTML Easy Questions */}
-        <div className="p-3 rounded-xl bg-charcoal-950/80 border border-cyan-500/20 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-mono font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-yellow-400" />
-              <span>Calibrated Easy HTML Choose Option Presets:</span>
-            </span>
-            <span className="text-[10px] font-mono text-slate-400">
-              30 Sec Lead Time Calibration
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedArena('web_dev');
-                setSelectedTag('html');
-                setSelectedDifficulty('easy');
-                setSelectedDuration(180);
-              }}
-              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 180
-                  ? 'bg-rose-500/20 border-rose-400 text-white shadow-md'
-                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs font-bold font-mono">
-                <span className="text-rose-400">⚡ 3-Min Blitz</span>
-                <span className="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded border border-rose-800">180s</span>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">10 Quick HTML Challenges</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedArena('web_dev');
-                setSelectedTag('html');
-                setSelectedDifficulty('easy');
-                setSelectedDuration(300);
-              }}
-              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 300
-                  ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
-                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs font-bold font-mono">
-                <span className="text-amber-400">🔥 5-Min Competitive</span>
-                <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">300s</span>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">10 Core HTML Challenges</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedArena('web_dev');
-                setSelectedTag('html');
-                setSelectedDifficulty('easy');
-                setSelectedDuration(600);
-              }}
-              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 600
-                  ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
-                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs font-bold font-mono">
-                <span className="text-emerald-400">🏆 10-Min Marathon</span>
-                <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">600s</span>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">10 Deep HTML Blueprints</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedArena('web_dev');
-                setSelectedTag('html');
-                setSelectedDifficulty('easy');
-                setSelectedDuration('all');
-              }}
-              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                selectedArena === 'web_dev' && selectedTag === 'html' && selectedDifficulty === 'easy' && selectedDuration === 'all'
-                  ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-md'
-                  : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs font-bold font-mono">
-                <span className="text-cyan-400">🌐 All HTML Easy</span>
-                <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">30 Qs</span>
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1">Complete 30 Question Bank</p>
-            </button>
-          </div>
-
-          {/* Quick Algorithm Duels Presets */}
-          <div className="pt-2 border-t border-charcoal-800/80">
-            <span className="text-[11px] font-mono text-amber-400 font-bold uppercase tracking-wider block mb-2">
-              ⚔️ Competitive Algorithm Duels (Java • Python • C++)
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('algorithms');
-                  setSelectedTag('java');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'algorithms' && selectedTag === 'java'
-                    ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-amber-400">☕ Java Duels</span>
-                  <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('algorithms');
-                  setSelectedTag('python');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'algorithms' && selectedTag === 'python'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-emerald-400">🐍 Python Duels</span>
-                  <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('algorithms');
-                  setSelectedTag('cpp');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'algorithms' && selectedTag === 'cpp'
-                    ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-cyan-400">⚡ C++ Duels</span>
-                  <span className="text-[10px] bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('algorithms');
-                  setSelectedTag('all');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'algorithms' && selectedTag === 'all'
-                    ? 'bg-purple-500/20 border-purple-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-purple-400">🏆 All Algorithms</span>
-                  <span className="text-[10px] bg-purple-950 text-purple-300 px-1.5 py-0.5 rounded border border-purple-800">270 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Full Competitive Problem Bank</p>
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Web UI Bug Hunt Presets */}
-          <div className="pt-2 border-t border-charcoal-800/80">
-            <span className="text-[11px] font-mono text-emerald-400 font-bold uppercase tracking-wider block mb-2 flex items-center gap-1.5">
-              <Bug className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Web UI Bug Hunt Duels (HTML • CSS • JavaScript)</span>
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('bug_hunt');
-                  setSelectedTag('bug_html');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'bug_hunt' && selectedTag === 'bug_html'
-                    ? 'bg-amber-500/20 border-amber-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-amber-400">📄 HTML Bugs</span>
-                  <span className="text-[10px] bg-amber-950 text-amber-300 px-1.5 py-0.5 rounded border border-amber-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Easy, Medium, Hard (3m, 5m, 10m)</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('bug_hunt');
-                  setSelectedTag('bug_css');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'bug_hunt' && selectedTag === 'bug_css'
-                    ? 'bg-blue-500/20 border-blue-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-blue-400">🎨 HTML + CSS</span>
-                  <span className="text-[10px] bg-blue-950 text-blue-300 px-1.5 py-0.5 rounded border border-blue-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Flex, Grid, Layout Bugs</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('bug_hunt');
-                  setSelectedTag('bug_html_css_js');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'bug_hunt' && selectedTag === 'bug_html_css_js'
-                    ? 'bg-yellow-500/20 border-yellow-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-yellow-400">⚡ HTML+CSS+JS</span>
-                  <span className="text-[10px] bg-yellow-950 text-yellow-300 px-1.5 py-0.5 rounded border border-yellow-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">DOM, Events, Async Bugs</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('bug_hunt');
-                  setSelectedTag('bug_html_js');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'bug_hunt' && selectedTag === 'bug_html_js'
-                    ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-emerald-400">📜 HTML + JS</span>
-                  <span className="text-[10px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-800">90 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Logic, State, Input Bugs</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedArena('bug_hunt');
-                  setSelectedTag('bug_web');
-                  setSelectedDifficulty('all');
-                  setSelectedDuration('all');
-                }}
-                className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                  selectedArena === 'bug_hunt' && selectedTag === 'bug_web'
-                    ? 'bg-rose-500/20 border-rose-400 text-white shadow-md'
-                    : 'bg-charcoal-900 border-charcoal-800 text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs font-bold font-mono">
-                  <span className="text-rose-400">🔍 All Web Bugs</span>
-                  <span className="text-[10px] bg-rose-950 text-rose-300 px-1.5 py-0.5 rounded border border-rose-800">360 Qs</span>
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">Full Web UI Bug Matrix</p>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Options Filter Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-          {/* Arena Category */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Arena Category</label>
-            <div className="flex flex-wrap gap-1">
-              {(['all', 'web_dev', 'algorithms', 'bug_hunt'] as const).map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedArena(cat)}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                    selectedArena === cat
-                      ? 'bg-rose-500 text-white font-bold shadow-sm'
-                      : 'bg-charcoal-950 text-slate-300 border border-charcoal-750 hover:bg-charcoal-800'
-                  }`}
-                >
-                  {cat === 'all' ? 'All' : cat === 'web_dev' ? 'Web Dev' : cat === 'algorithms' ? 'DSA' : 'Bug Hunt'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Duration / Pacing */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Match Duration</label>
-            <div className="flex flex-wrap gap-1">
-              {([
-                { val: 'all', label: 'All' },
-                { val: 180, label: '3m' },
-                { val: 300, label: '5m' },
-                { val: 600, label: '10m' },
-              ] as const).map((dur) => (
-                <button
-                  key={String(dur.val)}
-                  type="button"
-                  onClick={() => setSelectedDuration(dur.val)}
-                  className={`px-2.5 py-1 rounded-lg font-mono font-medium transition-all cursor-pointer ${
-                    selectedDuration === dur.val
-                      ? 'bg-cyan-600 text-white font-bold shadow-sm'
-                      : 'bg-charcoal-950 text-slate-300 border border-charcoal-750 hover:bg-charcoal-800'
-                  }`}
-                >
-                  {dur.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Difficulty */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Difficulty</label>
-            <div className="flex flex-wrap gap-1">
-              {([
-                { val: 'all', label: 'All' },
-                { val: 'easy', label: 'Easy' },
-                { val: 'medium', label: 'Medium' },
-                { val: 'hard', label: 'Hard' },
-              ] as const).map((diff) => (
-                <button
-                  key={diff.val}
-                  type="button"
-                  onClick={() => setSelectedDifficulty(diff.val)}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                    selectedDifficulty === diff.val
-                      ? diff.val === 'easy'
-                        ? 'bg-emerald-600 text-white font-bold'
-                        : diff.val === 'medium'
-                        ? 'bg-amber-600 text-white font-bold'
-                        : 'bg-rose-600 text-white font-bold'
-                      : 'bg-charcoal-950 text-slate-300 border border-charcoal-750 hover:bg-charcoal-800'
-                  }`}
-                >
-                  {diff.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tag Filter */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono text-slate-400 font-semibold block">Technology Tag</label>
-            <div className="flex flex-wrap gap-1">
-              {(['all', 'html', 'css', 'javascript', 'java', 'python', 'cpp'] as const).map((tag) => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setSelectedTag(tag)}
-                  className={`px-2 py-0.5 rounded-md font-mono text-[11px] transition-all cursor-pointer ${
-                    selectedTag === tag
-                      ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                      : 'bg-charcoal-950 text-slate-400 border border-charcoal-750 hover:text-white'
-                  }`}
-                >
-                  {tag === 'all' ? 'All' : `#${tag}`}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* New Question Form */}
-      {isAddingNew && (() => {
-        const isWebAdminMode = newArena === 'web_dev' || (newArena === 'bug_hunt' && newBugDomain === 'web');
-        const isAlgoAdminMode = newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic');
-
-        const parsedCurrentTags = newTags
-          .split(',')
-          .map((t) => t.trim().toLowerCase())
-          .filter(Boolean);
-
-        const hasAnyWebTag = parsedCurrentTags.some((t) => ['html', 'css', 'javascript', 'js'].includes(t));
-        const showWebHtml = hasAnyWebTag ? parsedCurrentTags.includes('html') : true;
-        const showWebCss = hasAnyWebTag ? parsedCurrentTags.includes('css') : true;
-        const showWebJs = hasAnyWebTag ? (parsedCurrentTags.includes('javascript') || parsedCurrentTags.includes('js')) : false;
-
-        const hasAnyAlgoTag = parsedCurrentTags.some((t) => ['python', 'java', 'cpp', 'c++'].includes(t));
-        // Single language selection for Algorithms & DSA or Logic Bug Hunt (Java, Python, or C++)
-        const showAlgoJava = parsedCurrentTags.includes('java') || (!hasAnyAlgoTag && isAlgoAdminMode);
-        const showAlgoPython = parsedCurrentTags.includes('python');
-        const showAlgoCpp = parsedCurrentTags.includes('cpp') || parsedCurrentTags.includes('c++');
-
-        const visibleWebFieldsCount = (showWebHtml ? 1 : 0) + (showWebCss ? 1 : 0) + (showWebJs ? 1 : 0);
-        const webFieldsGridClass =
-          visibleWebFieldsCount === 1
-            ? 'grid-cols-1'
-            : visibleWebFieldsCount === 2
-            ? 'grid-cols-1 md:grid-cols-2'
-            : 'grid-cols-1 md:grid-cols-3';
-
-        const visibleAlgoFieldsCount = (showAlgoPython ? 1 : 0) + (showAlgoJava ? 1 : 0) + (showAlgoCpp ? 1 : 0);
-        const algoFieldsGridClass =
-          visibleAlgoFieldsCount === 1
-            ? 'grid-cols-1'
-            : visibleAlgoFieldsCount === 2
-            ? 'grid-cols-1 md:grid-cols-2'
-            : 'grid-cols-1 md:grid-cols-3';
-
-        const handleToggleTag = (tag: string) => {
-          const list = newTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
-          let nextList: string[];
-          if (list.includes(tag.toLowerCase())) {
-            nextList = list.filter((t) => t !== tag.toLowerCase());
-            if (nextList.length === 0) {
-              nextList = [tag.toLowerCase()];
-            }
-          } else {
-            nextList = [...list, tag.toLowerCase()];
-          }
-          setNewTags(nextList.join(', '));
-        };
-
-        return (
-        <form onSubmit={handleSaveNewQuestion} className="p-5 rounded-2xl bg-charcoal-900 border border-rose-500/30 space-y-4 animate-fadeIn">
-          <div className="flex items-center justify-between pb-3 border-b border-charcoal-800">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <FileCode className="w-4 h-4 text-rose-400" />
-              <span>Create New Arena Duel Question</span>
-            </h3>
-            <span className="text-[11px] font-mono text-slate-400">Published directly to server</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Question Title</label>
-              <input
-                type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                placeholder="e.g. Modern Glassmorphism Pricing Card"
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs focus:border-rose-500 focus:outline-none"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Arena Category</label>
-              <select
-                value={
-                  newArena === 'bug_hunt'
-                    ? newBugDomain === 'logic'
-                      ? 'bug_hunt_logic'
-                      : 'bug_hunt_web'
-                    : newArena
-                }
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === 'web_dev') {
-                    setNewArena('web_dev');
-                    setNewTags('html,css');
-                  } else if (val === 'algorithms') {
-                    setNewArena('algorithms');
-                    setNewTags('java');
-                  } else if (val === 'bug_hunt_web') {
-                    setNewArena('bug_hunt');
-                    setNewBugDomain('web');
-                    setNewTags('html,css');
-                  } else if (val === 'bug_hunt_logic') {
-                    setNewArena('bug_hunt');
-                    setNewBugDomain('logic');
-                    setNewTags('java');
-                  }
-                }}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs focus:border-rose-500 focus:outline-none"
-              >
-                <option value="web_dev">Web Development (HTML / CSS / JS)</option>
-                <option value="algorithms">Algorithms & DSA (Java / Python / C++)</option>
-                <option value="bug_hunt_web">Bug Hunt — Web UI (HTML / CSS / JS)</option>
-                <option value="bug_hunt_logic">Bug Hunt — Logic & Code (Java / Python / C++)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Prominent Bug Hunt Domain & Mode Selector */}
-          {newArena === 'bug_hunt' && (
-            <div className="p-3.5 rounded-xl bg-charcoal-950 border border-rose-500/40 shadow-lg space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-rose-400 font-mono uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                  Bug Hunt Domain & Mode:
-                </label>
-                <span className="text-[10px] font-mono text-slate-400">
-                  Select whether this challenge tests Frontend UI or Backend/DSA Logic
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNewBugDomain('web');
-                    setNewTags('html,css');
-                  }}
-                  className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
-                    newBugDomain === 'web'
-                      ? 'bg-cyan-500/15 border-cyan-500/70 text-white shadow-md'
-                      : 'bg-charcoal-900 border-charcoal-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
-                      newBugDomain === 'web' ? 'bg-cyan-500 border-cyan-400 text-black font-bold' : 'border-slate-600'
-                    }`}
-                  >
-                    {newBugDomain === 'web' ? '✓' : ''}
-                  </span>
-                  <div>
-                    <div className="font-bold text-cyan-300 text-xs">Web UI Bug (HTML / CSS / JS)</div>
-                    <div className="text-[10px] text-slate-400">Visual layout bugs with Target Preview & Output diff</div>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNewBugDomain('logic');
-                    setNewTags('java');
-                  }}
-                  className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
-                    newBugDomain === 'logic'
-                      ? 'bg-rose-500/15 border-rose-500/70 text-white shadow-md'
-                      : 'bg-charcoal-900 border-charcoal-800 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <span
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${
-                      newBugDomain === 'logic' ? 'bg-rose-500 border-rose-400 text-white font-bold' : 'border-slate-600'
-                    }`}
-                  >
-                    {newBugDomain === 'logic' ? '✓' : ''}
-                  </span>
-                  <div>
-                    <div className="font-bold text-rose-300 text-xs">Logic & Code Bug (Java / Python / C++)</div>
-                    <div className="text-[10px] text-slate-400">Algorithmic bugs with real Judge0 compiler test cases</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-slate-300">Tags (comma-separated)</label>
-                <span className="text-[10px] font-mono text-cyan-400">Controls visible fields</span>
-              </div>
-              <input
-                type="text"
-                value={newTags}
-                onChange={(e) => setNewTags(e.target.value)}
-                placeholder="html,css,javascript"
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs font-mono focus:border-rose-500 focus:outline-none"
-              />
-              <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                <span className="text-[10px] font-mono text-slate-400">Quick Tags:</span>
-                {isWebAdminMode && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTag('html')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
-                        showWebHtml
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/50'
-                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
-                      }`}
-                    >
-                      {showWebHtml ? '✓' : '+'} html
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTag('css')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
-                        showWebCss
-                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
-                      }`}
-                    >
-                      {showWebCss ? '✓' : '+'} css
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTag('javascript')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all border ${
-                        showWebJs
-                          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50'
-                          : 'bg-charcoal-950 text-slate-500 border-charcoal-800 hover:text-slate-300'
-                      }`}
-                    >
-                      {showWebJs ? '✓' : '+'} javascript
-                    </button>
-                  </>
-                )}
-                {isAlgoAdminMode && (
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {[
-                      { id: 'java', label: 'Java', color: 'amber' },
-                      { id: 'python', label: 'Python', color: 'cyan' },
-                      { id: 'cpp', label: 'C++', color: 'rose' },
-                    ].map((lang) => {
-                      const isSelected = parsedCurrentTags.includes(lang.id) || (lang.id === 'java' && !hasAnyAlgoTag);
-                      return (
-                        <button
-                          key={lang.id}
-                          type="button"
-                          onClick={() => setNewTags(lang.id)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
-                            isSelected
-                              ? 'bg-rose-500 text-white border-rose-400 shadow-sm'
-                              : 'bg-charcoal-950 text-slate-400 border-charcoal-800 hover:text-slate-200'
-                          }`}
-                        >
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full border flex items-center justify-center text-[8px] ${
-                              isSelected ? 'bg-white border-white text-rose-600 font-bold' : 'border-slate-600'
-                            }`}
-                          >
-                            {isSelected ? '✓' : ''}
-                          </span>
-                          <span>{lang.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Difficulty</label>
-              <select
-                value={newDifficulty}
-                onChange={(e) => setNewDifficulty(e.target.value as any)}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs focus:border-rose-500 focus:outline-none"
-              >
-                <option value="easy">Easy (100 PTS)</option>
-                <option value="medium">Medium (250 PTS)</option>
-                <option value="hard">Hard (500 PTS)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">Time Limit (Seconds)</label>
-              <input
-                type="number"
-                value={newTimeLimit}
-                onChange={(e) => setNewTimeLimit(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs font-mono focus:border-rose-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">Challenge Description & Objective</label>
-            <textarea
-              rows={2}
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              placeholder="Describe the target UI component or logic players must build..."
-              className="w-full px-3 py-2 rounded-xl bg-charcoal-950 border border-charcoal-750 text-white text-xs focus:border-rose-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Bug Hunt Target Language Confirmation */}
-          {newArena === 'bug_hunt' && (
-            <div className="p-3 rounded-xl bg-charcoal-950 border border-charcoal-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span className="text-xs font-mono font-bold text-slate-300 uppercase tracking-wider">
-                  Target Bug Language ({newBugDomain === 'web' ? 'Web UI' : 'Logic Code'}):
-                </span>
-                <span className="text-xs font-mono text-cyan-300 font-bold">
-                  {newTags}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 text-xs font-mono">
-                {(newBugDomain === 'web'
-                  ? [
-                      { id: 'html', label: 'HTML' },
-                      { id: 'css', label: 'CSS' },
-                      { id: 'javascript', label: 'JavaScript' },
-                    ]
-                  : [
-                      { id: 'java', label: 'Java' },
-                      { id: 'python', label: 'Python' },
-                      { id: 'cpp', label: 'C++' },
-                    ]
-                ).map((lang) => {
-                  const currentTagsList = newTags
-                    .split(',')
-                    .map((t) => t.trim().toLowerCase())
-                    .filter(Boolean);
-                  const isSelected = currentTagsList.includes(lang.id);
-                  return (
-                    <button
-                      key={lang.id}
-                      type="button"
-                      onClick={() => {
-                        if (newBugDomain === 'web') {
-                          let updated: string[];
-                          if (isSelected) {
-                            if (currentTagsList.length > 1) {
-                              updated = currentTagsList.filter((t) => t !== lang.id);
-                            } else {
-                              updated = currentTagsList;
-                            }
-                          } else {
-                            updated = [...currentTagsList, lang.id];
-                          }
-                          setNewTags(updated.join(', '));
-                        } else {
-                          setNewTags(lang.id);
-                        }
-                      }}
-                      className={`px-2.5 py-1 rounded-lg border font-mono text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
-                        isSelected
-                          ? newBugDomain === 'web'
-                            ? 'bg-cyan-600 text-white border-cyan-400 shadow-sm'
-                            : 'bg-rose-500 text-white border-rose-400 shadow-sm'
-                          : 'bg-charcoal-900 text-slate-400 border-charcoal-750 hover:text-white'
-                      }`}
-                    >
-                      <span>{isSelected ? '✓' : '+'}</span>
-                      <span>{lang.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-
-          {/* Starter Codes for Web or Web Bug Hunt (Dynamically filtered by tags) */}
-          {isWebAdminMode && (
-            <>
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Starter Code Fields (Active Tags: {newTags || 'none'})
-                  </span>
-                  <span className="text-[10px] font-mono text-cyan-400">
-                    Showing {visibleWebFieldsCount} field{visibleWebFieldsCount > 1 ? 's' : ''} based on tags
-                  </span>
-                </div>
-                <div className={`grid ${webFieldsGridClass} gap-3`}>
-                  {showWebHtml && (
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                        Starter HTML {newArena === 'bug_hunt' && '(Include Buggy HTML)'}
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={newStarterHtml}
-                        onChange={(e) => setNewStarterHtml(e.target.value)}
-                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                  {showWebCss && (
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                        Starter CSS {newArena === 'bug_hunt' && '(Include Buggy CSS)'}
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={newStarterCss}
-                        onChange={(e) => setNewStarterCss(e.target.value)}
-                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                  {showWebJs && (
-                    <div>
-                      <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                        Starter JavaScript {newArena === 'bug_hunt' && '(Include Buggy JS)'}
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={newStarterJs}
-                        onChange={(e) => setNewStarterJs(e.target.value)}
-                        placeholder="// Optional starter JS..."
-                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-yellow-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Target Component HTML, CSS & JavaScript (Visual Blueprint preview for Students) */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                    Target Blueprint Fields (Active Tags: {newTags || 'none'})
-                  </span>
-                  <span className="text-[10px] font-mono text-cyan-400">
-                    Showing {visibleWebFieldsCount} blueprint{visibleWebFieldsCount > 1 ? 's' : ''} based on tags
-                  </span>
-                </div>
-                <div className={`grid ${webFieldsGridClass} gap-3`}>
-                  {showWebHtml && (
-                    <div>
-                      <label className="block text-xs font-medium text-emerald-400 mb-1 font-mono">
-                        Target HTML (Blueprint Structure):
-                      </label>
-                      <textarea
-                        rows={5}
-                        value={newTargetHtml}
-                        onChange={(e) => setNewTargetHtml(e.target.value)}
-                        placeholder="<div class='dashboard'>\n  <aside class='sidebar'>...</aside>\n</div>"
-                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-emerald-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                  {showWebCss && (
-                    <div>
-                      <label className="block text-xs font-medium text-cyan-400 mb-1 font-mono">
-                        Target CSS (Blueprint Styling):
-                      </label>
-                      <textarea
-                        rows={5}
-                        value={newTargetCss}
-                        onChange={(e) => setNewTargetCss(e.target.value)}
-                        placeholder=".dashboard { display: flex; }\n.sidebar { width: 220px; background: #0f172a; }"
-                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                  {showWebJs && (
-                    <div>
-                      <label className="block text-xs font-medium text-amber-400 mb-1 font-mono">
-                        Target JavaScript (Interactive Logic):
-                      </label>
-                      <textarea
-                        rows={5}
-                        value={newTargetJs}
-                        onChange={(e) => setNewTargetJs(e.target.value)}
-                        placeholder="// Target DOM interaction or click logic (optional)"
-                        className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1 font-mono">
-                    Live Blueprint Preview (Sandboxed Isolated Iframe - No CSS Leak):
-                  </label>
-                  <div className="rounded-xl border border-charcoal-750 bg-white overflow-hidden min-h-[140px] max-h-56">
-                    <iframe
-                      title="Admin Blueprint Preview"
-                      srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;font-family:sans-serif;background:#ffffff;color:#000000;box-sizing:border-box;}*,*:before,*:after{box-sizing:inherit;}${showWebCss ? newTargetCss : ''}</style></head><body>${showWebHtml ? newTargetHtml : '<p>Blueprint Preview</p>'}<script>${showWebJs ? newTargetJs : ''}</script></body></html>`}
-                      className="w-full h-full min-h-[140px] border-0 block"
-                      sandbox="allow-scripts"
-                    />
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Starter Codes for Algorithms & Logic Bug Hunt (Dynamically filtered by tags) */}
-          {isAlgoAdminMode && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-300">
-                  Starter Code Fields (Active Tags: {newTags || 'none'})
-                </span>
-                <span className="text-[10px] font-mono text-cyan-400">
-                  Showing {visibleAlgoFieldsCount} field{visibleAlgoFieldsCount > 1 ? 's' : ''} based on tags
-                </span>
-              </div>
-              <div className={`grid ${algoFieldsGridClass} gap-3`}>
-                {showAlgoPython && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                      Starter Python {newArena === 'bug_hunt' && '(With Bug)'}
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={newStarterPython}
-                      onChange={(e) => setNewStarterPython(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-cyan-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
-                )}
-                {showAlgoJava && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                      Starter Java {newArena === 'bug_hunt' && '(With Bug)'}
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={newStarterJava}
-                      onChange={(e) => setNewStarterJava(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-amber-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
-                )}
-                {showAlgoCpp && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">
-                      Starter C++ {newArena === 'bug_hunt' && '(With Bug)'}
-                    </label>
-                    <textarea
-                      rows={5}
-                      value={newStarterCpp}
-                      onChange={(e) => setNewStarterCpp(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-charcoal-950 border border-charcoal-750 text-rose-200 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* FOR WEB DEV: Automated Spatial Coordinate Graph & Content Grading Specification */}
-          {isWebAdminMode && (
-            <div className="p-4 rounded-xl bg-charcoal-950 border border-cyan-500/30 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
-                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    Automated Spatial Coordinate Graph & Content Grading Contract
-                  </span>
-                </div>
-                <span className="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-950 border border-cyan-500/40 text-cyan-300">
-                  {visibleWebFieldsCount} Dynamic Auto Test{visibleWebFieldsCount > 1 ? 's' : ''} Active
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                Test cases strictly match tags ({newTags}). Students must pass all {visibleWebFieldsCount} test{visibleWebFieldsCount > 1 ? 's' : ''} to submit and claim victory:
-              </p>
-              <div className={`grid ${webFieldsGridClass} gap-2 text-xs font-mono`}>
-                {showWebHtml && (
-                  <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30 space-y-1">
-                    <div className="flex items-center justify-between text-amber-400 font-bold">
-                      <span>Test Case #1</span>
-                      <span className="text-[10px] uppercase bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30">HTML Words & Tags</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300">
-                      Validates semantic HTML tags, DOM hierarchy, and exact word spelling alignment against the blueprint.
-                    </p>
-                  </div>
-                )}
-
-                {showWebCss && (
-                  <div className="p-3 rounded-xl bg-slate-900 border border-cyan-500/30 space-y-1">
-                    <div className="flex items-center justify-between text-cyan-400 font-bold">
-                      <span>Test Case #{showWebHtml ? 2 : 1}</span>
-                      <span className="text-[10px] uppercase bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">CSS Coordinates</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300">
-                      Calculates spatial bounding box coordinates (width, height, flex/grid positions) with lenient ±30% tolerance.
-                    </p>
-                  </div>
-                )}
-
-                {showWebJs && (
-                  <div className="p-3 rounded-xl bg-slate-900 border border-emerald-500/30 space-y-1">
-                    <div className="flex items-center justify-between text-emerald-400 font-bold">
-                      <span>Test Case #{(showWebHtml ? 1 : 0) + (showWebCss ? 1 : 0) + 1}</span>
-                      <span className="text-[10px] uppercase bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">JS DOM Logic</span>
-                    </div>
-                    <p className="text-[11px] text-slate-300">
-                      Runs DOM interaction and event handlers to verify dynamic behavior matches the target script.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* FOR ALGORITHMS & LOGIC BUG HUNT: Manual Compiler Test Cases Builder */}
-          {(newArena === 'algorithms' || (newArena === 'bug_hunt' && newBugDomain === 'logic')) && (
-            <div className="p-4 rounded-xl bg-charcoal-950 border border-charcoal-800 space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-charcoal-800">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    Automated Verification Test Cases ({testCasesList.length})
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddTestCase}
-                  className="px-3 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Add Test Case</span>
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {testCasesList.map((tc, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-xl bg-charcoal-900 border border-charcoal-750 space-y-2.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold text-slate-300">
-                        Test Case #{idx + 1}
-                      </span>
-                      {testCasesList.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTestCase(idx)}
-                          className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
-                          title="Remove test case"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                          Input (Arguments / Stdin Data):
-                        </label>
-                        <input
-                          type="text"
-                          value={tc.input}
-                          onChange={(e) => handleUpdateTestCase(idx, 'input', e.target.value)}
-                          placeholder="e.g. nums = [3, 1, 2, 4]"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-cyan-300 text-xs font-mono focus:border-rose-500 focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                          Expected Output / Assertion:
-                        </label>
-                        <input
-                          type="text"
-                          value={tc.expectedOutput}
-                          onChange={(e) => handleUpdateTestCase(idx, 'expectedOutput', e.target.value)}
-                          placeholder="e.g. [2, 4, 3, 1]"
-                          className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-emerald-400 text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-mono text-slate-400 mb-1">
-                        Objective / Description:
-                      </label>
-                      <input
-                        type="text"
-                        value={tc.description}
-                        onChange={(e) => handleUpdateTestCase(idx, 'description', e.target.value)}
-                        placeholder="e.g. Even and odd parity separation"
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-charcoal-950 border border-charcoal-700 text-slate-300 text-xs font-mono focus:border-emerald-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsAddingNew(false)}
-              className="px-4 py-2 rounded-xl bg-charcoal-800 text-slate-300 text-xs font-semibold hover:bg-charcoal-750 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 text-white text-xs font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center gap-1.5"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? 'Publishing...' : 'Save & Publish Question'}</span>
-            </button>
-          </div>
-        </form>
-        );
-      })()}
-
-      {/* Questions List */}
-      <div className="space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 font-mono px-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-slate-200">
-              Active Questions ({filteredQuestions.length} of {questions.length})
-            </span>
-            {(selectedArena !== 'all' || selectedTag !== 'all' || selectedDuration !== 'all' || selectedDifficulty !== 'all') && (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] text-slate-500">Filters:</span>
-                {selectedArena !== 'all' && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                    {selectedArena}
-                  </span>
-                )}
-                {selectedTag !== 'all' && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-                    {selectedTag === 'bug_html'
-                      ? '🐛 HTML Bugs (90)'
-                      : selectedTag === 'bug_css'
-                      ? '🎨 HTML+CSS Bugs (90)'
-                      : selectedTag === 'bug_html_css_js'
-                      ? '⚡ HTML+CSS+JS Bugs (90)'
-                      : selectedTag === 'bug_html_js'
-                      ? '📜 HTML+JS Bugs (90)'
-                      : selectedTag === 'bug_web'
-                      ? '🔍 All Web Bugs (360)'
-                      : `#${selectedTag}`}
-                  </span>
-                )}
-                {selectedDuration !== 'all' && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                    {Math.round(Number(selectedDuration) / 60)}m ({selectedDuration}s)
-                  </span>
-                )}
-                {selectedDifficulty !== 'all' && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase">
-                    {selectedDifficulty}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedArena('all');
-                    setSelectedTag('all');
-                    setSelectedDuration('all');
-                    setSelectedDifficulty('all');
-                  }}
-                  className="text-[10px] text-slate-400 hover:text-white underline ml-1 cursor-pointer"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-          <span className="text-[11px] text-slate-500">Automatic weighted scoring matchmaking</span>
-        </div>
-
-        {filteredQuestions.map((q) => (
-          <div
-            key={q.id}
-            className="p-4 rounded-xl bg-charcoal-900 border border-charcoal-800 hover:border-charcoal-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-          >
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-white text-sm">{q.title}</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-charcoal-800 border border-charcoal-700 text-slate-300">
-                  {q.arena}
-                </span>
-                <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                    q.difficulty === 'easy'
-                      ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                      : q.difficulty === 'medium'
-                      ? 'bg-amber-950 text-amber-400 border border-amber-800'
-                      : 'bg-rose-950 text-rose-400 border border-rose-800'
-                  }`}
-                >
-                  {q.difficulty}
-                </span>
-                <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {Math.round(q.timeLimitSeconds / 60)}m
-                </span>
-              </div>
-              <p className="text-xs text-slate-300 line-clamp-1">{q.description}</p>
-              <div className="flex items-center gap-1.5 pt-1">
-                {q.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-charcoal-950 border border-charcoal-750 text-slate-400"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-900 px-2 py-1 rounded-md">
-                {q.testCases?.length || 3} Test Cases
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedTestQuestion(q);
-                  setIsTestLobbyOpen(true);
-                }}
-                className="px-2.5 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700 text-emerald-300 font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover:scale-105 active:scale-95"
-                title="Play & Test this specific question in Battle Arena"
-              >
-                <Play className="w-3 h-3 fill-current" />
-                <span>Play</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteQuestion(q.id)}
-                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 transition-colors flex items-center justify-center cursor-pointer"
-                title="Delete Question"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      </div>
       )}
 
       {isTestLobbyOpen && (
@@ -1984,10 +282,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             setSelectedTestQuestion(null);
           }}
           initialQuestion={selectedTestQuestion || undefined}
-          currentUser={{
-            displayName: 'Admin Tester',
-            username: 'admin',
-          }}
+          currentUser={{ displayName: 'Admin_Tester', username: 'admin' }}
         />
       )}
     </div>
