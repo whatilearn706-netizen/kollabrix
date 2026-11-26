@@ -138,6 +138,10 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
   // Active Battle HUD + Code Buffers
   const questionPoolRef = useRef<DuelQuestion[]>([]);
+  const previewInteractUntilRef = useRef<number>(0);
+  const markPreviewInteraction = useCallback(() => {
+    previewInteractUntilRef.current = Date.now() + 2000;
+  }, []);
   const [availableQuestionsCount, setAvailableQuestionsCount] = useState<number | null>(null);
   const [lobbyNotice, setLobbyNotice] = useState<string>('');
   const [activeQuestion, setActiveQuestion] = useState<DuelQuestion>(enrichQuestion(initialQuestion));
@@ -727,10 +731,12 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     }
   }, [stage, rivalTestsPassed, totalTests, finalizeMatchResult]);
 
-  // Anti-cheat tab/window focus sentinel during active battle
+  // Anti-cheat tab/window focus sentinel during active battle (ignores clicks inside live preview iframes)
   useEffect(() => {
     if (stage !== 'battle') return;
     let lastFlag = 0;
+    let blurTimer: ReturnType<typeof setTimeout> | null = null;
+
     const flag = (reason: string) => {
       const now = Date.now();
       if (now - lastFlag < 2000) return;
@@ -743,11 +749,29 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         return next;
       });
     };
+
     const onVis = () => document.visibilityState === 'hidden' && flag('Tab switched away from Arena');
-    const onBlur = () => flag('Window focus lost during duel');
+    const onBlur = () => {
+      if (blurTimer) clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => {
+        if (document.hidden || document.visibilityState === 'hidden') return;
+        const activeEl = document.activeElement;
+        if (
+          activeEl &&
+          (activeEl.tagName === 'IFRAME' || activeEl.getAttribute('data-arena-preview') === 'true')
+        ) {
+          return;
+        }
+        if (Date.now() < previewInteractUntilRef.current) return;
+        if (document.hasFocus()) return;
+        flag('Window focus lost during duel');
+      }, 90);
+    };
+
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('blur', onBlur);
     return () => {
+      if (blurTimer) clearTimeout(blurTimer);
       document.removeEventListener('visibilitychange', onVis);
       window.removeEventListener('blur', onBlur);
     };
@@ -851,27 +875,32 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
           });
           const d = await res.json();
           const out = (d.stdout || '').trim();
+          const errText = (d.stderr || d.compile_output || (!d.success ? d.error : '') || '').trim();
           const pass = Boolean(d.success) && verifyTestOutput(activeQuestion.id, out, (tc.expectedOutput || '').trim(), tc.input || '');
           return {
             idx,
             verdict: {
               status: (!d.success ? 'Error' : pass ? 'Accepted' : 'Wrong Answer') as TestCaseVerdict['status'],
-              stdout: out || d.stderr || d.compile_output || '(No output)',
-              stderr: d.stderr || d.compile_output,
+              stdout: out || (errText ? '' : '(No output)'),
+              stderr: errText || undefined,
               executionTimeMs: d.executionTimeMs || 15,
             },
           };
         } catch {
-          return { idx, verdict: { status: 'Error' as const, stdout: 'Execution service unreachable' } };
+          return { idx, verdict: { status: 'Error' as const, stdout: '', stderr: 'Execution service unreachable' } };
         }
       })
     );
 
     const map: Record<number, TestCaseVerdict> = {};
     let passed = 0;
+    let firstErrSnippet = '';
     results.forEach(({ idx, verdict }) => {
       map[idx] = verdict;
       if (verdict.status === 'Accepted') passed++;
+      else if (!firstErrSnippet && verdict.stderr) {
+        firstErrSnippet = verdict.stderr.split('\n').map((l: string) => l.trim()).filter(Boolean).pop() || '';
+      }
     });
     setTestVerdicts(map);
     setUserTestsPassed(passed);
@@ -886,7 +915,12 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       }
     } else {
       if (audioEnabled) playCompileErrorSound();
-      setStatusNotice({ type: 'err', text: `${passed}/${tcs.length} cases passed. Check Test Runner details on the left.` });
+      setStatusNotice({
+        type: 'err',
+        text: firstErrSnippet
+          ? `${passed}/${tcs.length} passed · ${firstErrSnippet}`
+          : `${passed}/${tcs.length} cases passed. Check Test Runner details on the left.`,
+      });
     }
     setIsCompiling(false);
     setIsSubmitting(false);
@@ -1068,6 +1102,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     joinRoomByCode,
     startCustomRoomMatch,
     runOrSubmit,
+    markPreviewInteraction,
     handleNextBo3Round,
     handleForfeit,
   };

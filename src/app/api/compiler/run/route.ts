@@ -221,8 +221,13 @@ function normalizePythonCode(code: string, stdin?: string): string {
 
   const hasMain = /if\s+__name__\s*==\s*['"]__main__['"]/.test(finalCode);
   const isClassSolution = /class\s+Solution\b/.test(finalCode);
+  const hasExplicitIO = usesSysStdin || /\bprint\s*\(/.test(finalCode);
 
-  // If user has class Solution, always inject auto runner regardless of internal print
+  // If code already handles stdin/print or defines main (and isn't LeetCode Solution class), run as-is
+  if (!isClassSolution && (hasMain || hasExplicitIO)) {
+    return finalCode;
+  }
+
   if (hasMain && !isClassSolution) {
     return finalCode;
   }
@@ -270,7 +275,8 @@ def _auto_run():
             fn = user_fns[0]
 
     if fn:
-        res = fn(*args)
+        sig = inspect.signature(fn)
+        res = fn() if len(sig.parameters) == 0 else fn(*args)
         if res is not None:
             if isinstance(res, (list, dict, bool)):
                 print(json.dumps(res))

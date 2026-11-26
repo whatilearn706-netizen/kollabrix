@@ -66,6 +66,19 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
     return () => clearTimeout(t);
   }, [pasteNotice]);
 
+  // Auto-expand first failing/errored test case so diagnostics show immediately
+  useEffect(() => {
+    if (engine.totalRuns === 0) {
+      setSelectedCaseIdx(null);
+      return;
+    }
+    const entries = Object.entries(engine.testVerdicts) as Array<[string, any]>;
+    const firstFail = entries.find(([, v]) => v && v.status !== 'Accepted');
+    if (firstFail) {
+      setSelectedCaseIdx(Number(firstFail[0]));
+    }
+  }, [engine.totalRuns, engine.testVerdicts]);
+
   const currentFileLabel = useMemo(() => {
     const slug = q.title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'solution';
     if (engine.activeTab === 'python') return `${slug}.py`;
@@ -295,7 +308,13 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
               )}
 
               {isWeb && (
-                <div ref={split.webStackRef} className="flex-1 min-h-[260px] flex flex-col">
+                <div
+                  ref={split.webStackRef}
+                  onPointerDownCapture={() => engine.markPreviewInteraction()}
+                  onMouseEnter={() => engine.markPreviewInteraction()}
+                  onFocusCapture={() => engine.markPreviewInteraction()}
+                  className="flex-1 min-h-[260px] flex flex-col"
+                >
                   <div
                     style={{ height: `${100 - split.widths.yoursRatio}%` }}
                     className="min-h-[90px] rounded-xl overflow-hidden border border-white/15 bg-[#05080F] flex flex-col"
@@ -306,6 +325,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                     </div>
                     <iframe
                       title="Target Blueprint"
+                      data-arena-preview="true"
                       srcDoc={targetDoc}
                       className={`w-full flex-1 border-0 ${isDragging ? 'pointer-events-none' : ''}`}
                       sandbox="allow-scripts"
@@ -335,10 +355,11 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         Yours (Live)
                       </span>
-                      <span className="text-slate-500">Updates as you type</span>
+                      <span className="text-slate-500">Interactive Sandbox</span>
                     </div>
                     <iframe
                       title="Your Live Preview"
+                      data-arena-preview="true"
                       srcDoc={userDoc}
                       className={`w-full flex-1 border-0 ${isDragging ? 'pointer-events-none' : ''}`}
                       sandbox="allow-scripts"
@@ -349,8 +370,8 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
             </div>
           </div>
 
-          {/* Clickable Test Runner Box with stdout details */}
-          <div className="rounded-2xl bg-[#0A0E17] border border-white/10 p-3 space-y-2 max-h-48 overflow-y-auto shrink-0">
+          {/* Clickable Test Runner Box with auto-expanded stderr & expected vs actual diffs */}
+          <div className="rounded-2xl bg-[#0A0E17] border border-white/10 p-3 space-y-2 max-h-56 overflow-y-auto shrink-0">
             <div className="text-[11px] font-mono font-bold text-slate-300 uppercase tracking-wider">Test Runner</div>
             <div className="space-y-1.5">
               {visibleCases.map((tc: any, idx: number) => {
@@ -376,14 +397,27 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                         {isHidden ? `Hidden Case ${idx + 1}` : tc?.testName || `Case ${idx + 1}`}:{' '}
                         <strong className="text-white">{verdict ? verdict.status : 'Pending'}</strong>
                       </span>
-                      {passed && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                      <span className="flex items-center gap-1 shrink-0">
+                        {passed && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                        {verdict && (expanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />)}
+                      </span>
                     </button>
                     {expanded && verdict && (
-                      <div className="px-3 py-2 rounded-lg bg-[#05080F] border border-white/10 font-mono text-[10px] text-slate-300 space-y-1">
-                        {!isHidden && !isWeb && tc?.expectedOutput && (
-                          <div><span className="text-slate-500">Expected:</span> {tc.expectedOutput}</div>
+                      <div className="px-3 py-2 rounded-lg bg-[#05080F] border border-white/10 font-mono text-[10px] text-slate-300 space-y-1.5">
+                        {!isHidden && !isWeb && tc?.input && (
+                          <div className="break-all"><span className="text-slate-500">Input:</span> {tc.input}</div>
                         )}
-                        <div className="break-words"><span className="text-slate-500">Output:</span> {verdict.stdout}</div>
+                        {!isHidden && !isWeb && tc?.expectedOutput !== undefined && (
+                          <div className="break-all"><span className="text-slate-500">Expected:</span> {tc.expectedOutput}</div>
+                        )}
+                        {verdict.stdout && (
+                          <div className="break-words"><span className="text-slate-500">Output:</span> {verdict.stdout}</div>
+                        )}
+                        {verdict.stderr && (
+                          <pre className="whitespace-pre-wrap break-words text-red-300 bg-red-950/30 border border-red-500/20 rounded p-2 text-[10px] leading-relaxed">
+                            {verdict.stderr}
+                          </pre>
+                        )}
                       </div>
                     )}
                   </div>
@@ -512,11 +546,69 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                   const target = e.currentTarget;
                   const s = target.selectionStart;
                   const end = target.selectionEnd;
-                  const next = `${activeBuffer.slice(0, s)}  ${activeBuffer.slice(end)}`;
+                  const step = engine.activeTab === 'python' ? '    ' : '  ';
+                  const next = `${activeBuffer.slice(0, s)}${step}${activeBuffer.slice(end)}`;
                   setActiveBuffer(next);
-                  setCursorPos(s + 2);
-                  requestAnimationFrame(() => target.setSelectionRange(s + 2, s + 2));
+                  setCursorPos(s + step.length);
+                  requestAnimationFrame(() => target.setSelectionRange(s + step.length, s + step.length));
                   return;
+                }
+
+                // Smart Enter auto-indentation (preserves leading indent & indents after ':' or '{')
+                if (e.key === 'Enter' && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+                  const target = e.currentTarget;
+                  const s = target.selectionStart;
+                  const end = target.selectionEnd;
+                  if (s === end) {
+                    const lineStart = activeBuffer.lastIndexOf('\n', s - 1) + 1;
+                    const lineBefore = activeBuffer.slice(lineStart, s);
+                    const baseIndent = (lineBefore.match(/^[ \t]*/) || [''])[0];
+                    const trimmed = lineBefore.trimEnd();
+                    const step = engine.activeTab === 'python' ? '    ' : '  ';
+                    const shouldIndent = trimmed.endsWith('{') || (engine.activeTab === 'python' && trimmed.endsWith(':'));
+                    const nextChar = activeBuffer[s];
+
+                    if (trimmed.endsWith('{') && nextChar === '}') {
+                      e.preventDefault();
+                      const insert = `\n${baseIndent}${step}\n${baseIndent}`;
+                      const next = `${activeBuffer.slice(0, s)}${insert}${activeBuffer.slice(end)}`;
+                      const caret = s + 1 + baseIndent.length + step.length;
+                      setActiveBuffer(next);
+                      setCursorPos(caret);
+                      requestAnimationFrame(() => target.setSelectionRange(caret, caret));
+                      return;
+                    }
+
+                    if (baseIndent.length > 0 || shouldIndent) {
+                      e.preventDefault();
+                      const extra = shouldIndent ? step : '';
+                      const insert = `\n${baseIndent}${extra}`;
+                      const next = `${activeBuffer.slice(0, s)}${insert}${activeBuffer.slice(end)}`;
+                      const caret = s + insert.length;
+                      setActiveBuffer(next);
+                      setCursorPos(caret);
+                      requestAnimationFrame(() => target.setSelectionRange(caret, caret));
+                      return;
+                    }
+                  }
+                }
+
+                // Overtype duplicate closing bracket / quote cleanly
+                if (
+                  (e.key === ')' || e.key === ']' || e.key === '}' || e.key === '"' || e.key === "'") &&
+                  !e.metaKey &&
+                  !e.ctrlKey &&
+                  !e.altKey
+                ) {
+                  const target = e.currentTarget;
+                  const s = target.selectionStart;
+                  const end = target.selectionEnd;
+                  if (s === end && activeBuffer[s] === e.key) {
+                    e.preventDefault();
+                    setCursorPos(s + 1);
+                    requestAnimationFrame(() => target.setSelectionRange(s + 1, s + 1));
+                    return;
+                  }
                 }
 
                 // Auto-closing brackets and quotes
@@ -535,6 +627,10 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
                 }
               }}
               spellCheck={false}
+              autoCorrect="off"
+              autoCapitalize="off"
+              autoComplete="off"
+              data-gramm="false"
               className="flex-1 p-3 bg-transparent text-slate-100 font-mono text-xs leading-6 resize-none outline-none overflow-y-auto select-text"
             />
 

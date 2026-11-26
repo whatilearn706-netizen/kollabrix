@@ -313,7 +313,9 @@ export function evaluateWebCoordinateGraph(
 ): WebGraphEvaluation {
   const cleanHtml = (htmlCode || '').trim();
   const cleanCss = (cssCode || '').trim();
-  const cleanJs = (options?.jsCode || '').trim();
+  const inlineScriptMatches = Array.from(cleanHtml.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi));
+  const inlineJs = inlineScriptMatches.map((m) => m[1] || '').join('\n').trim();
+  const cleanJs = ((options?.jsCode || '').trim() || inlineJs).trim();
   const cleanTargetJs = (options?.targetJs || '').trim();
   const starterHtml = (options?.starterHtml || '').trim();
   const starterCss = (options?.starterCss || '').trim();
@@ -531,51 +533,64 @@ export function evaluateWebCoordinateGraph(
 
   // ================= TEST 3: JAVASCRIPT DOM LOGIC & INTERACTION =================
   if (hasJsTest) {
-    const studentJs = cleanJs.toLowerCase();
-    const hasJsCode = cleanJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim().length > 10;
-    
+    const jsStripped = cleanJs.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '').trim();
+    const studentJs = jsStripped.toLowerCase();
+    const hasJsCode = jsStripped.length > 10;
+
+    let syntaxError = '';
+    if (hasJsCode) {
+      try {
+        new Function(cleanJs);
+      } catch (e: any) {
+        syntaxError = e?.message ? `SyntaxError: ${e.message}` : 'SyntaxError in script.js';
+      }
+    }
+
     // Support all standard JavaScript DOM interaction patterns (format-agnostic)
     const hasEventListeners =
       studentJs.includes('addeventlistener') ||
       studentJs.includes('onclick') ||
+      studentJs.includes('oninput') ||
       studentJs.includes('onchange') ||
       studentJs.includes('onsubmit') ||
+      studentJs.includes('onkeydown') ||
+      studentJs.includes('onkeyup') ||
       studentJs.includes('queryselector') ||
       studentJs.includes('getelementbyid') ||
       studentJs.includes('getelementsby') ||
       studentJs.includes('.value') ||
+      studentJs.includes('.textcontent') ||
       studentJs.includes('.innertext') ||
       studentJs.includes('.innerhtml') ||
       studentJs.includes('.classlist') ||
       studentJs.includes('.style') ||
       studentJs.includes('.setattribute');
 
-    // If target JavaScript is defined by admin, ensure core DOM triggers match
+    // Only enforce hidden target identifier tokens on Bug Hunt (where starter code shares IDs)
     let matchesTargetBehavior = true;
-    if (cleanTargetJs && cleanTargetJs.length > 15) {
-      const targetTokens = cleanTargetJs
-        .toLowerCase()
-        .match(/([a-zA-Z0-9_-]{4,})/g) || [];
+    if (isBugHunt && cleanTargetJs && cleanTargetJs.length > 15) {
+      const targetTokens = cleanTargetJs.toLowerCase().match(/([a-zA-Z0-9_-]{4,})/g) || [];
       const criticalTokens = targetTokens.filter(
         (t) => !['const', 'let', 'var', 'function', 'return', 'true', 'false', 'document'].includes(t)
       );
       if (criticalTokens.length > 0) {
         const matched = criticalTokens.filter((t) => studentJs.includes(t));
-        // Pass if at least 30% of key semantic identifiers/event targets are engaged
         matchesTargetBehavior = matched.length / criticalTokens.length >= 0.3;
       }
     }
 
-    const jsPassed = !isStarterJsUnchanged && hasJsCode && hasEventListeners && matchesTargetBehavior;
+    const jsPassed = !syntaxError && !isStarterJsUnchanged && hasJsCode && hasEventListeners && matchesTargetBehavior;
 
     results.push({
       testName: 'JavaScript DOM Interactivity & Event Handlers',
       passed: jsPassed,
-      message: isStarterJsUnchanged
-        ? 'Failed: Starter JavaScript bug has not been modified yet. Diagnose and fix the JS bug.'
-        : jsPassed
-          ? 'Passed: Dynamic DOM event handling and interactive script logic verified.'
-          : 'Failed: JavaScript interaction incomplete. Attach DOM event handlers (e.g. click, input) to update the component.',
+      message: syntaxError
+        ? `Failed: ${syntaxError}`
+        : isStarterJsUnchanged
+          ? 'Failed: Starter JavaScript has not been modified yet. Write or fix your JS handler.'
+          : jsPassed
+            ? 'Passed: Valid JavaScript syntax, DOM event listeners, and interactive updates verified.'
+            : 'Failed: JavaScript interaction incomplete. Select DOM elements and attach event handlers (e.g. addEventListener, onclick) to update the UI.',
     });
   }
 
