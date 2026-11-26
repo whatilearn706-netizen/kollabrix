@@ -369,7 +369,7 @@ export default function ResourcesPage() {
                 <button
                   type="button"
                   onClick={() => setActiveSection('home')}
-                  className="px-5 py-2.5 rounded-full bg-white text-slate-950 text-xs font-semibold cursor-pointer hover:bg-sky-50"
+                  className="px-5 py-2.5 rounded-full bg-[#FAF8F5] text-[#07090E] text-xs font-semibold cursor-pointer hover:bg-sky-100"
                 >
                   Browse Tracks →
                 </button>
@@ -401,7 +401,7 @@ export default function ResourcesPage() {
                     <button
                       type="button"
                       onClick={() => handleOpenVolume(vol)}
-                      className="w-full py-2.5 rounded-full bg-white text-slate-950 text-xs font-semibold hover:bg-sky-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="w-full py-2.5 rounded-full bg-[#FAF8F5] text-[#07090E] text-xs font-semibold hover:bg-sky-100 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span>{vol.ctaLabel}</span>
                       <ArrowUpRight className="w-3.5 h-3.5" />

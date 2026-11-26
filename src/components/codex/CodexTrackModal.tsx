@@ -134,7 +134,7 @@ export function CodexTrackModal({
                   onClick={() => handleLevelChange(tab.id)}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                     active
-                      ? 'bg-white text-slate-950 shadow'
+                      ? 'bg-[#FAF8F5] text-[#07090E] shadow'
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
@@ -321,7 +321,7 @@ export function CodexTrackModal({
                 <button
                   type="button"
                   onClick={() => onLaunchFullWorkspace(selectedLevel)}
-                  className="w-full py-3 px-4 rounded-2xl bg-white text-slate-950 font-semibold text-sm hover:bg-sky-50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full py-3 px-4 rounded-2xl bg-[#FAF8F5] text-[#07090E] font-semibold text-sm hover:bg-sky-100 flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <Layers className="w-4 h-4" />
                   <span>Open Full Interactive Step Workspace</span>

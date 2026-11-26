@@ -315,7 +315,7 @@ export function CodexReaderModal({
                       }}
                       className={`px-3 py-1 rounded-full text-[11px] font-mono uppercase cursor-pointer ${
                         patternLang === lang
-                          ? 'bg-white text-slate-950 font-bold'
+                          ? 'bg-[#FAF8F5] text-[#07090E] font-bold'
                           : 'text-zinc-400 hover:text-white'
                       }`}
                     >
@@ -350,7 +350,7 @@ export function CodexReaderModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link
                 href="/icpc"
-                className="py-3 px-4 rounded-2xl bg-white text-slate-950 font-semibold text-sm hover:bg-sky-50 flex items-center justify-center gap-2 transition-all"
+                className="py-3 px-4 rounded-2xl bg-[#FAF8F5] text-[#07090E] font-semibold text-sm hover:bg-sky-100 flex items-center justify-center gap-2 transition-all"
               >
                 <Code2 className="w-4 h-4" />
                 <span>Solve in Practice IDE</span>

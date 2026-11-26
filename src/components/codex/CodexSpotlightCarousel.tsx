@@ -114,7 +114,7 @@ export function CodexSpotlightCarousel({
             <button
               type="button"
               onClick={() => onOpenVolume(active)}
-              className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-white text-slate-950 font-semibold text-sm shadow-[0_12px_40px_rgba(255,255,255,0.16)] hover:bg-sky-50 hover:scale-[1.02] active:scale-[0.99] transition-all cursor-pointer"
+              className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#FAF8F5] text-[#07090E] font-semibold text-sm shadow-[0_12px_40px_rgba(255,255,255,0.16)] hover:bg-sky-100 hover:scale-[1.02] active:scale-[0.99] transition-all cursor-pointer"
             >
               {active.kind === 'track' ? (
                 <Play className="w-3.5 h-3.5 fill-slate-950" />
@@ -308,7 +308,7 @@ export function CodexSpotlightCarousel({
               type="button"
               onClick={handlePrev}
               aria-label="Previous volume"
-              className="w-9 h-9 rounded-full border border-white/15 bg-white/[0.03] hover:bg-white text-zinc-200 hover:text-slate-950 flex items-center justify-center transition-all cursor-pointer"
+              className="w-9 h-9 rounded-full border border-white/15 bg-white/[0.03] hover:bg-[#FAF8F5] text-zinc-200 hover:text-[#07090E] flex items-center justify-center transition-all cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -316,7 +316,7 @@ export function CodexSpotlightCarousel({
               type="button"
               onClick={handleNext}
               aria-label="Next volume"
-              className="w-9 h-9 rounded-full border border-white/15 bg-white/[0.03] hover:bg-white text-zinc-200 hover:text-slate-950 flex items-center justify-center transition-all cursor-pointer"
+              className="w-9 h-9 rounded-full border border-white/15 bg-white/[0.03] hover:bg-[#FAF8F5] text-zinc-200 hover:text-[#07090E] flex items-center justify-center transition-all cursor-pointer"
             >
               <ArrowRight className="w-4 h-4" />
             </button>
