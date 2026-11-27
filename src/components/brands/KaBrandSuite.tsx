@@ -10,45 +10,66 @@ interface KaBrandEmblemProps {
 }
 
 /**
- * Shared KΛ liquid-silver geometric monogram with warm amber-gold (K) and ice-blue (Λ) rim accents.
+ * Shared KΛ emblem echoing Kollabrix's exact obsidian-silver aesthetic:
+ * - Bright platinum-silver "K" (matching KOLL / BRIX)
+ * - Signature Kollabrix gunmetal-graphite "Λ" (#A1A1AA -> #52525B -> #27272A) with silver bevel
+ * - Subtle vertical platinum spark needle connecting the two strokes
  */
 export function KaBrandEmblem({ className = '', size = 'sm' }: KaBrandEmblemProps) {
-  const dims = size === 'md' ? 'w-7 h-5' : 'w-6 h-4';
+  const dims = size === 'md' ? 'w-8 h-5' : 'w-7 h-4';
   return (
     <svg
-      viewBox="0 0 44 28"
+      viewBox="0 0 48 28"
       fill="none"
       aria-hidden="true"
-      className={`${dims} shrink-0 ${className}`}
+      className={`${dims} shrink-0 drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] ${className}`}
     >
       <defs>
-        <linearGradient id="kaSilverBody" x1="4" y1="2" x2="40" y2="26" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#F8FAFC" />
-          <stop offset="50%" stopColor="#CBD5E1" />
-          <stop offset="100%" stopColor="#64748B" />
+        {/* Bright platinum-white silver matching KOLL / BRIX */}
+        <linearGradient id="kaPlatinumK" x1="12" y1="3" x2="12" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="55%" stopColor="#E2E8F0" />
+          <stop offset="100%" stopColor="#94A3B8" />
         </linearGradient>
-        <linearGradient id="kaAmberEdge" x1="4" y1="3" x2="20" y2="25" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FDE68A" />
-          <stop offset="100%" stopColor="#F59E0B" />
+
+        {/* Exact Kollabrix Λ gunmetal-graphite gradient (zinc-400 -> zinc-600 -> zinc-800) */}
+        <linearGradient id="kaKollabrixLambda" x1="34" y1="3" x2="34" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#A1A1AA" />
+          <stop offset="50%" stopColor="#52525B" />
+          <stop offset="100%" stopColor="#27272A" />
         </linearGradient>
-        <linearGradient id="kaIceEdge" x1="22" y1="3" x2="40" y2="25" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#E0F2FE" />
-          <stop offset="100%" stopColor="#38BDF8" />
+
+        {/* Brushed silver bevel border matching Kollabrix wings */}
+        <linearGradient id="kaSilverBevel" x1="24" y1="3" x2="44" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#E2E8F0" stopOpacity="0.85" />
+          <stop offset="50%" stopColor="#94A3B8" stopOpacity="0.65" />
+          <stop offset="100%" stopColor="#64748B" stopOpacity="0.45" />
+        </linearGradient>
+
+        {/* Luminous silver vertical spark */}
+        <linearGradient id="kaCenterSpark" x1="23" y1="1" x2="23" y2="27" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#94A3B8" stopOpacity="0" />
+          <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#94A3B8" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {/* K stroke with subtle warm amber rim */}
+
+      {/* Platinum-Silver K */}
       <path
-        d="M5 4H10V12.5L18.2 4H24L14.5 14L24.2 24H18.4L10 15.3V24H5V4Z"
-        fill="url(#kaSilverBody)"
-        stroke="url(#kaAmberEdge)"
-        strokeWidth="0.9"
+        d="M4 4H9.2V12.4L17.4 4H23.1L13.7 13.9L23.3 24H17.5L9.2 15.2V24H4V4Z"
+        fill="url(#kaPlatinumK)"
       />
-      {/* Λ stroke with subtle ice-blue rim */}
+
+      {/* Subtle Kollabrix Vertical Platinum Spark */}
+      <polygon points="23.8,1.5 24.8,14 23.8,26.5 22.8,14" fill="url(#kaCenterSpark)" />
+
+      {/* Signature Kollabrix Dark Gunmetal-Graphite Λ with Brushed Silver Bevel */}
       <path
-        d="M30.5 4H35.3L42.5 24H37.4L32.9 10.6L28.4 24H23.3L30.5 4Z"
-        fill="url(#kaSilverBody)"
-        stroke="url(#kaIceEdge)"
-        strokeWidth="0.9"
+        d="M32.4 4H37.2L44.6 24H39.4L34.8 10.6L30.2 24H25L32.4 4Z"
+        fill="url(#kaKollabrixLambda)"
+        stroke="url(#kaSilverBevel)"
+        strokeWidth="0.95"
+        strokeLinejoin="round"
       />
     </svg>
   );
