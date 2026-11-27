@@ -52,6 +52,14 @@ export interface CodexBookChapter {
   };
 }
 
+export interface BookMentorGuide {
+  goalTags: string[];
+  useWhen: string;
+  skipWhen: string;
+  onlyChaptersYouNeed: string;
+  quickVerdict: string;
+}
+
 export interface CodexBookVolume {
   id: string;
   kind: 'book';
@@ -68,6 +76,7 @@ export interface CodexBookVolume {
   spineColor: string;
   accentColor: string;
   badgeText: string;
+  mentorGuide?: BookMentorGuide;
   chapters: CodexBookChapter[];
 }
 

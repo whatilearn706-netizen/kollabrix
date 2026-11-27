@@ -38,7 +38,11 @@ import type { LanguageCurriculum } from '@/types/curriculum';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
-import { BOOK_CHAPTER_METAS } from '@/data/codexBookMeta';
+import {
+  BOOK_CHAPTER_METAS,
+  BOOK_MENTOR_GUIDES,
+  FOLIO_BOOK_GOALS,
+} from '@/data/codexBookMeta';
 import { getKaFolioHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
@@ -74,6 +78,7 @@ const FOLIO_CATEGORY_STYLES: Record<
 const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
   const style = FOLIO_CATEGORY_STYLES[b.category] || FOLIO_CATEGORY_STYLES.Craft;
   const bookMetas = BOOK_CHAPTER_METAS[b.id] || [];
+  const mentorGuide = BOOK_MENTOR_GUIDES[b.id];
   return {
     id: b.id,
     kind: 'book',
@@ -83,13 +88,14 @@ const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
     subtitle: b.tagline,
     spotlightAuthor: b.author,
     spotlightRole: `${b.category} · ISBN ${b.isbn}`,
-    spotlightBio: b.tagline,
-    ctaLabel: 'Start Reading',
+    spotlightBio: mentorGuide?.quickVerdict ? `${mentorGuide.quickVerdict} — ${b.tagline}` : b.tagline,
+    ctaLabel: 'Open Mentor Guide',
     pagesCount: b.pages,
     coverGradient: style.gradient,
     spineColor: b.spineColor,
     accentColor: style.accent,
     badgeText: b.category.toUpperCase(),
+    mentorGuide,
     chapters: b.chapters.map((ch, chIdx) => {
       const meta = bookMetas[chIdx] || bookMetas[0];
       return {
@@ -100,17 +106,19 @@ const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
         keyRules: ch.takeaways,
         hackathonUse: meta?.hackathon,
         interviewFlashcards: meta?.flashcards,
-        code: ch.codeSnippet
-          ? {
-              language: (ch.codeTitle?.toLowerCase().includes('cpp')
-                ? 'cpp'
-                : ch.codeTitle?.toLowerCase().includes('java')
-                ? 'java'
-                : 'python') as 'cpp' | 'java' | 'python',
-              title: ch.codeTitle || `${ch.title} Implementation`,
-              snippet: ch.codeSnippet,
-            }
-          : meta?.code,
+        code:
+          meta?.code ||
+          (ch.codeSnippet
+            ? {
+                language: (ch.codeTitle?.toLowerCase().includes('cpp')
+                  ? 'cpp'
+                  : ch.codeTitle?.toLowerCase().includes('java')
+                  ? 'java'
+                  : 'python') as 'cpp' | 'java' | 'python',
+                title: ch.codeTitle || `${ch.title} Implementation`,
+                snippet: ch.codeSnippet,
+              }
+            : undefined),
       };
     }),
   };
@@ -335,7 +343,10 @@ export default function ResourcesPage() {
       const topicBooks =
         bookTopic === 'All'
           ? FOLIO_12_BOOKS
-          : FOLIO_12_BOOKS.filter((b) => b.languageTag === bookTopic);
+          : FOLIO_12_BOOKS.filter(
+              (b) =>
+                b.mentorGuide?.goalTags?.includes(bookTopic) || b.languageTag === bookTopic
+            );
       const res = topicBooks.filter(match);
       return res.length > 0 ? res : topicBooks;
     }
@@ -532,9 +543,9 @@ export default function ResourcesPage() {
 
         {activeSection === 'books' && (
           <CodexSpotlightCarousel
-            sectionLabel="02 · TECHNICAL BOOKSHELF & 12 VOLUMES"
-            headline="Read the manuals."
-            headlineAccent="Built for engineers."
+            sectionLabel="02 · GOAL-BASED BOOK DECISION ENGINE"
+            headline="Pick the right book."
+            headlineAccent="Built for your goal."
             volumes={filteredVolumes}
             activeIndex={carouselIndices.books}
             onChangeIndex={(next) => setCarouselIndices((prev) => ({ ...prev, books: next }))}
@@ -543,7 +554,7 @@ export default function ResourcesPage() {
             onToggleSave={toggleSave}
             topicFilterBar={
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                {['All', 'Systems', 'Algorithms', 'Architecture', 'Craft', 'Interviews'].map((topic) => (
+                {FOLIO_BOOK_GOALS.map((topic) => (
                   <button
                     key={topic}
                     type="button"

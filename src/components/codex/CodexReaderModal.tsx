@@ -6,14 +6,17 @@ import {
   AlertTriangle,
   Bookmark,
   BookOpen,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Code2,
   ExternalLink,
   HelpCircle,
   Play,
+  SkipForward,
   Sparkles,
   Swords,
+  Target,
   Terminal,
   X,
   Zap,
@@ -167,8 +170,65 @@ export function CodexReaderModal({
               </div>
             </aside>
 
-            {/* Editorial Chapter Content */}
+            {/* Editorial Chapter Content + Top Mentor Decision Guide */}
             <article className="md:col-span-8 p-5 sm:p-8 space-y-6 bg-[#0C121F]">
+              {volume.mentorGuide && (
+                <section className="rounded-2xl border border-white/[0.14] bg-gradient-to-br from-[#131C30] via-[#0E1525] to-[#0A101C] p-4 sm:p-5 space-y-4 shadow-lg">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-sky-300">
+                        KΛ MENTOR PRESCRIPTION · SHOULD YOU USE THIS BOOK?
+                      </p>
+                      <h4 className="text-base sm:text-lg font-bold text-white mt-0.5">
+                        {volume.mentorGuide.quickVerdict}
+                      </h4>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {volume.mentorGuide.goalTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2.5 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-[10px] font-mono font-semibold text-sky-200"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-emerald-500/[0.08] border border-emerald-400/25 p-3.5 space-y-1.5">
+                      <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Use This Book If...</span>
+                      </p>
+                      <p className="text-xs sm:text-[13px] text-[#E2E8F0] leading-relaxed">
+                        {volume.mentorGuide.useWhen}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-rose-500/[0.07] border border-rose-400/25 p-3.5 space-y-1.5">
+                      <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+                        <SkipForward className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                        <span>Skip It For Now If...</span>
+                      </p>
+                      <p className="text-xs sm:text-[13px] text-[#E2E8F0] leading-relaxed">
+                        {volume.mentorGuide.skipWhen}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-sky-500/[0.08] border border-sky-400/25 p-3.5 space-y-1">
+                    <p className="text-[11px] font-mono font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5">
+                      <Target className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                      <span>The Only Chapters You Actually Need (80/20 Rule)</span>
+                    </p>
+                    <p className="text-xs sm:text-[13px] font-medium text-[#F1F5F9] leading-relaxed">
+                      {volume.mentorGuide.onlyChaptersYouNeed}
+                    </p>
+                  </div>
+                </section>
+              )}
+
               {chapter && (
                 <>
                   <div>
