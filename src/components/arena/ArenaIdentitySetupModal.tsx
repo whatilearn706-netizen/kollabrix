@@ -22,43 +22,43 @@ export const AVATAR_CLASS_META: Record<
 > = {
   walker: {
     title: 'Cyber Architect',
-    specialty: 'Slate Tee × Caramel Bag',
+    specialty: 'Graphite Armor × Ice-Cyan Visor',
     badge: 'ARCHITECT',
-    armorHex: '#697C82',
-    armorDarkHex: '#663F24',
-    jointHex: '#C46B2B',
+    armorHex: '#1E293B',
+    armorDarkHex: '#0B101B',
+    jointHex: '#38BDF8',
   },
   ronin: {
     title: 'Compiler Knight',
-    specialty: 'Cobalt Tee × Cyan Bag',
+    specialty: 'Cobalt Plate × Electric Sky Visor',
     badge: 'KNIGHT',
-    armorHex: '#355787',
-    armorDarkHex: '#27272A',
-    jointHex: '#38BDF8',
+    armorHex: '#1D3B72',
+    armorDarkHex: '#091326',
+    jointHex: '#60A5FA',
   },
   sentinel: {
     title: 'Kernel Phantom',
-    specialty: 'Crimson Tee × Amber Bag',
+    specialty: 'Crimson Ops × Molten Ember Visor',
     badge: 'PHANTOM',
-    armorHex: '#7C2D3E',
-    armorDarkHex: '#3F2316',
-    jointHex: '#D97706',
+    armorHex: '#5F1322',
+    armorDarkHex: '#14070B',
+    jointHex: '#F43F5E',
   },
   coder: {
     title: 'Syntax Prodigy',
-    specialty: 'Jade Tee × Tan Bag',
+    specialty: 'Jade Stealth × Emerald Core',
     badge: 'PRODIGY',
-    armorHex: '#2E5E50',
-    armorDarkHex: '#4B2E1B',
-    jointHex: '#C97B36',
+    armorHex: '#114B3F',
+    armorDarkHex: '#061915',
+    jointHex: '#34D399',
   },
   glitch: {
     title: 'Glitch Viper',
-    specialty: 'Violet Tee × Gold Bag',
+    specialty: 'Obsidian Violet × Apex Gold Visor',
     badge: 'VIPER',
-    armorHex: '#4B3869',
-    armorDarkHex: '#1E1B24',
-    jointHex: '#EAB308',
+    armorHex: '#3B1E6D',
+    armorDarkHex: '#120822',
+    jointHex: '#FACC15',
   },
 };
 
@@ -77,69 +77,77 @@ export function ColoredMechBadge({
 }) {
   const sizeClass =
     size === 'lg'
-      ? 'w-28 h-28 drop-shadow-[0_12px_25px_rgba(0,0,0,0.8)]'
+      ? 'w-28 h-28 drop-shadow-[0_12px_25px_rgba(0,0,0,0.85)]'
       : size === 'sm'
         ? 'w-8 h-8'
         : 'w-12 h-12';
 
   return (
-    <svg
-      viewBox="-4 4 128 112"
-      className={sizeClass}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 120 120" className={sizeClass} aria-hidden="true">
       <defs>
-        <radialGradient id={`skinGrad-${uid}`} cx="45%" cy="38%" r="60%">
-          <stop offset="0%" stopColor="#FCE0CC" />
-          <stop offset="65%" stopColor="#F2BE9E" />
-          <stop offset="100%" stopColor="#DCA080" />
-        </radialGradient>
+        <linearGradient id={`helmGrad-${uid}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={armorHex} />
+          <stop offset="100%" stopColor={armorDarkHex} />
+        </linearGradient>
       </defs>
 
-      {/* Soft ground shadow */}
-      <ellipse cx="60" cy="108" rx="30" ry="5" fill="rgba(0,0,0,0.65)" />
-
-      {/* Crewneck T-Shirt Bust + Crossbody Bag Strap */}
+      {/* Rear Holo Wing Silhouette */}
       <path
-        d="M28 104 C28 84, 40 76, 60 76 C80 76, 92 84, 92 104 Z"
-        fill={armorHex}
+        d="M16 58 L36 42 L36 74 Z M104 58 L84 42 L84 74 Z"
+        fill={jointHex}
+        opacity="0.28"
       />
-      <path d="M40 78 L80 104" stroke={jointHex} strokeWidth="6" strokeLinecap="round" />
 
-      {/* Ears */}
-      <circle cx="30" cy="52" r="7.5" fill="#EAC1A5" />
-      <circle cx="90" cy="52" r="7.5" fill="#EAC1A5" />
-
-      {/* Plump Chibi Head */}
-      <ellipse cx="60" cy="50" rx="29" ry="27" fill={`url(#skinGrad-${uid})`} />
-
-      {/* Sculpted Hair Cap & Side-Swept Bangs */}
+      {/* Armored Shoulder Pauldrons & Chest V-Chevron */}
       <path
-        d="M31 44 C31 20, 89 20, 89 44 C84 34, 72 31, 60 32 C48 31, 36 34, 31 44 Z"
-        fill={armorDarkHex}
+        d="M22 108 L30 80 L48 76 L60 88 L72 76 L90 80 L98 108 Z"
+        fill={`url(#helmGrad-${uid})`}
+        stroke="rgba(255,255,255,0.22)"
+        strokeWidth="1.5"
       />
-      <path d="M36 37 Q54 25 74 34" stroke={armorDarkHex} strokeWidth="6" strokeLinecap="round" fill="none" />
+      <path
+        d="M46 84 L60 98 L74 84"
+        fill="none"
+        stroke={jointHex}
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
 
-      {/* Soft Cheek Blush */}
-      <ellipse cx="42" cy="59" rx="5.5" ry="3.2" fill="#E5947A" opacity="0.65" />
-      <ellipse cx="78" cy="59" rx="5.5" ry="3.2" fill="#E5947A" opacity="0.65" />
+      {/* Stealth Helmet Shell */}
+      <path
+        d="M36 52 C36 26, 84 26, 84 52 L80 72 L60 80 L40 72 Z"
+        fill={`url(#helmGrad-${uid})`}
+        stroke="rgba(255,255,255,0.28)"
+        strokeWidth="1.8"
+      />
 
-      {/* Eyebrows */}
-      <rect x="40" y="39" width="11" height="3" rx="1.5" fill={armorDarkHex} />
-      <rect x="69" y="39" width="11" height="3" rx="1.5" fill={armorDarkHex} />
+      {/* Helmet Crest & Ear Comm-Fins */}
+      <rect x="57" y="19" width="6" height="16" rx="2" fill={jointHex} />
+      <rect x="31" y="42" width="5" height="20" rx="2" fill={armorDarkHex} stroke={jointHex} strokeWidth="1" />
+      <rect x="84" y="42" width="5" height="20" rx="2" fill={armorDarkHex} stroke={jointHex} strokeWidth="1" />
 
-      {/* Round Glasses Frames + Bead Eyes + Nose */}
-      <circle cx="46" cy="51" r="9.5" fill="rgba(255,255,255,0.06)" stroke="#18191C" strokeWidth="2.4" />
-      <circle cx="74" cy="51" r="9.5" fill="rgba(255,255,255,0.06)" stroke="#18191C" strokeWidth="2.4" />
-      <line x1="55.5" y1="51" x2="64.5" y2="51" stroke="#18191C" strokeWidth="2.4" />
+      {/* Glowing Curved Tactical Visor */}
+      <path
+        d="M40 48 Q60 54 80 48 L77 58 Q60 63 43 58 Z"
+        fill={jointHex}
+      />
+      <path
+        d="M45 50 Q60 54 75 50"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="1.5"
+        opacity="0.7"
+      />
 
-      <circle cx="46" cy="51" r="3" fill="#111012" />
-      <circle cx="45" cy="49.7" r="1" fill="#FFFFFF" />
-      <circle cx="74" cy="51" r="3" fill="#111012" />
-      <circle cx="73" cy="49.7" r="1" fill="#FFFFFF" />
-
-      <circle cx="60" cy="57" r="3.2" fill="#E3977C" />
-      <rect x="56" y="64" width="8" height="1.8" rx="0.9" fill={armorDarkHex} opacity="0.65" />
+      {/* Tactical Mask Respirator Lines */}
+      <path
+        d="M48 67 L60 72 L72 67"
+        fill="none"
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

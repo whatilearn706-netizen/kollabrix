@@ -125,25 +125,30 @@ export function MatchmakingFaceOff({ engine }: MatchmakingFaceOffProps) {
   const isLocked = engine.faceOffStatus !== 'scanning';
 
   return (
-    <div className="relative z-10 min-h-screen w-full flex items-center justify-center p-4 sm:p-6">
-      <div className="w-full max-w-3xl rounded-3xl bg-[#0A0E17]/95 border border-white/15 shadow-[0_28px_80px_rgba(0,0,0,0.92)] backdrop-blur-2xl p-6 sm:p-10 space-y-8">
-        <div className="flex items-center justify-between">
-          <span className="px-3 py-1 rounded-full bg-white/[0.06] border border-white/15 font-mono text-[10px] font-bold uppercase tracking-widest text-slate-300">
-            {engine.activeQuestion.title.toUpperCase()}
+    <div className="relative z-10 min-h-screen w-full flex items-center justify-center p-4 sm:p-6 bg-[#03050C]/85 backdrop-blur-xl">
+      <div className="relative w-full max-w-4xl rounded-3xl bg-[#080C16]/95 border border-sky-400/25 shadow-[0_32px_100px_rgba(0,0,0,0.96),0_0_60px_rgba(56,189,248,0.12)] overflow-hidden p-6 sm:p-10 space-y-8">
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-sky-400 via-amber-400 to-rose-500" />
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="px-3.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/35 font-mono text-[10px] font-black uppercase tracking-[0.2em] text-sky-200">
+            KΛ ARENA &bull; {engine.activeQuestion.title.toUpperCase()}
           </span>
-          <span className="font-mono text-xs text-slate-400">
-            Stake: <strong className="text-emerald-400">+24</strong> / <strong className="text-red-400">-14</strong> ELO
+          <span className="px-3 py-1 rounded-full bg-white/[0.05] border border-white/10 font-mono text-xs text-slate-300">
+            STAKES: <strong className="text-emerald-400">+24 ELO</strong> / <strong className="text-rose-400">-14 ELO</strong>
           </span>
         </div>
 
-        {/* VS Face-Off Cards */}
+        {/* BGMI / Street-Fighter Split-Screen VS Clash */}
         <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
-          {/* Left: You */}
-          <div className="md:col-span-4 p-5 rounded-2xl bg-[#060910] border border-white/25 text-center space-y-2">
+          {/* Left Challenger: YOU (Cyan Aura) */}
+          <div className="md:col-span-4 relative p-6 rounded-2xl bg-gradient-to-br from-sky-500/15 via-[#070B14] to-[#05070C] border border-sky-400/45 text-center space-y-2.5 shadow-[0_0_32px_rgba(56,189,248,0.16)]">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-sky-300">
+              CHALLENGER 01
+            </span>
             {(() => {
               const meta = AVATAR_CLASS_META[engine.selectedAvatarId] || AVATAR_CLASS_META.walker;
               return (
-                <div className="w-16 h-16 rounded-2xl mx-auto border border-white/25 bg-gradient-to-b from-[#171A23] to-[#080A0F] flex items-center justify-center">
+                <div className="w-20 h-20 rounded-2xl mx-auto border border-sky-400/40 bg-gradient-to-b from-[#131D30] to-[#060911] flex items-center justify-center shadow-lg">
                   <ColoredMechBadge
                     armorHex={meta.armorHex}
                     armorDarkHex={meta.armorDarkHex}
@@ -154,70 +159,81 @@ export function MatchmakingFaceOff({ engine }: MatchmakingFaceOffProps) {
                 </div>
               );
             })()}
-            <div className="font-sans font-bold text-white text-base truncate">{engine.playerName}</div>
-            <div className="text-[11px] font-mono text-slate-400">
-              {engine.playerCollege} &bull; {engine.stats.elo.toLocaleString()} ELO
+            <div className="font-sans font-black text-white text-lg truncate">{engine.playerName}</div>
+            <div className="text-[11px] font-mono text-sky-200/80">
+              {engine.playerCollege} &bull; <strong className="text-amber-300">{engine.stats.elo.toLocaleString()} ELO</strong>
             </div>
           </div>
 
-          {/* Center: Scanning / Countdown */}
+          {/* Center Clash VS Bolt */}
           <div className="md:col-span-3 flex flex-col items-center justify-center text-center py-2 space-y-2">
             {engine.faceOffStatus === 'scanning' && (
               <>
-                <div className="w-12 h-12 rounded-full bg-white/[0.06] border border-white/20 flex items-center justify-center">
-                  <Radio className="w-5 h-5 text-emerald-400 animate-ping" />
+                <div className="w-16 h-16 rounded-2xl bg-sky-500/15 border border-sky-400/40 flex items-center justify-center shadow-[0_0_24px_rgba(56,189,248,0.3)]">
+                  <Radio className="w-7 h-7 text-sky-300 animate-ping" />
                 </div>
-                <span className="font-mono text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                  Scanning Campus Queue...
+                <span className="font-mono text-[11px] font-black text-sky-200 uppercase tracking-[0.2em]">
+                  Scanning Arena...
                 </span>
               </>
             )}
             {engine.faceOffStatus === 'locked' && (
               <>
-                <div className="w-12 h-12 rounded-full bg-white text-slate-950 flex items-center justify-center shadow-lg">
-                  <Swords className="w-5 h-5" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center shadow-[0_0_32px_rgba(245,158,11,0.65)] -skew-x-6">
+                  <span className="skew-x-6 font-mono text-xl font-black">VS</span>
                 </div>
-                <span className="font-mono text-xs font-black text-emerald-400 uppercase tracking-widest">
-                  MATCH FOUND!
+                <span className="font-mono text-xs font-black text-amber-300 uppercase tracking-[0.24em]">
+                  OPPONENT LOCKED!
                 </span>
               </>
             )}
             {engine.faceOffStatus === 'countdown' && (
               <div className="space-y-1">
                 <div
-                  className={`font-mono font-black tracking-tight ${
-                    engine.countdownNum === 'COMPILE!' ? 'text-2xl text-red-400' : 'text-5xl text-white'
+                  className={`font-mono font-black tracking-tight drop-shadow-[0_0_20px_rgba(251,191,36,0.6)] ${
+                    engine.countdownNum === 'COMPILE!' ? 'text-2xl text-amber-400' : 'text-6xl text-white'
                   }`}
                 >
                   {engine.countdownNum}
                 </div>
-                <div className="font-mono text-[10px] text-slate-400 uppercase tracking-widest">
-                  Initializing IDE &amp; Shield
+                <div className="font-mono text-[10px] text-sky-300 uppercase tracking-[0.2em]">
+                  Deploying Sandbox...
                 </div>
               </div>
             )}
           </div>
 
-          {/* Right: Opponent */}
+          {/* Right Challenger: RIVAL (Crimson Aura) */}
           <div
-            className={`md:col-span-4 p-5 rounded-2xl bg-[#060910] border text-center space-y-2 transition-all ${
-              isLocked ? 'border-white/25 opacity-100' : 'border-white/10 opacity-60'
+            className={`md:col-span-4 relative p-6 rounded-2xl bg-gradient-to-bl from-rose-500/15 via-[#090B14] to-[#05070C] border text-center space-y-2.5 transition-all ${
+              isLocked
+                ? 'border-rose-400/50 opacity-100 shadow-[0_0_32px_rgba(244,63,94,0.18)]'
+                : 'border-white/10 opacity-65'
             }`}
           >
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-rose-300">
+              RIVAL DUELIST
+            </span>
             {isLocked ? (
               <>
-                <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-white/20 mx-auto flex items-center justify-center text-2xl">
-                  {engine.rivalProfile.avatarEmoji}
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-b from-[#2A111A] to-[#09070C] border border-rose-400/40 mx-auto flex items-center justify-center shadow-lg">
+                  <ColoredMechBadge
+                    armorHex="#5F1322"
+                    armorDarkHex="#14070B"
+                    jointHex="#F43F5E"
+                    uid="faceoff-rival"
+                    size="md"
+                  />
                 </div>
-                <div className="font-sans font-bold text-white text-base truncate">{engine.rivalProfile.name}</div>
-                <div className="text-[11px] font-mono text-slate-400">
-                  {engine.rivalProfile.college} &bull; {engine.rivalProfile.elo.toLocaleString()} ELO
+                <div className="font-sans font-black text-white text-lg truncate">{engine.rivalProfile.name}</div>
+                <div className="text-[11px] font-mono text-rose-200/80">
+                  {engine.rivalProfile.college} &bull; <strong className="text-amber-300">{engine.rivalProfile.elo.toLocaleString()} ELO</strong>
                 </div>
               </>
             ) : (
-              <div className="py-5 space-y-2">
-                <Loader2 className="w-8 h-8 text-slate-500 animate-spin mx-auto" />
-                <div className="font-mono text-xs text-slate-400">Matching rival at ~{engine.stats.elo} ELO</div>
+              <div className="py-6 space-y-2">
+                <Loader2 className="w-9 h-9 text-rose-400/70 animate-spin mx-auto" />
+                <div className="font-mono text-xs text-slate-400">Matching ~{engine.stats.elo} ELO rival</div>
               </div>
             )}
           </div>
@@ -229,7 +245,7 @@ export function MatchmakingFaceOff({ engine }: MatchmakingFaceOffProps) {
             onClick={engine.cancelMatchmaking}
             className="text-xs font-mono text-slate-500 hover:text-slate-300 cursor-pointer"
           >
-            Cancel Matchmaking
+            Abort Matchmaking
           </button>
         </div>
       </div>

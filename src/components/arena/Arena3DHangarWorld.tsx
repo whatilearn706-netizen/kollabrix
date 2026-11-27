@@ -9,6 +9,10 @@ import { buildCyberDuelist3D } from './Arena3DHangarCharacter';
 interface Arena3DHangarWorldProps {
   avatarId: string;
   algoLanguage: string;
+  elo?: number;
+  wins?: number;
+  winStreak?: number;
+  teamSize?: string;
   paused?: boolean;
 }
 
@@ -58,12 +62,25 @@ function createRadialGlowTexture(
  * - Glossy midnight reflective court floor with crisp white sweeping court arcs & center circle
  * - Interactive 3D Boy Character standing on a sleek dark obsidian & ice-blue pedestal dais
  */
-export function Arena3DHangarWorld({ avatarId, paused = false }: Arena3DHangarWorldProps) {
+export function Arena3DHangarWorld({
+  avatarId,
+  elo = 1200,
+  wins = 0,
+  winStreak = 0,
+  teamSize = '1v1',
+  paused = false,
+}: Arena3DHangarWorldProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const avatarIdRef = useRef(avatarId);
   avatarIdRef.current = avatarId;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const eloRef = useRef(elo);
+  eloRef.current = elo;
+  const winsRef = useRef(wins);
+  winsRef.current = wins;
+  const streakRef = useRef(winStreak);
+  streakRef.current = winStreak;
 
   useEffect(() => {
     const container = mountRef.current;
@@ -391,31 +408,105 @@ export function Arena3DHangarWorld({ avatarId, paused = false }: Arena3DHangarWo
         scene.add(beamOuter);
       });
 
-      // --- CENTER OBSIDIAN + ICE-BLUE STADIUM PEDESTAL DAIS ---
+      // --- CENTER OBSIDIAN + RANK-REACTIVE ROTATING ESPORTS PEDESTAL ---
+      const rankRingHex =
+        eloRef.current >= 1800 ? 0xc026d3 : eloRef.current >= 1300 ? 0xf59e0b : 0x38bdf8;
+      const rankSubHex =
+        eloRef.current >= 1800 ? 0xf43f5e : eloRef.current >= 1300 ? 0xfde047 : 0x67e8f9;
+
       const padBase = new THREE.Mesh(
-        tg(new THREE.CylinderGeometry(1.05, 1.12, 0.04, 48)),
+        tg(new THREE.CylinderGeometry(1.12, 1.24, 0.06, 48)),
         tm(
           new THREE.MeshStandardMaterial({
-            color: 0x080d1a,
-            metalness: 0.8,
-            roughness: 0.24,
+            color: 0x070b14,
+            metalness: 0.85,
+            roughness: 0.22,
           })
         )
       );
-      padBase.position.y = 0.02;
+      padBase.position.y = 0.03;
       scene.add(padBase);
 
       const padRing = new THREE.Mesh(
-        tg(new THREE.TorusGeometry(1.06, 0.016, 10, 64)),
-        tm(new THREE.MeshBasicMaterial({ color: 0x38bdf8 }))
+        tg(new THREE.TorusGeometry(1.14, 0.022, 10, 64)),
+        tm(new THREE.MeshBasicMaterial({ color: rankRingHex }))
       );
       padRing.rotation.x = Math.PI / 2;
-      padRing.position.y = 0.042;
+      padRing.position.y = 0.062;
       scene.add(padRing);
 
-      // --- CENTER 3D CHARACTER MODEL (pin.it/31f49YKRp stylized vinyl character) ---
-      const duelist = buildCyberDuelist3D(avatarIdRef.current);
-      duelist.root.position.set(0, 0.045, 0);
+      // Spinning Outer Segmented Tech Ring & Counter-Rotating Rank Halo
+      const outerTechRing = new THREE.Mesh(
+        tg(new THREE.TorusGeometry(1.48, 0.015, 6, 36)),
+        tm(
+          new THREE.MeshBasicMaterial({
+            color: rankSubHex,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.55,
+          })
+        )
+      );
+      outerTechRing.rotation.x = Math.PI / 2;
+      outerTechRing.position.y = 0.04;
+      scene.add(outerTechRing);
+
+      const innerSpinHalo = new THREE.Mesh(
+        tg(new THREE.RingGeometry(1.22, 1.28, 32, 1, 0, Math.PI * 1.4)),
+        tm(
+          new THREE.MeshBasicMaterial({
+            color: rankRingHex,
+            transparent: true,
+            opacity: 0.72,
+            side: THREE.DoubleSide,
+          })
+        )
+      );
+      innerSpinHalo.rotation.x = -Math.PI / 2;
+      innerSpinHalo.position.y = 0.045;
+      scene.add(innerSpinHalo);
+
+      // 2v2 Squad Companion Hologram Pad beside the hero
+      if (teamSize === '2v2') {
+        const squadPad = new THREE.Mesh(
+          tg(new THREE.TorusGeometry(0.65, 0.018, 8, 42)),
+          tm(new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.75 }))
+        );
+        squadPad.rotation.x = Math.PI / 2;
+        squadPad.position.set(-1.75, 0.04, -0.45);
+        scene.add(squadPad);
+      }
+
+      // Rising Cyber Sparks / Embers around Pedestal
+      const emberCount = 70;
+      const emberPositions = new Float32Array(emberCount * 3);
+      for (let i = 0; i < emberCount; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 0.8 + Math.random() * 1.6;
+        emberPositions[i * 3] = Math.cos(a) * r;
+        emberPositions[i * 3 + 1] = 0.08 + Math.random() * 2.5;
+        emberPositions[i * 3 + 2] = Math.sin(a) * r;
+      }
+      const emberGeo = tg(new THREE.BufferGeometry());
+      emberGeo.setAttribute('position', new THREE.BufferAttribute(emberPositions, 3));
+      const emberMat = tm(
+        new THREE.PointsMaterial({
+          color: rankSubHex,
+          size: 0.038,
+          transparent: true,
+          opacity: 0.72,
+        })
+      );
+      const embers = new THREE.Points(emberGeo, emberMat);
+      scene.add(embers);
+
+      // --- CENTER 3D CYBER-DUELIST MODEL ---
+      const duelist = buildCyberDuelist3D(avatarIdRef.current, {
+        elo: eloRef.current,
+        wins: winsRef.current,
+        streak: streakRef.current,
+      });
+      duelist.root.position.set(0, 0.06, 0);
       duelist.root.scale.setScalar(1.06);
       scene.add(duelist.root);
 
@@ -484,6 +575,10 @@ export function Arena3DHangarWorld({ avatarId, paused = false }: Arena3DHangarWo
         duelist.root.rotation.y = currentYaw;
         duelist.update(t);
 
+        outerTechRing.rotation.z = t * 0.35;
+        innerSpinHalo.rotation.z = -t * 0.65;
+        embers.rotation.y = t * 0.18;
+
         camera.position.x += (targetCamX - camera.position.x) * 0.06;
         camera.position.y += (targetCamY - camera.position.y) * 0.06;
         camera.lookAt(0, 1.08, -4.0);
@@ -517,7 +612,7 @@ export function Arena3DHangarWorld({ avatarId, paused = false }: Arena3DHangarWo
     } catch {
       return () => {};
     }
-  }, [avatarId]);
+  }, [avatarId, elo, wins, winStreak, teamSize]);
 
   return (
     <div
