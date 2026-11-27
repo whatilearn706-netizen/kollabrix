@@ -7,6 +7,7 @@ import { ArrowUpRight, ChevronDown, X } from 'lucide-react';
 import { KA_CODEX_BOOKS, type CodingBook } from '@/data/kaCodexBooks';
 import { KaCodexWebGLHero } from '@/components/brands/KaCodexWebGLHero';
 import { KaCodexSpotlightStage } from '@/components/brands/KaCodexSpotlightStage';
+import { KaBrandEmblem, KaSuiteSwitcher } from '@/components/brands/KaBrandSuite';
 
 export default function KaCodexBrandPage() {
   const router = useRouter();
@@ -77,16 +78,26 @@ export default function KaCodexBrandPage() {
 
         {/* Floating Transparent Header (Dark Theme Only) */}
         <header className="relative z-30 w-full px-5 sm:px-9 pt-6 sm:pt-7 flex items-start justify-between gap-4 pointer-events-none">
-          <div className="pointer-events-auto">
-            <h2 className="text-sm sm:text-base font-semibold tracking-tight text-[#F4F3EF]">
-              KΛ CODEX
-            </h2>
-            <p className="text-[11px] sm:text-xs text-[#8C867E] mt-0.5">
-              Programming &amp; software engineering books &middot; Built by Kollabrix
-            </p>
+          <div className="pointer-events-auto flex items-center gap-2.5">
+            <KaBrandEmblem />
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold tracking-tight text-[#F4F3EF]">
+                KΛ CODEX
+              </h2>
+              <p className="text-[11px] sm:text-xs text-[#8C867E] mt-0.5">
+                Programming &amp; engineering books &middot;{' '}
+                <Link href="/" className="text-[#D6D1C7] hover:text-white underline underline-offset-2">
+                  Built by Kollabrix
+                </Link>
+              </p>
+            </div>
           </div>
 
           <nav aria-label="KΛ CODEX navigation" className="pointer-events-auto flex items-center gap-2">
+            <div className="hidden md:flex">
+              <KaSuiteSwitcher active="codex" tone="dark-stone" />
+            </div>
+
             <button
               type="button"
               onClick={() => setShowIndexOverlay(true)}
@@ -95,20 +106,6 @@ export default function KaCodexBrandPage() {
               <span>Index</span>
               <sup className="text-[9px] font-mono text-[#8C867E]">{totalBooks}</sup>
             </button>
-
-            <Link
-              href="/ka-ai"
-              className="hidden sm:inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-[#1C1A17]/85 hover:bg-[#282521] border border-white/[0.14] backdrop-blur-xl text-xs font-medium text-[#D6D1C7] hover:text-white transition-all"
-            >
-              <span>KΛ ΛI</span>
-            </Link>
-
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-[#1C1A17]/85 hover:bg-[#282521] border border-white/[0.14] backdrop-blur-xl text-xs font-medium text-[#F4F3EF] transition-all"
-            >
-              <span>Kollabrix</span>
-            </Link>
           </nav>
         </header>
 

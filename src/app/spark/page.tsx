@@ -34,6 +34,7 @@ import { SparkChatMessage } from '@/components/spark/SparkSuperpowersPanel';
 import { SparkMarkdown } from '@/components/spark/SparkMarkdown';
 import { SparkSidebar, SparkMode, StoredSparkThread } from '@/components/spark/SparkSidebar';
 import { KaPricingModal } from '@/components/spark/KaPricingModal';
+import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 import type { KaEntitlementSummary } from '@/lib/spark/plans';
 
 type ModelTier = 'fast' | 'deep';
@@ -691,18 +692,25 @@ export default function SparkUniversalWorkspacePage() {
               </>
             )}
 
-            <Link
-              href="/ka-ai"
-              title="Back to KΛ ΛI Homepage — Built by Kollabrix"
-              className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-b from-[#171C28] via-[#0E121B] to-[#080A10] border border-white/15 hover:border-sky-300/45 shadow-[0_0_18px_rgba(148,163,184,0.14)] transition-all"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-zinc-300 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="text-[11px] font-semibold tracking-tight text-white">KΛ ΛI</span>
-              <span className="h-3 w-px bg-white/15" />
-              <span className="text-[10px] font-mono text-zinc-300">
+            <div className="inline-flex items-center p-0.5 rounded-full bg-gradient-to-b from-[#171C28] via-[#0E121B] to-[#080A10] border border-white/15 shadow-[0_0_18px_rgba(148,163,184,0.14)]">
+              <Link
+                href="/ka-ai"
+                title="Back to KΛ ΛI Homepage"
+                className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-white/[0.08] transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-zinc-300 group-hover:-translate-x-0.5 transition-transform" />
+                <KaBrandEmblem className="w-4 h-3" />
+                <span className="text-[11px] font-semibold tracking-tight text-white">KΛ ΛI</span>
+              </Link>
+              <span className="h-3.5 w-px bg-white/15" />
+              <Link
+                href="/"
+                title="Visit Kollabrix"
+                className="px-2.5 py-1 rounded-full hover:bg-white/[0.08] text-[10px] font-mono text-zinc-300 hover:text-white transition-colors"
+              >
                 Built by <span className="text-sky-300 font-bold">Kollabrix</span>
-              </span>
-            </Link>
+              </Link>
+            </div>
 
             <div className="relative">
               <button

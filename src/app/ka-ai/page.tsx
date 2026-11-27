@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Sparkles } from 'lucide-react';
 import { KaAiCinematicIntro } from '@/components/brands/KaAiCinematicIntro';
 import { KaAiParticleOrb } from '@/components/brands/KaAiParticleOrb';
+import { KaBrandEmblem, KaSuiteSwitcher } from '@/components/brands/KaBrandSuite';
 
 export default function KaAiBrandPage() {
   const [introDone, setIntroDone] = useState(false);
@@ -73,24 +74,16 @@ export default function KaAiBrandPage() {
           {/* Centered Floating Pill Navbar */}
           <nav
             aria-label="KΛ ΛI navigation"
-            className="relative z-20 w-full max-w-[460px] rounded-2xl bg-[#091229]/70 border border-white/[0.1] backdrop-blur-2xl px-4 py-2.5 flex items-center justify-between gap-3 shadow-[0_14px_40px_rgba(0,0,0,0.65)]"
+            className="relative z-20 w-full max-w-[660px] rounded-2xl bg-[#091229]/70 border border-white/[0.1] backdrop-blur-2xl px-4 py-2 flex flex-wrap items-center justify-between gap-2.5 shadow-[0_14px_40px_rgba(0,0,0,0.65)]"
           >
-            <Link href="/ka-ai" className="inline-flex items-center gap-2.5 group">
-              {/* Interlocking geometric KΛ ribbon emblem */}
-              <svg viewBox="0 0 28 24" fill="none" className="w-6 h-5 text-white" aria-hidden="true">
-                <path
-                  d="M7 5.5C7 3.84 8.34 2.5 10 2.5H19.5C21.16 2.5 22.5 3.84 22.5 5.5C22.5 7.16 21.16 8.5 19.5 8.5H10C8.34 8.5 7 7.16 7 5.5Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M5.5 15.5C5.5 13.84 6.84 12.5 8.5 12.5H18C19.66 12.5 21 13.84 21 15.5C21 17.16 19.66 18.5 18 18.5H8.5C6.84 18.5 5.5 17.16 5.5 15.5Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-              </svg>
+            <Link href="/ka-ai" className="inline-flex items-center gap-2 group">
+              <KaBrandEmblem />
               <span className="font-semibold text-sm tracking-tight text-white">KΛ ΛI</span>
             </Link>
+
+            <div className="hidden sm:flex">
+              <KaSuiteSwitcher active="ai" tone="dark-blue" />
+            </div>
 
             <div className="flex items-center gap-2">
               <Link
@@ -110,10 +103,14 @@ export default function KaAiBrandPage() {
 
           {/* Hero Display Headline with Silver-White Focal Luminance Sweep */}
           <div className="relative z-10 mt-12 sm:mt-16 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.05] border border-white/15 text-[11px] font-mono text-slate-200 mb-5">
+            <Link
+              href="/"
+              title="Visit Kollabrix"
+              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-sky-300/45 text-[11px] font-mono text-slate-200 mb-5 transition-all"
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-              <span>Built by Kollabrix</span>
-            </div>
+              <span>Built by <strong className="text-white">Kollabrix</strong> &rarr;</span>
+            </Link>
             <h1 className="text-3xl sm:text-5xl md:text-[54px] font-medium tracking-[-0.03em] leading-[1.14]">
               <span className="bg-gradient-to-r from-slate-500 via-white to-slate-500 bg-clip-text text-transparent">
                 Build with KΛ ΛI – Smarter,
