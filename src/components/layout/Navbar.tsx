@@ -280,7 +280,7 @@ export function Navbar() {
             <span className="relative z-10">My Dashboard</span>
           </Link>
 
-          {/* Creative KΛ AI New-Tab Launcher Button (replaces Bell notification) */}
+          {/* Creative Brushed-Silver KΛ AI New-Tab Launcher Button */}
           <Link
             href="/spark"
             target="_blank"
@@ -288,27 +288,40 @@ export function Navbar() {
             aria-label="Open KΛ ΛI Studio in a new tab"
             title="Launch KΛ ΛI Studio (New Tab)"
             className={clsx(
-              'relative inline-flex items-center justify-center gap-1 h-9 px-3 rounded-full overflow-hidden transition-all duration-300 active:scale-[0.96] group shrink-0',
+              'relative inline-flex items-center justify-center gap-1 h-9 px-3.5 rounded-full overflow-hidden transition-all duration-300 active:scale-[0.96] group shrink-0',
               isNavbarDark
-                ? 'bg-gradient-to-b from-[#161a24] via-[#0c0f17] to-[#05070b] border border-white/25 hover:border-amber-300/60 text-white shadow-[0_0_20px_rgba(255,255,255,0.08),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:shadow-[0_0_22px_rgba(251,191,36,0.28)]'
-                : 'bg-slate-900 text-white border border-slate-700 hover:border-amber-500 shadow-sm'
+                ? 'bg-gradient-to-b from-[#1B1F29] via-[#0F1219] to-[#06070B] border border-zinc-300/45 hover:border-white/80 text-white shadow-[0_0_18px_rgba(226,232,240,0.22),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:shadow-[0_0_26px_rgba(226,232,240,0.4)]'
+                : 'bg-gradient-to-b from-slate-800 to-slate-950 text-white border border-slate-400/50 hover:border-white shadow-[0_0_14px_rgba(148,163,184,0.3)]'
             )}
           >
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute -top-1 left-2 w-8 h-2.5 rounded-full bg-gradient-to-r from-amber-300/40 via-white/50 to-cyan-300/40 blur-[4px] opacity-60 group-hover:opacity-100 transition-opacity"
+              className="pointer-events-none absolute -top-1.5 left-1.5 w-10 h-2.5 rounded-full bg-white/35 blur-[4px] opacity-65 group-hover:opacity-100 transition-opacity"
             />
-            <span className="relative z-10 inline-flex items-center gap-[1px] font-black text-[13px] tracking-tight leading-none">
-              <span className="text-slate-100 group-hover:text-white transition-colors">K</span>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-px inset-x-3 h-px bg-gradient-to-r from-transparent via-zinc-200/80 to-transparent opacity-80"
+            />
+            <span className="relative z-10 inline-flex items-center gap-[2px] font-black text-[13px] tracking-tight leading-none">
+              <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent group-hover:from-white group-hover:to-zinc-200 transition-all">
+                K
+              </span>
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
-                className="w-3.5 h-3.5 text-amber-300 group-hover:text-amber-200 group-hover:scale-110 transition-all duration-200 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]"
+                className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200 drop-shadow-[0_0_6px_rgba(226,232,240,0.45)]"
                 aria-hidden="true"
               >
+                <defs>
+                  <linearGradient id="kaLambdaSilverDesk" x1="12" y1="2" x2="12" y2="21" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#E2E8F0" />
+                    <stop offset="48%" stopColor="#94A3B8" />
+                    <stop offset="100%" stopColor="#525C6E" />
+                  </linearGradient>
+                </defs>
                 <path
-                  d="M12 3.2L4.2 20.8H8.3L12 11.4L15.7 20.8H19.8L12 3.2Z"
-                  fill="currentColor"
+                  d="M9.6 3.5H14.4L20.4 20.5H15.8L12 9.4L8.2 20.5H3.6L9.6 3.5Z"
+                  fill="url(#kaLambdaSilverDesk)"
                 />
               </svg>
             </span>
@@ -502,15 +515,22 @@ export function Navbar() {
             rel="noopener noreferrer"
             aria-label="Open KΛ ΛI Studio in a new tab"
             className={clsx(
-              'inline-flex items-center justify-center gap-0.5 h-8 px-2.5 rounded-full border text-xs font-black transition-all',
+              'inline-flex items-center justify-center gap-[2px] h-8 px-2.5 rounded-full border text-xs font-black transition-all shadow-[0_0_14px_rgba(226,232,240,0.2)]',
               isNavbarDark
-                ? 'bg-[#0c0f17] border-white/25 text-white'
-                : 'bg-slate-900 border-slate-700 text-white'
+                ? 'bg-gradient-to-b from-[#1B1F29] to-[#080A0E] border-zinc-300/45 text-white'
+                : 'bg-slate-900 border-slate-400/50 text-white'
             )}
           >
-            <span>K</span>
-            <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-amber-300" aria-hidden="true">
-              <path d="M12 3.2L4.2 20.8H8.3L12 11.4L15.7 20.8H19.8L12 3.2Z" fill="currentColor" />
+            <span className="bg-gradient-to-b from-white to-zinc-300 bg-clip-text text-transparent">K</span>
+            <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" aria-hidden="true">
+              <defs>
+                <linearGradient id="kaLambdaSilverMob" x1="12" y1="2" x2="12" y2="21" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#E2E8F0" />
+                  <stop offset="55%" stopColor="#94A3B8" />
+                  <stop offset="100%" stopColor="#525C6E" />
+                </linearGradient>
+              </defs>
+              <path d="M9.6 3.5H14.4L20.4 20.5H15.8L12 9.4L8.2 20.5H3.6L9.6 3.5Z" fill="url(#kaLambdaSilverMob)" />
             </svg>
           </Link>
 

@@ -27,11 +27,13 @@ function ArenaPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomParam = searchParams.get('room') || undefined;
-  const { user, profile } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
-  // Opens directly into the Cinematic Proving Grounds Arena command center
-  const [showPlayLobby, setShowPlayLobby] = useState<boolean>(true);
+  // Starts ASLEEP (0% GPU/CPU Three.js footprint) until the user enters Battle Arena.
+  // Exits back to Kollabrix (/) unmount WebGL and return Arena to sleep on next visit.
+  const [showPlayLobby, setShowPlayLobby] = useState<boolean>(Boolean(roomParam));
+  const [pendingWakeAfterAuth, setPendingWakeAfterAuth] = useState<boolean>(false);
 
   const [isLive, setIsLive] = useState<boolean>(true);
   const [maintenanceMessage, setMaintenanceMessage] = useState(
@@ -222,14 +224,32 @@ function ArenaPageContent() {
     } catch {}
   }, [router]);
 
+  // Auto-wake Battle Arena once user finishes creating/signing into their Kollabrix account
+  useEffect(() => {
+    if (pendingWakeAfterAuth && user) {
+      setPendingWakeAfterAuth(false);
+      setShowPlayLobby(true);
+    }
+  }, [pendingWakeAfterAuth, user]);
+
   const handleLaunchLobby = () => {
     playEnterSound();
+    if (!user) {
+      setPendingWakeAfterAuth(true);
+      openAuthModal('signup');
+      return;
+    }
     setShowPlayLobby(true);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('play', 'true');
       window.history.pushState({}, '', url.toString());
     }
+  };
+
+  const handleEnterLocalGuestPreview = () => {
+    playEnterSound();
+    setShowPlayLobby(true);
   };
 
   const handleClose = () => {
@@ -320,144 +340,84 @@ function ArenaPageContent() {
   }
 
   // =========================================================================
-  // 1. THE PROVING GROUNDS CINEMATIC GATEWAY (Middle-Earth Chrome Experiment Style)
-  // Symmetrical layout with epic mountain landscape, grand typography, and central pulsing BEGIN button
+  // 1. ZERO-GPU STANDBY GATEWAY (Sleeps until user creates account & wakes Arena)
   // =========================================================================
   if (!showPlayLobby) {
     return (
-      <div className="fixed inset-0 w-full h-full bg-[#030611] text-white overflow-hidden select-none flex flex-col justify-between">
-        {/* Full-Screen Ultra-HD Proving Grounds Alpine Horizon */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden select-none">
-          <img
-            src="/images/arena-proving-grounds-bg.jpg"
-            alt="The Proving Grounds • Collegiate Speed Coding Combat"
-            className="w-full h-full object-cover object-center select-none filter contrast-[1.05] brightness-[0.92] saturate-[1.10]"
-          />
-          {/* Symmetrical dark vignettes to focus user attention onto center portal */}
-          <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80 pointer-events-none" />
-          <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/85 via-black/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-black/90 via-black/50 to-transparent pointer-events-none" />
-        </div>
+      <div className="fixed inset-0 w-full h-full bg-[#050609] text-white overflow-hidden select-none flex flex-col justify-between p-6 sm:p-10">
+        {/* Lightweight Pure CSS Dark-Smoke Ambient Glow (Zero Three.js GPU Load while sleeping!) */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(ellipse 70% 50% at 50% 45%, rgba(148, 163, 184, 0.08) 0%, rgba(15, 18, 25, 0.75) 55%, #040508 100%)',
+          }}
+        />
 
-        {/* Minimalist Top Navigation Header */}
-        <header className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pt-6 sm:pt-8 flex items-center justify-between">
-          {/* Brand Pill */}
+        {/* Minimal Header */}
+        <header className="relative z-20 w-full max-w-6xl mx-auto flex items-center justify-between">
           <Link
             href="/"
-            className="group flex items-center gap-2.5 px-4 py-2 rounded-full bg-black/50 hover:bg-black/70 border border-white/15 hover:border-white/30 backdrop-blur-md transition-all text-slate-300 hover:text-white shadow-lg cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#0D1017] hover:bg-white/[0.08] border border-white/15 text-xs font-mono font-bold text-zinc-200 hover:text-white transition-all"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-white">
-              KOLLABRIX
-            </span>
-            <span className="text-white/20 select-none">|</span>
-            <span className="text-xs sm:text-sm font-sans font-medium text-slate-300">
-              Exit
-            </span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Kollabrix</span>
           </Link>
 
-          {/* Audio & Status Controls */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={toggleAudio}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full border backdrop-blur-md transition-all cursor-pointer shadow-lg text-xs font-mono select-none ${
-                audioEnabled && isAudioPlaying
-                  ? 'bg-amber-500/20 border-amber-400/80 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                  : 'bg-black/60 hover:bg-black/80 border-white/20 hover:border-amber-400/60 text-slate-300 hover:text-white'
-              }`}
-              title="Toggle atmospheric mountain soundscape"
-            >
-              {audioEnabled && isAudioPlaying ? (
-                <>
-                  <Volume2 className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                  <span className="text-amber-300 font-bold">Atmospheric Ambiance (Active) &bull; Click to Mute</span>
-                  <span className="flex items-center gap-0.5 ml-1">
-                    <span className="w-0.5 h-2.5 bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <span className="w-0.5 h-3.5 bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <span className="w-0.5 h-2 bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </span>
-                </>
-              ) : (
-                <>
-                  <VolumeX className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-slate-300 font-medium">🔇 Atmospheric Audio Off &bull; Click to Enable Ambiance</span>
-                </>
-              )}
-            </button>
-          </div>
+          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0D1017] border border-zinc-400/25 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>3D ENGINE SLEEPING &bull; ZERO GPU LOAD</span>
+          </span>
         </header>
 
-        {/* Central Epic Stage: Symmetrical Cinematic Presentation (Middle-Earth Chrome Experiment) */}
-        <main className="relative z-10 w-full max-w-5xl mx-auto px-6 py-4 flex-1 flex flex-col items-center justify-center text-center">
-          {/* Poetic Pre-Title Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/50 border border-amber-400/30 text-amber-300 text-[10px] sm:text-xs font-mono tracking-[0.25em] uppercase mb-4 sm:mb-6 backdrop-blur-md shadow-lg animate-fadeIn">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.9)]" />
-            <span>A JOURNEY THROUGH SPEED &amp; LOGIC</span>
-          </div>
-
-          {/* Grand Cinematic Title */}
-          <h1 className="font-heading font-black tracking-[0.08em] sm:tracking-[0.15em] leading-[0.95] text-white text-4xl sm:text-6xl md:text-7xl lg:text-8xl select-none uppercase drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
-            <span className="bg-gradient-to-b from-white via-amber-100 to-amber-300/80 bg-clip-text text-transparent">
+        {/* Centered Dark-Smoke Awakening Panel */}
+        <main className="relative z-10 w-full max-w-2xl mx-auto my-auto text-center space-y-6">
+          <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-gradient-to-b from-[#1B1E26] via-[#0F1117] to-[#08090D] border border-zinc-400/25 border-t-zinc-200/35 shadow-xl">
+            <span className="w-1.5 h-1.5 rotate-45 bg-zinc-200" />
+            <span className="font-heading font-black text-xs tracking-[0.28em] uppercase bg-gradient-to-b from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
               THE PROVING GROUNDS
             </span>
+            <span className="w-1.5 h-1.5 rotate-45 bg-zinc-200" />
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white">
+            Enter Battle Arena
           </h1>
 
-          {/* Elegant Gold Separator Line */}
-          <div className="w-32 sm:w-56 h-[1px] bg-gradient-to-r from-transparent via-amber-400/70 to-transparent my-4 sm:my-6" />
-
-          {/* Poetic Subtitle */}
-          <p className="text-slate-200/90 text-xs sm:text-sm md:text-base font-mono uppercase tracking-[0.25em] max-w-xl text-center drop-shadow-[0_2px_14px_rgba(0,0,0,0.95)]">
-            WHERE REAL BUILDERS ARE PROVEN UNDER TIME
+          <p className="text-sm sm:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
+            {user
+              ? 'Your 3D Mech & Matchmaking engine stays asleep until you enter—keeping your laptop cool until combat begins.'
+              : 'Sign in or create your Kollabrix account to wake the 3D Mech lobby, save your rank, and enter live 1v1 duels.'}
           </p>
 
-          {/* The Iconic Central BEGIN Circular Portal Button */}
-          <div className="mt-8 sm:mt-12 relative flex items-center justify-center">
-            {/* Ambient Pulsing Radar Rings */}
-            <div className="absolute w-28 h-28 sm:w-36 sm:h-36 rounded-full border border-amber-400/30 animate-ping pointer-events-none opacity-40" />
-            <div className="absolute w-36 h-36 sm:w-48 sm:h-48 rounded-full border border-white/10 animate-pulse pointer-events-none" />
-
-            {/* Interactive Circular Portal */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               id="begin-portal-btn"
               type="button"
               onClick={handleLaunchLobby}
-              onMouseEnter={playHoverSound}
-              className="group relative w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-black/45 hover:bg-black/65 border border-white/40 hover:border-amber-400 text-white backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 shadow-[0_0_35px_rgba(251,191,36,0.25)] hover:shadow-[0_0_55px_rgba(251,191,36,0.55)] flex flex-col items-center justify-center cursor-pointer select-none"
+              className="px-9 py-4 rounded-2xl bg-gradient-to-b from-[#232732] via-[#13161D] to-[#090B0F] text-white border border-zinc-300/50 hover:border-white/85 font-mono text-xs sm:text-sm font-black uppercase tracking-[0.18em] flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(226,232,240,0.22),inset_0_1px_0_rgba(255,255,255,0.28)] hover:shadow-[0_0_40px_rgba(226,232,240,0.38)] hover:scale-[1.02] transition-all cursor-pointer"
             >
-              {/* Inner Decorative Accent Ring */}
-              <div className="absolute inset-1.5 sm:inset-2 rounded-full border border-white/15 group-hover:border-amber-400/40 transition-colors pointer-events-none" />
-
-              <span className="font-mono text-xs sm:text-sm font-bold tracking-[0.3em] uppercase text-white group-hover:text-amber-300 transition-colors">
-                BEGIN
-              </span>
-              <span className="text-[9px] sm:text-[10px] font-mono text-slate-400 group-hover:text-amber-200/80 tracking-wider transition-colors mt-0.5">
-                ENTER ARENA
-              </span>
+              <Swords className="w-4 h-4 text-zinc-200" />
+              <span>{user ? 'Wake & Enter Arena' : 'Create Account & Enter Arena'}</span>
+              <ArrowRight className="w-4 h-4 text-zinc-200" />
             </button>
+
+            {!user && (
+              <button
+                type="button"
+                onClick={handleEnterLocalGuestPreview}
+                className="px-5 py-4 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/12 text-xs font-mono font-bold text-zinc-300 hover:text-white transition-all cursor-pointer"
+              >
+                Preview 3D Lobby (Guest)
+              </button>
+            )}
           </div>
         </main>
 
-        {/* Minimalist Chrome Experiment Style Footer */}
-        <footer className="relative z-20 w-full max-w-[1720px] 2xl:max-w-[1920px] mx-auto px-6 sm:px-10 lg:px-14 xl:px-20 pb-6 sm:pb-8 pt-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-slate-400">
-          {/* Left: Powered By */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-slate-400 tracking-wider">
-              KOLLABRIX &bull; COLLEGIATE CODE COMBAT
-            </span>
-          </div>
-
-          {/* Middle: Audio Recommendation */}
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-300">
-            <Headphones className="w-3.5 h-3.5 text-amber-400" />
-            <span>Best Experienced in Chrome &bull; 1v1 Speed Battle</span>
-          </div>
-
-          {/* Right: Live Ticker */}
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] text-slate-300">Live Campus Matchmaking Active</span>
-          </div>
+        <footer className="relative z-20 w-full max-w-6xl mx-auto flex items-center justify-between text-[11px] font-mono text-zinc-500">
+          <span>KOLLΛBRIX &bull; ECO STANDBY ACTIVE</span>
+          <span>EXITS TO SLEEP ON LEAVE</span>
         </footer>
       </div>
     );
@@ -470,20 +430,24 @@ function ArenaPageContent() {
     <FullArenaExperience
       onClose={handleClose}
       initialRoomCode={roomParam}
-      currentUser={{
-        displayName:
-          profile?.display_name ||
-          user?.user_metadata?.full_name ||
-          user?.user_metadata?.name ||
-          user?.email?.split('@')[0] ||
-          'CyberCoder',
-        username:
-          profile?.username ||
-          user?.user_metadata?.username ||
-          user?.email?.split('@')[0] ||
-          'coder',
-        avatarUrl: profile?.avatar_url || user?.user_metadata?.avatar_url || undefined,
-      }}
+      currentUser={
+        user
+          ? {
+              displayName:
+                profile?.display_name ||
+                user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                user?.email?.split('@')[0] ||
+                undefined,
+              username:
+                profile?.username ||
+                user?.user_metadata?.username ||
+                user?.email?.split('@')[0] ||
+                undefined,
+              avatarUrl: profile?.avatar_url || user?.user_metadata?.avatar_url || undefined,
+            }
+          : undefined
+      }
     />
   );
 }

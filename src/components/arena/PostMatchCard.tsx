@@ -5,6 +5,7 @@ import { ArrowRight, Download, Swords, Trophy } from 'lucide-react';
 import { downloadFightCardPng } from './arenaHelpers';
 import { formatClock } from './arenaTypes';
 import { useArenaEngine } from './useArenaEngine';
+import { AVATAR_CLASS_META, ColoredMechBadge } from './ArenaIdentitySetupModal';
 
 interface PostMatchCardProps {
   engine: ReturnType<typeof useArenaEngine>;
@@ -81,7 +82,20 @@ export function PostMatchCard({ engine }: PostMatchCardProps) {
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src={engine.activeAvatarUrl} alt={engine.playerName} className="w-8 h-8 rounded-lg object-cover border border-white/20" />
+                  {(() => {
+                    const meta = AVATAR_CLASS_META[engine.selectedAvatarId] || AVATAR_CLASS_META.walker;
+                    return (
+                      <div className="w-9 h-9 rounded-lg border border-white/20 bg-gradient-to-b from-[#171A23] to-[#080A0F] flex items-center justify-center shrink-0">
+                        <ColoredMechBadge
+                          armorHex={meta.armorHex}
+                          armorDarkHex={meta.armorDarkHex}
+                          jointHex={meta.jointHex}
+                          uid={`postmatch-${engine.selectedAvatarId}`}
+                          size="sm"
+                        />
+                      </div>
+                    );
+                  })()}
                   <div className="text-xs font-bold text-white truncate">
                     {engine.playerName} <span className="text-slate-400 font-normal">&bull; {engine.playerCollege}</span>
                   </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { supabase } from '@/lib/supabase/client';
 import { DuelQuestion, DEFAULT_ARENA_QUESTIONS } from '@/types/arenaDuel';
 import { selectBestQuestion } from '@/lib/arena/questionSelector';
 import { verifyTestOutput } from '@/lib/arena/testCaseVerifier';
@@ -33,6 +34,7 @@ import {
   TestCaseVerdict,
   computeExpectedQuestionTests,
   enrichQuestion,
+  generateGuestCallsign,
   getSmartDurationSeconds,
   getTierFromElo,
   getVisibleWebTabs,
@@ -54,23 +56,160 @@ export interface ArenaEngineProps {
  * Core state & side-effect orchestrator for the 4-stage Kollabrix Battle Arena.
  */
 export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, currentUser }: ArenaEngineProps) {
-  const { user, profile } = useAuth();
+  const { user, profile, openAuthModal } = useAuth();
+  const isGuest = !user?.id;
   const [stage, setStage] = useState<ArenaStage>('lobby');
   const stageRef = useRef<ArenaStage>('lobby');
   stageRef.current = stage;
 
-  // Player identity (auto-sanitized on arrival so the user never starts with a callsign error)
+  // Player identity: guests receive an ephemeral random alphanumeric ID (resets on tab change/new tab);
+  // logged-in users hydrate & lock their unique claimed Arena callsign on the server.
   const [myPlayerId] = useState(() => `p-${Math.random().toString(36).slice(2, 9)}`);
-  const initialCallsign = sanitizeCallsign(
-    currentUser?.displayName || profile?.display_name || currentUser?.username || profile?.username || 'Builder'
+  const [playerName, setPlayerName] = useState<string>(() =>
+    user?.id
+      ? sanitizeCallsign(
+          currentUser?.displayName || profile?.display_name || currentUser?.username || profile?.username || user.email?.split('@')[0] || 'Builder'
+        )
+      : generateGuestCallsign()
   );
-  const [playerName, setPlayerName] = useState<string>(initialCallsign);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('available');
-  const [usernameMessage, setUsernameMessage] = useState<string>('Verified callsign ready');
-  const [selectedAvatarId, setSelectedAvatarId] = useState<string>('ronin');
-  const [customAvatarUrl, setCustomAvatarUrl] = useState<string>(currentUser?.avatarUrl || '');
+  const [usernameMessage, setUsernameMessage] = useState<string>(
+    user?.id ? 'Verified callsign ready' : 'Ephemeral guest preview ID'
+  );
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>('walker');
+  const [customAvatarUrl, setCustomAvatarUrl] = useState<string>(user?.id ? (currentUser?.avatarUrl || '') : '');
+  const [hasCompletedIdentitySetup, setHasCompletedIdentitySetup] = useState<boolean>(true);
   const [audioEnabled, setAudioEnabled] = useState<boolean>(true);
-  const playerCollege = (profile as any)?.college || (profile as any)?.university || 'DTU';
+  const playerCollege = user?.id ? ((profile as any)?.college || (profile as any)?.university || 'DTU') : 'GUEST';
+
+  // Sync identity: reset cleanly for guests; hydrate server + user-scoped identity for logged-in accounts
+  useEffect(() => {
+    if (!user?.id) {
+      setPlayerName(generateGuestCallsign());
+      setSelectedAvatarId('walker');
+      setCustomAvatarUrl('');
+      setHasCompletedIdentitySetup(true);
+      setStats({ elo: 1200, wins: 0, losses: 0, winStreak: 0, tier: 'SILVER I' });
+      setEloBefore(1200);
+      return;
+    }
+
+    let cancelled = false;
+    const storageKey = `kollabrix_arena_identity_${user.id}`;
+    const fallbackCallsign = sanitizeCallsign(
+      profile?.username || profile?.display_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Builder'
+    );
+
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.callsign) setPlayerName(sanitizeCallsign(parsed.callsign));
+        if (parsed?.avatarId) setSelectedAvatarId(parsed.avatarId);
+        setHasCompletedIdentitySetup(true);
+      } else {
+        setPlayerName(fallbackCallsign);
+      }
+    } catch {
+      setPlayerName(fallbackCallsign);
+    }
+
+    fetch(`/api/arena/identity?userId=${encodeURIComponent(user.id)}`, { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        if (d?.identity?.callsign) {
+          const clean = sanitizeCallsign(d.identity.callsign);
+          const avId = d.identity.avatarId || 'walker';
+          setPlayerName(clean);
+          setSelectedAvatarId(avId);
+          setHasCompletedIdentitySetup(true);
+          try {
+            localStorage.setItem(storageKey, JSON.stringify({ callsign: clean, avatarId: avId }));
+          } catch {}
+        } else {
+          let hasCached = false;
+          try {
+            hasCached = Boolean(localStorage.getItem(storageKey));
+          } catch {}
+          if (!hasCached) {
+            setHasCompletedIdentitySetup(false);
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, profile?.username, profile?.display_name, user?.email, user?.user_metadata?.full_name]);
+
+  const saveGamerIdentity = useCallback(
+    async (callsign: string, avatarId: string, customUrl?: string): Promise<{ ok: boolean; error?: string }> => {
+      if (!user?.id) {
+        // Guests can preview Mech skins & roll another random alphanumeric ID locally until tab switch/leave
+        const safeGuestId = /^G-[A-Z0-9]{8}$/.test(callsign.trim())
+          ? callsign.trim()
+          : generateGuestCallsign();
+        setPlayerName(safeGuestId);
+        setSelectedAvatarId(avatarId);
+        setCustomAvatarUrl('');
+        setHasCompletedIdentitySetup(true);
+        return { ok: true };
+      }
+
+      const clean = sanitizeCallsign(callsign);
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch('/api/arena/identity', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ userId: user.id, callsign: clean, avatarId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data?.success) {
+          const msg = data?.error || 'This Arena name could not be claimed.';
+          if (res.status === 409 || data?.code === 'CALLSIGN_TAKEN') {
+            setUsernameStatus('taken');
+            setUsernameMessage(msg);
+          }
+          return { ok: false, error: msg };
+        }
+      } catch (err: any) {
+        return { ok: false, error: err?.message || 'Unable to verify & save Arena identity.' };
+      }
+
+      setPlayerName(clean);
+      setSelectedAvatarId(avatarId);
+      setCustomAvatarUrl(customUrl || '');
+      setHasCompletedIdentitySetup(true);
+      setUsernameStatus('available');
+      setUsernameMessage('Exclusive callsign locked to your account');
+      try {
+        localStorage.setItem(
+          `kollabrix_arena_identity_${user.id}`,
+          JSON.stringify({ callsign: clean, avatarId })
+        );
+      } catch {}
+      return { ok: true };
+    },
+    [user?.id]
+  );
+
+  const rollGuestPreviewId = useCallback(() => {
+    if (!user?.id) {
+      setPlayerName(generateGuestCallsign());
+    }
+  }, [user?.id]);
 
   const activeAvatarUrl =
     customAvatarUrl ||
@@ -206,32 +345,45 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     [audioEnabled]
   );
 
-  // Sync auth profile safely
+  // Guest isolation: if an unauthenticated user switches tabs while in lobby/results, reset ELO, skin & roll fresh alphanumeric ID
   useEffect(() => {
-    if (!user) return;
-    const rawName = profile?.display_name || user.user_metadata?.full_name || profile?.username || user.email?.split('@')[0];
-    if (rawName) setPlayerName(sanitizeCallsign(rawName));
-  }, [user, profile]);
+    if (!isGuest) return;
+    const onVisibilityReset = () => {
+      if (document.visibilityState === 'hidden' && (stageRef.current === 'lobby' || stageRef.current === 'results')) {
+        setStats({ elo: 1200, wins: 0, losses: 0, winStreak: 0, tier: 'SILVER I' });
+        setEloBefore(1200);
+        setSelectedAvatarId('walker');
+        setCustomAvatarUrl('');
+        setWinnerSide(null);
+        setStage('lobby');
+        setPlayerName(generateGuestCallsign());
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityReset);
+    return () => document.removeEventListener('visibilitychange', onVisibilityReset);
+  }, [isGuest]);
 
-  // Fetch player rating and server question bank on mount
-  const ratingUserId = user?.id || myPlayerId;
+  // Fetch player rating (logged-in accounts only) and server question bank on mount
+  const ratingUserId = user?.id || '';
   useEffect(() => {
-    fetch(`/api/arena/rating?userId=${encodeURIComponent(ratingUserId)}`, { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.stats) {
-          const elo = d.stats.elo || 1200;
-          setStats({
-            elo,
-            wins: d.stats.wins || 0,
-            losses: d.stats.losses || 0,
-            winStreak: d.stats.winStreak || 0,
-            tier: getTierFromElo(elo),
-          });
-          if (stageRef.current === 'lobby') setEloBefore(elo);
-        }
-      })
-      .catch(() => {});
+    if (ratingUserId) {
+      fetch(`/api/arena/rating?userId=${encodeURIComponent(ratingUserId)}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d?.stats) {
+            const elo = d.stats.elo || 1200;
+            setStats({
+              elo,
+              wins: d.stats.wins || 0,
+              losses: d.stats.losses || 0,
+              winStreak: d.stats.winStreak || 0,
+              tier: getTierFromElo(elo),
+            });
+            if (stageRef.current === 'lobby') setEloBefore(elo);
+          }
+        })
+        .catch(() => {});
+    }
 
     fetch('/api/arena/questions?summary=true', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
@@ -243,8 +395,13 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       .catch(() => {});
   }, [ratingUserId]);
 
-  // Debounced callsign check
+  // Debounced callsign uniqueness check (logged-in accounts only)
   useEffect(() => {
+    if (isGuest) {
+      setUsernameStatus('available');
+      setUsernameMessage('Temporary guest preview ID');
+      return;
+    }
     const clean = playerName.trim();
     if (clean.length < 3) {
       setUsernameStatus('idle');
@@ -254,7 +411,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setUsernameStatus('checking');
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/profile/check-username?username=${encodeURIComponent(clean)}&userId=${user?.id || ''}`);
+        const res = await fetch(`/api/profile/check-username?username=${encodeURIComponent(clean)}&userId=${encodeURIComponent(user?.id || '')}`);
         const d = await res.json();
         setUsernameStatus(d.available === false ? 'taken' : 'available');
         setUsernameMessage(d.available === false ? d.message || 'Callsign taken' : 'Verified callsign ready');
@@ -264,7 +421,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       }
     }, 300);
     return () => clearTimeout(t);
-  }, [playerName, user?.id]);
+  }, [playerName, user?.id, isGuest]);
 
   // Populate editor buffers for a chosen DuelQuestion
   const loadQuestionIntoWorkspace = useCallback(
@@ -327,7 +484,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       if (initialQuestion) return enrichQuestion(initialQuestion);
       const { arena, bugDomain, tags } = mapModeToConfig(mode, lang, webTags);
       const isRandomWebBug = arena === 'bug_hunt' && bugDomain === 'web';
-      const seenIds = getStoredSeenQuestionIds();
+      const seenIds = isGuest ? [] : getStoredSeenQuestionIds();
       let chosen: DuelQuestion | null = null;
       try {
         const qs = new URLSearchParams({
@@ -372,10 +529,10 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
         }
       }
       if (!chosen) return null;
-      if (chosen.id) persistSeenQuestionId(chosen.id);
+      if (chosen.id && !isGuest) persistSeenQuestionId(chosen.id);
       return enrichQuestion(chosen);
     },
-    [initialQuestion, webTags]
+    [initialQuestion, webTags, isGuest]
   );
 
   const toggleFullscreen = useCallback(() => {
@@ -1191,9 +1348,16 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setStats((prev) => ({
       ...prev,
       elo: optimisticElo,
+      wins: prev.wins + (outcome === 'win' ? 1 : 0),
+      losses: prev.losses + (outcome === 'loss' ? 1 : 0),
       tier: getTierFromElo(optimisticElo),
       winStreak: outcome === 'win' ? prev.winStreak + 1 : 0,
     }));
+
+    // Guests keep temporary ELO in React memory only (resets on tab change / new tab); logged-in users save to server
+    if (!ratingUserId) {
+      return;
+    }
 
     fetch('/api/arena/rating', {
       method: 'POST',
@@ -1214,17 +1378,17 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
       .then((d) => {
         if (d?.success && d?.stats) {
           const nextElo = d.stats.elo || d.newElo || optimisticElo;
-          setStats({
+          setStats((prev) => ({
             elo: nextElo,
-            wins: d.stats.wins || stats.wins,
-            losses: d.stats.losses || stats.losses,
-            winStreak: d.stats.winStreak || 0,
+            wins: typeof d.stats.wins === 'number' ? d.stats.wins : prev.wins,
+            losses: typeof d.stats.losses === 'number' ? d.stats.losses : prev.losses,
+            winStreak: typeof d.stats.winStreak === 'number' ? d.stats.winStreak : prev.winStreak,
             tier: getTierFromElo(nextElo),
-          });
+          }));
         }
       })
       .catch(() => {});
-  }, [stage, winnerSide, ratingUserId, myPlayerId, eloBefore, playerName, timeLeft, timeLimit, userTestsPassed, totalTests, rivalProfile.name, activeQuestion.arena, matchFormat, htmlCode, cssCode, jsCode, pythonCode, javaCode, cppCode, sendEvent, stats.elo, stats.wins, stats.losses]);
+  }, [stage, winnerSide, ratingUserId, myPlayerId, eloBefore, playerName, timeLeft, timeLimit, userTestsPassed, totalTests, rivalProfile.name, activeQuestion.arena, matchFormat, htmlCode, cssCode, jsCode, pythonCode, javaCode, cppCode, sendEvent]);
 
   const rollCallsign = () => {
     if (audioEnabled) playTacticalSelectSound();
@@ -1260,6 +1424,10 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
 
   return {
     onClose,
+    isGuest,
+    userId: user?.id || '',
+    openAuthForArena: () => openAuthModal('login'),
+    rollGuestPreviewId,
     stage,
     setStage,
     playerName,
@@ -1270,7 +1438,11 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     activeAvatarUrl,
     selectedAvatarId,
     setSelectedAvatarId,
+    customAvatarUrl,
     setCustomAvatarUrl,
+    hasCompletedIdentitySetup,
+    setHasCompletedIdentitySetup,
+    saveGamerIdentity,
     playerCollege,
     stats,
     eloBefore,

@@ -30,11 +30,11 @@ export const COLLEGIATE_BOT_PROFILES: BotProfile[] = [
 ];
 
 export const PROVING_GROUNDS_AVATARS = [
-  { id: 'ronin', name: 'Cyber Ronin', image: '/images/arena-cyber-entity.jpg' },
-  { id: 'sentinel', name: 'Iron Sentinel', image: '/images/arena-retro-sentinel-hd.jpg' },
-  { id: 'walker', name: 'Portal Walker', image: '/images/arena-portal-walker-v1.webp' },
-  { id: 'coder', name: 'Code Prodigy', image: '/images/arena-coder-burst.jpg' },
-  { id: 'glitch', name: 'Glitch Viper', image: 'https://api.dicebear.com/7.x/bottts/svg?seed=GlitchViper&backgroundColor=0f172a' },
+  { id: 'walker', name: 'Cyber Architect', image: '/images/arena-cyber-architect.jpg' },
+  { id: 'ronin', name: 'Compiler Knight', image: '/images/arena-cyber-entity.jpg' },
+  { id: 'sentinel', name: 'Kernel Phantom', image: '/images/arena-retro-sentinel-hd.jpg' },
+  { id: 'coder', name: 'Syntax Prodigy', image: '/images/arena-coder-burst.jpg' },
+  { id: 'glitch', name: 'Glitch Viper', image: '/images/arena-portal-walker-v1.webp' },
 ] as const;
 
 export const RANDOM_CALLSIGNS = [
@@ -78,6 +78,26 @@ export interface CheatAlertInfo {
   strikes: number;
   reason: string;
   timestamp: number;
+}
+
+/**
+ * Generates an ephemeral alphanumeric callsign (mixed letters + digits) for unauthenticated guest previews.
+ */
+export function generateGuestCallsign(): string {
+  const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const digits = '23456789';
+  const chars: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    chars.push(letters[Math.floor(Math.random() * letters.length)]);
+  }
+  for (let i = 0; i < 4; i++) {
+    chars.push(digits[Math.floor(Math.random() * digits.length)]);
+  }
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return `G-${chars.join('')}`;
 }
 
 /**

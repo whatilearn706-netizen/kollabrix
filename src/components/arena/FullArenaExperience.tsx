@@ -58,7 +58,7 @@ export function FullArenaExperience({
 
   return (
     <div className="fixed inset-0 z-[9990] bg-[#030509] text-slate-100 overflow-y-auto overflow-x-hidden select-none">
-      <ArenaBackgroundMatrix radarMode={radarMode} />
+      {engine.stage !== 'lobby' && <ArenaBackgroundMatrix radarMode={radarMode} />}
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.03),transparent_60%)] pointer-events-none" />
 
       {engine.stage === 'lobby' && (

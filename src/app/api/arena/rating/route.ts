@@ -50,22 +50,34 @@ const DEFAULT_USER_STATS: UserArenaStats = {
 // In-memory fallback in case of transient database connection
 const inMemoryRatingsCache: Record<string, UserArenaStats> = {};
 
+function isGuestUserId(userId?: string | null): boolean {
+  if (!userId) return true;
+  const trimmed = userId.trim();
+  return !trimmed || trimmed.startsWith('guest-') || trimmed.startsWith('p-');
+}
+
 // GET: Fetch user's current arena rating & stats (defaults to 1200 Silver)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId')?.trim();
 
-    if (!userId) {
-      return NextResponse.json({ success: true, stats: DEFAULT_USER_STATS, elo: 1200 });
+    if (isGuestUserId(userId)) {
+      return NextResponse.json({
+        success: true,
+        guest: true,
+        stats: { ...DEFAULT_USER_STATS, lastMatchAt: new Date().toISOString() },
+        elo: 1200,
+      });
     }
 
     const allRatings = await getMasterControlSubkey<Record<string, UserArenaStats>>(
       'arena_user_ratings',
-      inMemoryRatingsCache
+      inMemoryRatingsCache,
+      true
     );
 
-    const userStats = allRatings[userId] || inMemoryRatingsCache[userId] || {
+    const userStats = allRatings[userId!] || inMemoryRatingsCache[userId!] || {
       ...DEFAULT_USER_STATS,
       lastMatchAt: new Date().toISOString(),
     };
@@ -99,13 +111,18 @@ export async function POST(request: NextRequest) {
       arena = 'web_dev',
     } = body;
 
-    if (!userId) {
-      return NextResponse.json({ success: false, error: 'User ID is required' }, { status: 400 });
+    if (isGuestUserId(userId)) {
+      return NextResponse.json({
+        success: false,
+        guest: true,
+        error: 'Guest sessions are temporary and are not saved. Sign in to save ELO & stats.',
+      }, { status: 401 });
     }
 
     const allRatings = await getMasterControlSubkey<Record<string, UserArenaStats>>(
       'arena_user_ratings',
-      inMemoryRatingsCache
+      inMemoryRatingsCache,
+      true
     );
 
     const currentStats: UserArenaStats = allRatings[userId] || inMemoryRatingsCache[userId] || {

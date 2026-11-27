@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Check, Copy, Loader2, Play, Radio, Share2, Swords } from 'lucide-react';
 import { useArenaEngine } from './useArenaEngine';
+import { AVATAR_CLASS_META, ColoredMechBadge } from './ArenaIdentitySetupModal';
 
 interface MatchmakingFaceOffProps {
   engine: ReturnType<typeof useArenaEngine>;
@@ -139,11 +140,20 @@ export function MatchmakingFaceOff({ engine }: MatchmakingFaceOffProps) {
         <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
           {/* Left: You */}
           <div className="md:col-span-4 p-5 rounded-2xl bg-[#060910] border border-white/25 text-center space-y-2">
-            <img
-              src={engine.activeAvatarUrl}
-              alt={engine.playerName}
-              className="w-16 h-16 rounded-2xl object-cover mx-auto border border-white/25"
-            />
+            {(() => {
+              const meta = AVATAR_CLASS_META[engine.selectedAvatarId] || AVATAR_CLASS_META.walker;
+              return (
+                <div className="w-16 h-16 rounded-2xl mx-auto border border-white/25 bg-gradient-to-b from-[#171A23] to-[#080A0F] flex items-center justify-center">
+                  <ColoredMechBadge
+                    armorHex={meta.armorHex}
+                    armorDarkHex={meta.armorDarkHex}
+                    jointHex={meta.jointHex}
+                    uid={`faceoff-${engine.selectedAvatarId}`}
+                    size="md"
+                  />
+                </div>
+              );
+            })()}
             <div className="font-sans font-bold text-white text-base truncate">{engine.playerName}</div>
             <div className="text-[11px] font-mono text-slate-400">
               {engine.playerCollege} &bull; {engine.stats.elo.toLocaleString()} ELO

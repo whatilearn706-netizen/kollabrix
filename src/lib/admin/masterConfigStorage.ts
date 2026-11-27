@@ -36,10 +36,10 @@ function getSupabaseClient() {
  * Authoritative Master Configuration Reader
  * Fetches the site_master_control_config row from platform_settings with 20s in-memory caching
  */
-export async function getMasterControlRecord(): Promise<Record<string, any>> {
-  // Check in-memory cache first to avoid repeated Supabase egress
+export async function getMasterControlRecord(forceFresh = false): Promise<Record<string, any>> {
+  // Check in-memory cache first to avoid repeated Supabase egress unless fresh read requested
   const now = Date.now();
-  if (cachedMasterRecord && (now - cacheTimestamp < CACHE_TTL_MS)) {
+  if (!forceFresh && cachedMasterRecord && (now - cacheTimestamp < CACHE_TTL_MS)) {
     return cachedMasterRecord;
   }
 
@@ -73,8 +73,12 @@ export async function getMasterControlRecord(): Promise<Record<string, any>> {
 /**
  * Fetch a specific subkey from site_master_control_config
  */
-export async function getMasterControlSubkey<T>(subkey: string, fallback: T): Promise<T> {
-  const master = await getMasterControlRecord();
+export async function getMasterControlSubkey<T>(
+  subkey: string,
+  fallback: T,
+  forceFresh = false
+): Promise<T> {
+  const master = await getMasterControlRecord(forceFresh);
   if (master && master[subkey] !== undefined && master[subkey] !== null) {
     return master[subkey] as T;
   }
@@ -96,8 +100,8 @@ export async function updateMasterControlSubkey(
   }
 
   try {
-    // 1. Read current master value
-    const currentMaster = await getMasterControlRecord();
+    // 1. Read fresh master value so concurrent updates don't overwrite other keys
+    const currentMaster = await getMasterControlRecord(true);
 
     // 2. Merge subkey
     const newMaster = {

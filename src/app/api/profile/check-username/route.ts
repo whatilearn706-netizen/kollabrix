@@ -6,6 +6,7 @@ import {
   DEFAULT_SUPABASE_ANON_KEY,
 } from '@/lib/supabase/isConfigured';
 import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
+import { getMasterControlSubkey } from '@/lib/admin/masterConfigStorage';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,7 @@ const RESERVED_CALLSIGNS = new Set([
   'bot',
   'arena',
   'colosseum',
+  'guest',
 ]);
 
 export async function GET(request: NextRequest) {
@@ -129,6 +131,23 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({
             available: false,
             message: 'This display name is already taken by another combatant',
+          });
+        }
+
+        // Check claimed Arena callsigns in site_master_control_config
+        const arenaIdentities = await getMasterControlSubkey<Record<string, { callsign?: string }>>(
+          'arena_user_identities',
+          {},
+          true
+        );
+        const claimedEntry = Object.entries(arenaIdentities).find(
+          ([ownerId, entry]) =>
+            ownerId !== currentUserId && entry?.callsign && entry.callsign.toLowerCase() === lower
+        );
+        if (claimedEntry) {
+          return NextResponse.json({
+            available: false,
+            message: 'This Arena name is already claimed by another user',
           });
         }
       } catch (dbErr) {
