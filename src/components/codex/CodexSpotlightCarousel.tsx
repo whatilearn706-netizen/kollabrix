@@ -17,7 +17,8 @@ import type {
   CodexLanguageTrack,
   CodexPatternVolume,
 } from '@/data/codexCatalog';
-import { getMonographSpec } from '@/lib/codex/monographArt';
+import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 
 export type CodexVolume = CodexLanguageTrack | CodexBookVolume | CodexPatternVolume;
 
@@ -205,11 +206,50 @@ export function CodexSpotlightCarousel({
                   ? 'hidden sm:flex'
                   : 'flex';
 
-            const scaleClass = isCenter
-              ? 'w-[225px] sm:w-[260px] h-[315px] sm:h-[365px] z-20 -translate-y-2 shadow-[0_35px_75px_-15px_rgba(0,0,0,0.9)]'
-              : isNear
-                ? 'w-[165px] sm:w-[190px] h-[240px] sm:h-[275px] z-10 opacity-75 hover:opacity-95 hover:-translate-y-1 shadow-[0_24px_50px_-15px_rgba(0,0,0,0.8)]'
-                : 'w-[140px] h-[205px] z-0 opacity-45 hover:opacity-75 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.75)]';
+            const matchedMonograph =
+              item.kind === 'book'
+                ? KA_CODEX_BOOKS.find((b) => b.id === item.id)
+                : undefined;
+
+            const scaleClass = matchedMonograph
+              ? isCenter
+                ? 'w-[225px] sm:w-[260px] aspect-[2/3] z-20 -translate-y-2 shadow-[0_35px_75px_-15px_rgba(0,0,0,0.92)]'
+                : isNear
+                  ? 'w-[165px] sm:w-[190px] aspect-[2/3] z-10 opacity-80 hover:opacity-100 hover:-translate-y-1 shadow-[0_24px_50px_-15px_rgba(0,0,0,0.85)]'
+                  : 'w-[138px] aspect-[2/3] z-0 opacity-50 hover:opacity-80 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.75)]'
+              : isCenter
+                ? 'w-[225px] sm:w-[260px] h-[315px] sm:h-[365px] z-20 -translate-y-2 shadow-[0_35px_75px_-15px_rgba(0,0,0,0.9)]'
+                : isNear
+                  ? 'w-[165px] sm:w-[190px] h-[240px] sm:h-[275px] z-10 opacity-75 hover:opacity-95 hover:-translate-y-1 shadow-[0_24px_50px_-15px_rgba(0,0,0,0.8)]'
+                  : 'w-[140px] h-[205px] z-0 opacity-45 hover:opacity-75 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.75)]';
+
+            if (matchedMonograph) {
+              return (
+                <button
+                  key={`${item.id}-${offset}`}
+                  type="button"
+                  onClick={() => (isCenter ? onOpenVolume(item) : onChangeIndex(idx))}
+                  className={`${visibilityClass} ${scaleClass} group relative flex-col text-left rounded-[8px] border border-white/25 bg-[#11100E] transition-all duration-500 ease-out cursor-pointer shrink-0 overflow-hidden`}
+                >
+                  <div className="w-full h-full group-hover:scale-[1.02] transition-transform duration-300">
+                    <KaMonographCover
+                      book={matchedMonograph}
+                      size={isCenter ? 'lg' : 'md'}
+                    />
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-50/10 via-transparent to-black/35"
+                  />
+                  {isCenter && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 z-20 px-3 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-white/25 flex items-center justify-between text-[11px] font-mono text-white">
+                      <span>Click to Read Volume</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+                </button>
+              );
+            }
 
             return (
               <button
@@ -240,35 +280,17 @@ export function CodexSpotlightCarousel({
                   </span>
                 </div>
 
-                {/* Cover Centerpiece Emblem / Bespoke Monograph Graphic / Title */}
+                {/* Cover Centerpiece Emblem / Title */}
                 <div className="relative z-10 pl-6 pr-5 my-auto space-y-2.5">
-                  {item.kind === 'book' ? (
-                    <div
-                      className={`rounded-xl bg-black/40 border border-white/[0.12] flex items-center justify-center ${
-                        isCenter ? 'w-full h-24 sm:h-28 p-2' : 'w-12 h-11 p-1.5'
-                      }`}
-                    >
-                      <svg
-                        viewBox="0 0 160 120"
-                        className={`w-full h-full ${item.accentColor}`}
-                        dangerouslySetInnerHTML={{
-                          __html: getMonographSpec({
-                            id: item.id,
-                            index: idx + 1,
-                            category: 'Systems',
-                          }).svgPaths,
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.08] border border-white/20 backdrop-blur-md">
-                      {item.kind === 'track' ? (
-                        <Code2 className={`w-5 h-5 ${item.accentColor}`} />
-                      ) : (
-                        <Zap className={`w-5 h-5 ${item.accentColor}`} />
-                      )}
-                    </div>
-                  )}
+                  <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.08] border border-white/20 backdrop-blur-md">
+                    {item.kind === 'track' ? (
+                      <Code2 className={`w-5 h-5 ${item.accentColor}`} />
+                    ) : item.kind === 'book' ? (
+                      <BookOpen className={`w-5 h-5 ${item.accentColor}`} />
+                    ) : (
+                      <Zap className={`w-5 h-5 ${item.accentColor}`} />
+                    )}
+                  </div>
 
                   <div>
                     <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-[#CBD5E1]">
