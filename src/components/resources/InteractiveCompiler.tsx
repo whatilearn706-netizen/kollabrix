@@ -228,26 +228,26 @@ export function InteractiveCompiler({
   const lineNumbers = Array.from({ length: Math.max(lineCount, 12) }, (_, i) => i + 1);
 
   return (
-    <div className={`rounded-2xl border border-slate-700/60 bg-slate-950/95 overflow-hidden shadow-2xl ${className}`}>
+    <div className={`rounded-2xl border border-white/10 bg-[#07090E] overflow-hidden shadow-[0_24px_80px_rgba(0,0,0,0.65)] ${className}`}>
       {/* Top Bar / Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-slate-900/90 border-b border-slate-800 text-xs font-mono">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-[#0B0F18] border-b border-white/[0.08] text-xs font-mono">
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 mr-2">
-            <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
-            <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
-            <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+          <div className="flex items-center gap-1.5 mr-1.5 opacity-75">
+            <span className="w-2.5 h-2.5 rounded-full bg-white/20 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-white/15 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-white/15 inline-block" />
           </div>
-          <span className="px-2.5 py-1 rounded-md bg-indigo-500/15 text-indigo-400 font-semibold border border-indigo-500/30 flex items-center gap-1.5">
-            <FileCode className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="px-2.5 py-1 rounded-full bg-white/[0.05] text-slate-200 font-medium border border-white/10 flex items-center gap-1.5">
+            <FileCode className="w-3.5 h-3.5 text-sky-300" />
             {compilerDisplayName}
           </span>
-          <span className="text-slate-500 hidden sm:inline">⌘ + Enter to Run</span>
+          <span className="text-zinc-500 hidden sm:inline text-[11px]">⌘ + Enter</span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full bg-white/[0.04] text-zinc-400 hover:text-white border border-white/10 transition-colors cursor-pointer"
             title="Copy code"
           >
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -255,7 +255,7 @@ export function InteractiveCompiler({
 
           <button
             onClick={handleReset}
-            className="p-1.5 rounded-md bg-slate-800 text-slate-400 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+            className="p-1.5 rounded-full bg-white/[0.04] text-zinc-400 hover:text-white border border-white/10 transition-colors cursor-pointer"
             title="Reset code"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -265,21 +265,21 @@ export function InteractiveCompiler({
             size="sm"
             onClick={handleRunClick}
             disabled={isRunning}
-            className={`font-medium px-4 py-1.5 rounded-lg shadow-lg flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+            className={`font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
               waitingForInput
-                ? 'bg-amber-500 hover:bg-amber-400 text-black font-bold ring-2 ring-amber-400/40 shadow-amber-500/20 animate-pulse'
-                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-500/20'
+                ? 'bg-sky-200 hover:bg-white text-[#07090E] ring-2 ring-sky-400/40 animate-pulse'
+                : 'bg-[#FAF8F5] hover:bg-sky-100 text-[#07090E] shadow-[0_8px_24px_rgba(255,255,255,0.12)]'
             }`}
           >
             {isRunning ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Compiling ({elapsedSeconds.toFixed(1)}s)...
+                Running ({elapsedSeconds.toFixed(1)}s)...
               </>
             ) : waitingForInput ? (
               <>
                 <CornerDownRight className="w-3.5 h-3.5" />
-                Provide Input Below
+                Enter Stdin Below
               </>
             ) : (
               <>
@@ -292,9 +292,9 @@ export function InteractiveCompiler({
       </div>
 
       {/* Editor & Line Numbers */}
-      <div className="relative flex min-h-[300px] max-h-[500px] overflow-auto font-mono text-sm">
+      <div className="relative flex min-h-[300px] max-h-[480px] overflow-auto font-mono text-sm bg-[#06080D]">
         {/* Line Numbers Gutter */}
-        <div className="select-none py-3 px-3 bg-slate-950/80 border-r border-slate-800/80 text-slate-600 text-right font-mono text-xs leading-6 min-w-[45px]">
+        <div className="select-none py-3.5 px-3 bg-[#080B11] border-r border-white/[0.06] text-zinc-600 text-right font-mono text-xs leading-6 min-w-[46px]">
           {lineNumbers.map((num) => (
             <div key={num}>{num}</div>
           ))}
@@ -310,7 +310,7 @@ export function InteractiveCompiler({
             spellCheck={false}
             autoCapitalize="off"
             autoComplete="off"
-            className="w-full h-full min-h-[300px] bg-transparent text-emerald-200 dark:text-emerald-100 p-3 font-mono text-xs sm:text-sm leading-6 resize-none focus:outline-none selection:bg-indigo-500/30 whitespace-pre overflow-x-auto"
+            className="w-full h-full min-h-[300px] bg-transparent text-slate-100 p-3.5 font-mono text-xs sm:text-sm leading-6 resize-none focus:outline-none selection:bg-sky-500/25 whitespace-pre overflow-x-auto"
             placeholder="Write your code here..."
           />
         </div>
@@ -321,45 +321,45 @@ export function InteractiveCompiler({
         <div
           className={`px-4 py-2.5 border-t text-xs font-medium flex items-center justify-between ${
             testResult === 'passed'
-              ? 'bg-emerald-950/70 border-emerald-500/40 text-emerald-300'
-              : 'bg-rose-950/70 border-rose-500/40 text-rose-300'
+              ? 'bg-emerald-500/10 border-emerald-400/25 text-emerald-300'
+              : 'bg-rose-500/10 border-rose-400/25 text-rose-300'
           }`}
         >
           <div className="flex items-center gap-2">
             {testResult === 'passed' ? (
               <>
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span className="font-semibold">Test Passed! Output matches expected result perfectly.</span>
+                <span className="font-semibold">Output matches expected result.</span>
               </>
             ) : (
               <>
                 <AlertTriangle className="w-4 h-4 text-rose-400" />
-                <span>Output does not match expected output yet. Compare below and try again!</span>
+                <span>Output does not match expected output yet.</span>
               </>
             )}
           </div>
           {executionTime !== null && (
-            <span className="text-[11px] opacity-80 font-mono">Time: {executionTime}ms</span>
+            <span className="text-[11px] opacity-80 font-mono">{executionTime}ms</span>
           )}
         </div>
       )}
 
       {/* Terminal Output Window */}
-      <div className="bg-black/95 border-t border-slate-800/90 p-4 font-mono text-xs flex flex-col min-h-[170px]">
+      <div className="bg-[#04060A] border-t border-white/[0.08] p-4 font-mono text-xs flex flex-col min-h-[156px]">
         {/* Terminal Header */}
-        <div className="flex items-center justify-between text-slate-400 mb-2 pb-1.5 border-b border-slate-800/60 select-none">
-          <div className="flex items-center gap-2 text-slate-300 font-semibold">
-            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Terminal Console</span>
+        <div className="flex items-center justify-between text-zinc-400 mb-2 pb-2 border-b border-white/[0.06] select-none">
+          <div className="flex items-center gap-2 text-zinc-300 font-medium">
+            <Terminal className="w-3.5 h-3.5 text-sky-300" />
+            <span>Output</span>
             {waitingForInput && (
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
-                Waiting for Input...
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/30">
+                Waiting for stdin
               </span>
             )}
           </div>
           {executionTime !== null && (
-            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-              ⚡ Completed in {executionTime < 1000 ? `${executionTime}ms` : `${(executionTime / 1000).toFixed(2)}s`}
+            <span className="text-[11px] font-mono text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              {executionTime < 1000 ? `${executionTime}ms` : `${(executionTime / 1000).toFixed(2)}s`}
             </span>
           )}
         </div>
@@ -367,60 +367,59 @@ export function InteractiveCompiler({
         {/* Output Body */}
         <div className="flex-1 space-y-2 py-1">
           {isRunning ? (
-            <div className="flex items-center gap-2 text-emerald-400 py-3">
-              <Loader2 className="w-4 h-4 animate-spin text-emerald-400 shrink-0" />
-              <span>Executing code in high-speed sandbox ({elapsedSeconds.toFixed(1)}s)...</span>
+            <div className="flex items-center gap-2 text-sky-300 py-3">
+              <Loader2 className="w-4 h-4 animate-spin text-sky-300 shrink-0" />
+              <span>Executing in sandbox ({elapsedSeconds.toFixed(1)}s)...</span>
             </div>
           ) : waitingForInput ? (
-            <div className="py-2.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-1.5 animate-in fade-in">
-              <div className="flex items-center gap-2 font-bold text-xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-                <span>Program is waiting for user input (stdin)...</span>
+            <div className="py-2.5 px-3 rounded-xl bg-sky-500/[0.08] border border-sky-400/25 text-sky-200 space-y-1.5">
+              <div className="flex items-center gap-2 font-semibold text-xs">
+                <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
+                <span>Program expects standard input (stdin).</span>
               </div>
-              <p className="text-[11px] text-amber-200/80">
-                Type your input in the box below and press <kbd className="px-1.5 py-0.5 rounded bg-black/60 border border-amber-500/40 text-amber-200 font-mono">Enter ↵</kbd> (e.g. <code className="text-amber-300 font-mono">2024</code>).
-              </p>
-              <div className="flex items-center gap-2 pt-0.5">
+              <p className="text-[11px] text-zinc-400">
+                Type input below and press Enter, or{' '}
                 <button
                   type="button"
                   onClick={() => executeProgram('')}
-                  className="text-[10px] text-slate-400 hover:text-amber-200 underline font-mono cursor-pointer transition-colors"
+                  className="text-sky-300 hover:underline cursor-pointer"
                 >
-                  Or click here to run with empty input
+                  run with empty input
                 </button>
-              </div>
+                .
+              </p>
             </div>
           ) : stdout || stderr ? (
             <div className="space-y-2">
               {lastRanInput && (
-                <div className="text-[11px] text-cyan-300 font-mono bg-cyan-950/40 px-2.5 py-1 rounded border border-cyan-800/50 flex items-center gap-2">
-                  <span className="text-slate-500">$ stdin:</span>
-                  <span className="font-bold text-cyan-200">{lastRanInput}</span>
+                <div className="text-[11px] text-sky-300 font-mono bg-white/[0.03] px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-2">
+                  <span className="text-zinc-500">stdin:</span>
+                  <span className="text-slate-200">{lastRanInput}</span>
                 </div>
               )}
               {stdout && (
-                <pre className="text-slate-100 whitespace-pre-wrap leading-5 font-mono selection:bg-emerald-500/20">
+                <pre className="text-slate-100 whitespace-pre-wrap leading-5 font-mono selection:bg-sky-500/25">
                   {stdout}
                 </pre>
               )}
               {stderr && (
-                <pre className="text-rose-400 whitespace-pre-wrap leading-5 font-mono bg-rose-950/30 p-2.5 rounded-lg border border-rose-900/50">
+                <pre className="text-rose-300 whitespace-pre-wrap leading-5 font-mono bg-rose-500/10 p-2.5 rounded-xl border border-rose-500/20">
                   {stderr}
                 </pre>
               )}
             </div>
           ) : (
-            <div className="text-slate-500 italic py-2">
-              Click &quot;Run Code&quot; or press ⌘ + Enter to execute. Type any input below like a real terminal.
+            <div className="text-zinc-500 py-2">
+              Click Run Code or press ⌘ + Enter to execute.
             </div>
           )}
         </div>
 
         {/* Expected output comparison if failed */}
         {testResult === 'failed' && expectedOutput && (
-          <div className="mt-2 p-3 bg-slate-900/90 rounded-lg border border-slate-800">
-            <div className="text-amber-400 font-semibold mb-1">Expected Output:</div>
-            <pre className="text-emerald-400 whitespace-pre-wrap font-mono">{expectedOutput}</pre>
+          <div className="mt-2 p-3 bg-white/[0.03] rounded-xl border border-white/10">
+            <div className="text-zinc-400 text-[11px] mb-1">Expected Output</div>
+            <pre className="text-emerald-300 whitespace-pre-wrap font-mono">{expectedOutput}</pre>
           </div>
         )}
 
@@ -430,41 +429,28 @@ export function InteractiveCompiler({
             e.preventDefault();
             executeProgram(currentInput);
           }}
-          className={`mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2 transition-all ${
-            waitingForInput ? 'bg-amber-950/30 -mx-4 -mb-4 p-3 rounded-b-2xl border-amber-500/40' : ''
-          }`}
+          className="mt-3 pt-3 border-t border-white/[0.06] flex items-center gap-2"
         >
-          <div className="flex items-center gap-1.5 font-mono text-emerald-400 font-bold shrink-0">
-            <span>&gt;_</span>
-            <span className="text-slate-400 text-xs">Input:</span>
-          </div>
+          <span className="font-mono text-zinc-500 text-xs shrink-0">stdin &gt;</span>
           <input
             ref={inputRef}
             type="text"
             value={currentInput}
             onChange={(e) => setCurrentInput(e.target.value)}
-            placeholder={
+            placeholder="Optional standard input (e.g. 2024)..."
+            className={`flex-1 bg-white/[0.03] text-slate-100 placeholder-zinc-600 px-3.5 py-2 rounded-xl border text-xs font-mono focus:outline-none transition-all ${
               waitingForInput
-                ? 'Type input (e.g. 2024) and press Enter ↵'
-                : 'Enter standard input (stdin) for your program (e.g. 2024)...'
-            }
-            className={`flex-1 bg-slate-900/90 text-slate-100 placeholder-slate-500 px-3.5 py-2 rounded-xl border text-xs font-mono focus:outline-none transition-all ${
-              waitingForInput
-                ? 'border-amber-400 ring-2 ring-amber-400/40 bg-black text-amber-200 shadow-md'
-                : 'border-slate-700/80 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/40'
+                ? 'border-sky-400/60 ring-1 ring-sky-400/30'
+                : 'border-white/10 focus:border-sky-400/40'
             }`}
           />
           <button
             type="submit"
             disabled={isRunning}
-            className={`px-4 py-2 rounded-xl font-mono font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md active:scale-95 disabled:opacity-50 ${
-              waitingForInput
-                ? 'bg-amber-500 hover:bg-amber-400 text-black ring-2 ring-amber-400/40 shadow-amber-500/20'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
-            }`}
+            className="px-4 py-2 rounded-xl font-mono font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 bg-white/[0.07] hover:bg-white/[0.14] text-white border border-white/10 disabled:opacity-50"
           >
-            <Send className="w-3.5 h-3.5" />
-            <span>{waitingForInput ? 'Send Input ↵' : 'Run with Input'}</span>
+            <Send className="w-3.5 h-3.5 text-sky-300" />
+            <span>{waitingForInput ? 'Send ↵' : 'Run Stdin'}</span>
           </button>
         </form>
       </div>

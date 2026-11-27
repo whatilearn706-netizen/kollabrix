@@ -123,7 +123,11 @@ export default function ResourcesPage() {
   const [activeModalVolume, setActiveModalVolume] = useState<CodexVolume | null>(null);
   const [curriculaMap, setCurriculaMap] =
     useState<Record<string, LanguageCurriculum>>(DEFAULT_CURRICULA);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [activeWorkspace, setActiveWorkspace] = useState<{
+    curriculumId: string;
+    track: CodexLanguageTrack | null;
+    level: CodexLevel;
+  } | null>(null);
 
   const [isResourcesLive, setIsResourcesLive] = useState<boolean>(true);
   const [statusLoaded, setStatusLoaded] = useState<boolean>(false);
@@ -251,26 +255,41 @@ export default function ResourcesPage() {
     });
   };
 
+  const openTrackWorkspaceDirect = (
+    track: CodexLanguageTrack,
+    level: CodexLevel = 'beginner'
+  ): boolean => {
+    const targetKey =
+      track.curriculumKeys[level] ||
+      track.curriculumKeys.beginner ||
+      track.curriculumKeys.intermediate;
+    if (targetKey && curriculaMap[targetKey]) {
+      setActiveModalVolume(null);
+      setActiveWorkspace({ curriculumId: targetKey, track, level });
+      return true;
+    }
+    return false;
+  };
+
   const handleOpenVolume = (vol: CodexVolume) => {
-    setActiveModalVolume(vol);
     setLastVisitedId(vol.id);
     try {
       localStorage.setItem(CONTINUE_STORAGE_KEY, vol.id);
     } catch {}
+    if (vol.kind === 'track' && openTrackWorkspaceDirect(vol, 'beginner')) {
+      return;
+    }
+    setActiveModalVolume(vol);
   };
 
   const handleResumeContinue = () => {
     if (!lastVisitedId) return;
     const found = ALL_VOLUMES.find((v) => v.id === lastVisitedId);
-    if (found) setActiveModalVolume(found);
+    if (found) handleOpenVolume(found);
   };
 
   const handleLaunchFullWorkspace = (track: CodexLanguageTrack, level: CodexLevel) => {
-    const targetKey = track.curriculumKeys[level] || track.curriculumKeys.beginner;
-    if (targetKey && curriculaMap[targetKey]) {
-      setActiveModalVolume(null);
-      setActiveWorkspaceId(targetKey);
-    }
+    openTrackWorkspaceDirect(track, level);
   };
 
   // Search filtering across current tab
@@ -369,13 +388,24 @@ export default function ResourcesPage() {
     );
   }
 
-  // Full interactive step workspace mode if user explicitly drilled into a curriculum
-  if (activeWorkspaceId && curriculaMap[activeWorkspaceId]) {
+  // Direct Interactive Step Studio mode when user taps any guided track
+  if (activeWorkspace && curriculaMap[activeWorkspace.curriculumId]) {
     return (
       <StepLearningWorkspace
-        curriculum={curriculaMap[activeWorkspaceId]}
-        onBack={() => setActiveWorkspaceId(null)}
-        onTrackChange={() => setActiveWorkspaceId(null)}
+        curriculum={curriculaMap[activeWorkspace.curriculumId]}
+        track={activeWorkspace.track}
+        activeLevel={activeWorkspace.level}
+        onSwitchLevel={(nextLvl) => {
+          if (activeWorkspace.track) {
+            openTrackWorkspaceDirect(activeWorkspace.track, nextLvl);
+          }
+        }}
+        isSaved={activeWorkspace.track ? savedIds.includes(activeWorkspace.track.id) : false}
+        onToggleSave={
+          activeWorkspace.track ? () => toggleSave(activeWorkspace.track!.id) : undefined
+        }
+        onBack={() => setActiveWorkspace(null)}
+        onTrackChange={() => setActiveWorkspace(null)}
       />
     );
   }

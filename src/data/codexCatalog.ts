@@ -456,7 +456,7 @@ asyncio.run(main())`,
     spineColor: 'bg-violet-400',
     accentColor: 'text-violet-300',
     badgeText: 'NEXT.JS 14',
-    curriculumKeys: {},
+    curriculumKeys: { beginner: 'web_dev-beginner', intermediate: 'web_dev-learning', pro: 'web_dev-learning' },
     lessons: [
       {
         id: 'ts-beg-1',
