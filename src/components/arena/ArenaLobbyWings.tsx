@@ -109,13 +109,11 @@ export function ArenaRightWing(_props: Partial<WingProps>) {
     };
 
     fetchTopDuelists();
-    // Poll every 4 seconds for real-time ELO updates
-    const timer = setInterval(fetchTopDuelists, 4000);
+    // Event-driven refresh: re-fetch only when a match finishes and updates ELO
     window.addEventListener('kollabrix:arena-elo-updated', fetchTopDuelists);
 
     return () => {
       active = false;
-      clearInterval(timer);
       window.removeEventListener('kollabrix:arena-elo-updated', fetchTopDuelists);
     };
   }, []);
