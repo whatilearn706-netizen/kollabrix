@@ -32,6 +32,7 @@ interface CodexSpotlightCarouselProps {
   onToggleSave: (id: string) => void;
   continueNote?: string | null;
   onResumeContinue?: () => void;
+  topicFilterBar?: React.ReactNode;
 }
 
 function getVolumeMetaPill(v: CodexVolume): string {
@@ -64,6 +65,7 @@ export function CodexSpotlightCarousel({
   onToggleSave,
   continueNote,
   onResumeContinue,
+  topicFilterBar,
 }: CodexSpotlightCarouselProps) {
   const safeIndex = volumes.length > 0 ? Math.min(activeIndex, volumes.length - 1) : 0;
   const active = volumes[safeIndex];
@@ -109,6 +111,8 @@ export function CodexSpotlightCarousel({
             <br />
             <span className="italic font-normal text-zinc-400">{headlineAccent}</span>
           </h1>
+
+          {topicFilterBar}
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <button
@@ -249,7 +253,7 @@ export function CodexSpotlightCarousel({
 
                   <div>
                     <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-400">
-                      KOLLΛBRIX CODEX · {getVolumeMonogram(item)}
+                      KOLLΛBRIX FOLIO · {getVolumeMonogram(item)}
                     </p>
                     <h3
                       className={`font-serif font-semibold text-white leading-tight mt-1 ${
@@ -289,7 +293,7 @@ export function CodexSpotlightCarousel({
         <div className="flex items-center gap-3 text-xs text-zinc-400">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 font-mono text-[10px] uppercase tracking-wider text-zinc-300">
             <Sparkles className="w-3 h-3 text-amber-300" />
-            <span>KΛ CODEX</span>
+            <span>KΛ FOLIO</span>
           </span>
           <span className="hidden sm:inline">
             Learn the Craft. Read the Volumes. Solve the Arena.

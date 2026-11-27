@@ -37,13 +37,69 @@ import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import type { LanguageCurriculum } from '@/types/curriculum';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
 
 const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
 const COMPLETED_STORAGE_KEY = 'kollabrix_codex_completed_lessons';
 const CONTINUE_STORAGE_KEY = 'kollabrix_codex_last_track';
 
+const FOLIO_CATEGORY_STYLES: Record<
+  string,
+  { gradient: string; accent: string }
+> = {
+  Systems: {
+    gradient: 'from-rose-950/95 via-stone-900 to-[#0B0D14]',
+    accent: 'text-rose-300',
+  },
+  Algorithms: {
+    gradient: 'from-emerald-950/95 via-slate-900 to-[#0B0D14]',
+    accent: 'text-emerald-300',
+  },
+  Architecture: {
+    gradient: 'from-sky-950/95 via-slate-900 to-[#0B0D14]',
+    accent: 'text-sky-300',
+  },
+  Craft: {
+    gradient: 'from-amber-950/95 via-stone-900 to-[#0B0D14]',
+    accent: 'text-amber-300',
+  },
+  Interviews: {
+    gradient: 'from-lime-950/95 via-slate-900 to-[#0B0D14]',
+    accent: 'text-lime-300',
+  },
+};
+
+const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
+  const style = FOLIO_CATEGORY_STYLES[b.category] || FOLIO_CATEGORY_STYLES.Craft;
+  return {
+    id: b.id,
+    kind: 'book',
+    title: b.title,
+    languageTag: b.category,
+    edition: `VOL. ${String(b.index).padStart(2, '0')} · ${b.year}`,
+    subtitle: b.tagline,
+    spotlightAuthor: b.author,
+    spotlightRole: `${b.category} · ISBN ${b.isbn}`,
+    spotlightBio: b.tagline,
+    ctaLabel: 'Start Reading',
+    pagesCount: b.pages,
+    coverGradient: style.gradient,
+    spineColor: b.spineColor,
+    accentColor: style.accent,
+    badgeText: b.category.toUpperCase(),
+    chapters: b.chapters.map((ch, chIdx) => ({
+      id: `${b.id}-ch-${chIdx + 1}`,
+      title: ch.title,
+      readTime: '6 min read',
+      overview: ch.summary,
+      keyRules: ch.takeaways,
+    })),
+  };
+});
+
 const ALL_VOLUMES: CodexVolume[] = [
   ...CODEX_LANGUAGE_TRACKS,
+  ...FOLIO_12_BOOKS,
   ...CODEX_BOOKS,
   ...CODEX_PATTERNS,
 ];
@@ -59,6 +115,7 @@ export default function ResourcesPage() {
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [bookTopic, setBookTopic] = useState<string>('All');
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [lastVisitedId, setLastVisitedId] = useState<string | null>(null);
@@ -71,7 +128,7 @@ export default function ResourcesPage() {
   const [isResourcesLive, setIsResourcesLive] = useState<boolean>(true);
   const [statusLoaded, setStatusLoaded] = useState<boolean>(false);
   const [offlineNotice, setOfflineNotice] = useState<string>(
-    'KOLLΛBRIX CODEX is currently offline while we curate new language tracks, technical manuals, and OA playbooks. Check back soon!'
+    'KOLLΛBRIX FOLIO is currently offline while we curate new language tracks, technical manuals, and OA playbooks. Check back soon!'
   );
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
@@ -91,6 +148,27 @@ export default function ResourcesPage() {
     };
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // Deep-link from KΛ FOLIO (?section=books&book=<id>) straight to Section 02 Bookshelf & open reader
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const sectionParam = params.get('section');
+    const bookParam = params.get('book');
+
+    if (sectionParam === 'books' || bookParam) {
+      setActiveSection('books');
+      setBookTopic('All');
+      if (bookParam) {
+        const idx = FOLIO_12_BOOKS.findIndex((b) => b.id === bookParam);
+        if (idx >= 0) {
+          setCarouselIndices((prev) => ({ ...prev, books: idx }));
+          setActiveModalVolume(FOLIO_12_BOOKS[idx]);
+          setLastVisitedId(FOLIO_12_BOOKS[idx].id);
+        }
+      }
+    }
   }, []);
 
   // Hydrate bookmarks, progress, and dynamic curricula
@@ -213,15 +291,19 @@ export default function ResourcesPage() {
       return res.length > 0 ? res : CODEX_LANGUAGE_TRACKS;
     }
     if (activeSection === 'books') {
-      const res = CODEX_BOOKS.filter(match);
-      return res.length > 0 ? res : CODEX_BOOKS;
+      const topicBooks =
+        bookTopic === 'All'
+          ? FOLIO_12_BOOKS
+          : FOLIO_12_BOOKS.filter((b) => b.languageTag === bookTopic);
+      const res = topicBooks.filter(match);
+      return res.length > 0 ? res : topicBooks;
     }
     if (activeSection === 'solving') {
       const res = CODEX_PATTERNS.filter(match);
       return res.length > 0 ? res : CODEX_PATTERNS;
     }
     return [];
-  }, [activeSection, searchQuery]);
+  }, [activeSection, searchQuery, bookTopic]);
 
   const savedVolumes = useMemo(
     () => ALL_VOLUMES.filter((v) => savedIds.includes(v.id)),
@@ -257,7 +339,7 @@ export default function ResourcesPage() {
                 NOT LIVE · COMING SOON
               </span>
               <h1 className="text-2xl sm:text-3xl font-serif font-semibold text-white mt-1">
-                KOLLΛBRIX CODEX
+                KOLLΛBRIX FOLIO
               </h1>
             </div>
           </div>
@@ -272,7 +354,7 @@ export default function ResourcesPage() {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#FAF8F5] text-[#07090E] font-semibold text-sm hover:bg-sky-100 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Return to KΛ CODEX</span>
+              <span>Return to KΛ FOLIO</span>
             </Link>
             <Link
               href="/arena"
@@ -341,12 +423,12 @@ export default function ResourcesPage() {
             <div className="inline-flex items-center p-0.5 rounded-full bg-gradient-to-b from-[#171C28] via-[#0E121B] to-[#080A10] border border-white/15 shadow-[0_0_18px_rgba(148,163,184,0.14)]">
               <Link
                 href="/ka-codex"
-                title="Back to KΛ CODEX Homepage"
+                title="Back to KΛ FOLIO Homepage"
                 className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-white/[0.08] transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-zinc-300 group-hover:-translate-x-0.5 transition-transform" />
                 <KaBrandEmblem className="w-4 h-3" />
-                <span className="text-[11px] font-semibold tracking-tight text-white">KΛ CODEX</span>
+                <span className="text-[11px] font-semibold tracking-tight text-white">KΛ FOLIO</span>
               </Link>
               <span className="h-3.5 w-px bg-white/15 hidden sm:inline" />
               <Link
@@ -360,7 +442,7 @@ export default function ResourcesPage() {
             <span className="text-zinc-700 hidden md:inline">/</span>
             <div className="flex items-center gap-2">
               <span className="text-xs sm:text-sm font-black tracking-[0.22em] uppercase text-white">
-                KOLLΛBRIX <span className="text-sky-300 font-semibold">CODEX</span>
+                KOLLΛBRIX <span className="text-sky-300 font-semibold">FOLIO</span>
               </span>
               <span className="hidden md:inline-block px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-[9px] font-mono uppercase tracking-widest text-zinc-400">
                 Library & Tracks
@@ -431,7 +513,7 @@ export default function ResourcesPage() {
 
         {activeSection === 'books' && (
           <CodexSpotlightCarousel
-            sectionLabel="02 · TECHNICAL BOOKSHELF & VOLUMES"
+            sectionLabel="02 · TECHNICAL BOOKSHELF & 12 VOLUMES"
             headline="Read the manuals."
             headlineAccent="Built for engineers."
             volumes={filteredVolumes}
@@ -440,6 +522,27 @@ export default function ResourcesPage() {
             onOpenVolume={handleOpenVolume}
             savedIds={savedIds}
             onToggleSave={toggleSave}
+            topicFilterBar={
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {['All', 'Systems', 'Algorithms', 'Architecture', 'Craft', 'Interviews'].map((topic) => (
+                  <button
+                    key={topic}
+                    type="button"
+                    onClick={() => {
+                      setBookTopic(topic);
+                      setCarouselIndices((prev) => ({ ...prev, books: 0 }));
+                    }}
+                    className={`px-3 py-1 rounded-full text-[11px] font-mono cursor-pointer transition-all ${
+                      bookTopic === topic
+                        ? 'bg-amber-400 text-slate-950 font-bold shadow-[0_0_14px_rgba(251,191,36,0.35)]'
+                        : 'bg-white/[0.04] hover:bg-white/[0.1] text-zinc-300 border border-white/10'
+                    }`}
+                  >
+                    {topic === 'All' ? `All (${FOLIO_12_BOOKS.length})` : topic}
+                  </button>
+                ))}
+              </div>
+            }
           />
         )}
 
@@ -464,7 +567,7 @@ export default function ResourcesPage() {
                 04 · PERSONAL ARCHIVE
               </p>
               <h1 className="text-3xl sm:text-4xl font-serif font-semibold text-white mt-1">
-                Saved Codex Volumes
+                Saved Folio Volumes
               </h1>
               <p className="text-sm text-zinc-400 mt-1">
                 Your bookmarked tracks, manuals, and OA playbooks for instant revision.

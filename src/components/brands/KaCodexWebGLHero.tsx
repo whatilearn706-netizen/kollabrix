@@ -118,7 +118,7 @@ function createDarkSpreadTexture(plate: { left: string; right: string }): THREE.
   // Left page micro caption
   ctx.fillStyle = 'rgba(168, 161, 150, 0.5)';
   ctx.font = '500 14px ui-monospace, SFMono-Regular, Menlo, monospace';
-  ctx.fillText('KΛ CODEX // SPREAD', 44, 466);
+  ctx.fillText('KΛ FOLIO // SPREAD', 44, 466);
 
   // Right page oversized typographic specimen glyphs (matching pin.it/5AwPsERe4 video frame)
   ctx.fillStyle = 'rgba(244, 243, 239, 0.9)';

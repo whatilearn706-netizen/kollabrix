@@ -19,7 +19,7 @@ const RAIL_ITEMS: Array<{
   { id: 'home', label: 'Home · Language Tracks', icon: Home },
   { id: 'books', label: 'Books · 3D Shelf', icon: BookOpen },
   { id: 'solving', label: 'Problem Solving Playbooks', icon: Zap },
-  { id: 'saved', label: 'Saved Codex', icon: Bookmark },
+  { id: 'saved', label: 'Saved Folio', icon: Bookmark },
   { id: 'vault', label: 'Perks & Starter Kits', icon: Gift },
 ];
 
@@ -28,7 +28,7 @@ export function CodexRail({ activeSection, onSelectSection, savedCount }: CodexR
     <>
       {/* Desktop Left Vertical Editorial Rail */}
       <aside
-        aria-label="KΛ Codex Navigation"
+        aria-label="KΛ Folio Navigation"
         className="hidden md:flex flex-col items-center justify-between w-[74px] shrink-0 py-6 border-r border-white/[0.07] bg-[#06080D]/90 backdrop-blur-xl select-none z-20"
       >
         <Link
@@ -77,7 +77,7 @@ export function CodexRail({ activeSection, onSelectSection, savedCount }: CodexR
         </nav>
 
         <div className="text-[9px] font-mono tracking-widest uppercase text-zinc-600 [writing-mode:vertical-rl] rotate-180">
-          CODEX
+          FOLIO
         </div>
       </aside>
 

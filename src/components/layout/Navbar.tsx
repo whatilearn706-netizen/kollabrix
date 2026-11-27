@@ -282,71 +282,6 @@ export function Navbar() {
             <span className="relative z-10">My Dashboard</span>
           </Link>
 
-          {/* Creative Brushed-Silver KA AI New-Tab Launcher Button */}
-          <Link
-            href="/spark"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open KΛ ΛI workspace in a new tab"
-            title="Launch KΛ ΛI (New Tab)"
-            className={clsx(
-              'relative inline-flex items-center justify-center gap-1 h-9 px-3.5 rounded-full overflow-hidden transition-all duration-300 active:scale-[0.96] group shrink-0',
-              isNavbarDark
-                ? 'bg-gradient-to-b from-[#1B1F29] via-[#0F1219] to-[#06070B] border border-zinc-300/45 hover:border-white/80 text-white shadow-[0_0_18px_rgba(226,232,240,0.22),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:shadow-[0_0_26px_rgba(226,232,240,0.4)]'
-                : 'bg-gradient-to-b from-slate-800 to-slate-950 text-white border border-slate-400/50 hover:border-white shadow-[0_0_14px_rgba(148,163,184,0.3)]'
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -top-1.5 left-1.5 w-10 h-2.5 rounded-full bg-white/35 blur-[4px] opacity-65 group-hover:opacity-100 transition-opacity"
-            />
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute -bottom-px inset-x-3 h-px bg-gradient-to-r from-transparent via-zinc-200/80 to-transparent opacity-80"
-            />
-            <span className="relative z-10 inline-flex items-center gap-[2px] font-black text-[13px] tracking-tight leading-none">
-              <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent group-hover:from-white group-hover:to-zinc-200 transition-all">
-                K
-              </span>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200 drop-shadow-[0_0_6px_rgba(226,232,240,0.45)]"
-                aria-hidden="true"
-              >
-                <defs>
-                  <linearGradient id="kaLambdaSilverDesk" x1="12" y1="2" x2="12" y2="21" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#E2E8F0" />
-                    <stop offset="48%" stopColor="#94A3B8" />
-                    <stop offset="100%" stopColor="#525C6E" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M9.6 3.5H14.4L20.4 20.5H15.8L12 9.4L8.2 20.5H3.6L9.6 3.5Z"
-                  fill="url(#kaLambdaSilverDesk)"
-                />
-              </svg>
-            </span>
-          </Link>
-
-          {/* Compact Brushed-Silver KA CODEX New-Tab Launcher Button */}
-          <Link
-            href="/resources"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open KA CODEX workspace in a new tab"
-            title="Launch KA CODEX (New Tab)"
-            className={clsx(
-              'relative inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-full overflow-hidden transition-all duration-300 active:scale-[0.96] group shrink-0',
-              isNavbarDark
-                ? 'bg-gradient-to-b from-[#1B1F29] via-[#0F1219] to-[#06070B] border border-zinc-300/35 hover:border-amber-200/75 text-zinc-200 hover:text-white shadow-[0_0_14px_rgba(226,232,240,0.14)]'
-                : 'bg-slate-900 text-white border border-slate-400/40 hover:border-white'
-            )}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-amber-300" />
-            <span className="font-mono text-[11px] font-black tracking-wider">CODEX</span>
-          </Link>
-
           {user ? (
             <div className="flex items-center gap-2.5">
               {/* Progressive Profiling: Non-intrusive finish profile pill if incomplete */}
@@ -529,31 +464,6 @@ export function Navbar() {
 
         {/* Mobile Header Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          <Link
-            href="/spark"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open KΛ ΛI workspace in a new tab"
-            className={clsx(
-              'inline-flex items-center justify-center gap-[2px] h-8 px-2.5 rounded-full border text-xs font-black transition-all shadow-[0_0_14px_rgba(226,232,240,0.2)]',
-              isNavbarDark
-                ? 'bg-gradient-to-b from-[#1B1F29] to-[#080A0E] border-zinc-300/45 text-white'
-                : 'bg-slate-900 border-slate-400/50 text-white'
-            )}
-          >
-            <span className="bg-gradient-to-b from-white to-zinc-300 bg-clip-text text-transparent">K</span>
-            <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" aria-hidden="true">
-              <defs>
-                <linearGradient id="kaLambdaSilverMob" x1="12" y1="2" x2="12" y2="21" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#E2E8F0" />
-                  <stop offset="55%" stopColor="#94A3B8" />
-                  <stop offset="100%" stopColor="#525C6E" />
-                </linearGradient>
-              </defs>
-              <path d="M9.6 3.5H14.4L20.4 20.5H15.8L12 9.4L8.2 20.5H3.6L9.6 3.5Z" fill="url(#kaLambdaSilverMob)" />
-            </svg>
-          </Link>
-
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className={clsx(
@@ -721,7 +631,7 @@ export function Navbar() {
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
               <BookOpen className="w-4 h-4 text-amber-300" />
-              <span>KA CODEX</span>
+              <span>KΛ FOLIO</span>
             </Link>
 
             <Link

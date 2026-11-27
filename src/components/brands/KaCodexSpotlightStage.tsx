@@ -270,7 +270,7 @@ export function KaCodexSpotlightStage() {
                     </div>
 
                     <div className="relative z-[2] pt-3 border-t border-white/[0.07] flex items-center justify-between text-[10px] font-mono text-[#6E6962]">
-                      <span>KΛ CODEX SPREAD</span>
+                      <span>KΛ FOLIO SPREAD</span>
                       <span>p. 02</span>
                     </div>
                   </div>
@@ -319,7 +319,7 @@ export function KaCodexSpotlightStage() {
 
                     <div className="relative z-[2] pt-3 border-t border-white/[0.07] flex items-center justify-between gap-2">
                       <Link
-                        href={`/resources?book=${encodeURIComponent(activeBook.id)}`}
+                        href={`/resources?section=books&book=${encodeURIComponent(activeBook.id)}`}
                         className="inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 px-3 py-1.5 rounded-full bg-[#F4F3EF] hover:bg-white text-[#141311] font-mono text-[10px] font-bold transition-all shadow-md"
                       >
                         <BookOpen className="w-3 h-3 shrink-0" />

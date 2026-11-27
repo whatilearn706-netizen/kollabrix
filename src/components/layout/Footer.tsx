@@ -259,7 +259,7 @@ export function Footer() {
                 </li>
                 <li>
                   <Link href="/resources" target="_blank" rel="noopener noreferrer" className={linkClass}>
-                    KA CODEX
+                    KΛ FOLIO
                   </Link>
                 </li>
               </ul>

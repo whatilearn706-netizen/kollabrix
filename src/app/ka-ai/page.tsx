@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RotateCcw, Sparkles } from 'lucide-react';
 import { KaAiCinematicIntro } from '@/components/brands/KaAiCinematicIntro';
 import { KaAiParticleOrb } from '@/components/brands/KaAiParticleOrb';
-import { KaBrandEmblem, KaSuiteSwitcher } from '@/components/brands/KaBrandSuite';
+import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 
 export default function KaAiBrandPage() {
   const [introDone, setIntroDone] = useState(false);
@@ -74,16 +74,12 @@ export default function KaAiBrandPage() {
           {/* Centered Floating Pill Navbar */}
           <nav
             aria-label="KΛ ΛI navigation"
-            className="relative z-20 w-full max-w-[660px] rounded-2xl bg-[#091229]/70 border border-white/[0.1] backdrop-blur-2xl px-4 py-2 flex flex-wrap items-center justify-between gap-2.5 shadow-[0_14px_40px_rgba(0,0,0,0.65)]"
+            className="relative z-20 w-full max-w-[460px] rounded-2xl bg-[#091229]/70 border border-white/[0.1] backdrop-blur-2xl px-4 py-2 flex items-center justify-between gap-2.5 shadow-[0_14px_40px_rgba(0,0,0,0.65)]"
           >
             <Link href="/ka-ai" className="inline-flex items-center gap-2 group">
               <KaBrandEmblem />
               <span className="font-semibold text-sm tracking-tight text-white">KΛ ΛI</span>
             </Link>
-
-            <div className="hidden sm:flex">
-              <KaSuiteSwitcher active="ai" tone="dark-blue" />
-            </div>
 
             <div className="flex items-center gap-2">
               <Link
@@ -262,11 +258,11 @@ export default function KaAiBrandPage() {
                     href="/ka-codex"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="KA CODEX"
-                    title="Open KA CODEX"
+                    aria-label="KΛ FOLIO"
+                    title="Open KΛ FOLIO"
                     className="w-14 h-8 rounded-full border border-white/35 bg-white/[0.06] hover:bg-white/[0.14] flex items-center justify-center text-white text-[11px] font-bold transition-all"
                   >
-                    CX
+                    FL
                   </Link>
                 </div>
               </div>
