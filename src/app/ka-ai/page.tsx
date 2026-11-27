@@ -109,7 +109,11 @@ export default function KaAiBrandPage() {
           </nav>
 
           {/* Hero Display Headline with Silver-White Focal Luminance Sweep */}
-          <div className="relative z-10 mt-14 sm:mt-20 max-w-3xl mx-auto">
+          <div className="relative z-10 mt-12 sm:mt-16 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.05] border border-white/15 text-[11px] font-mono text-slate-200 mb-5">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+              <span>Built by Kollabrix</span>
+            </div>
             <h1 className="text-3xl sm:text-5xl md:text-[54px] font-medium tracking-[-0.03em] leading-[1.14]">
               <span className="bg-gradient-to-r from-slate-500 via-white to-slate-500 bg-clip-text text-transparent">
                 Build with KΛ ΛI – Smarter,
@@ -320,7 +324,7 @@ export default function KaAiBrandPage() {
           {/* Pitch-Black Lower Legal Bar Bounded by Crisp Hairlines */}
           <div className="bg-[#000000] px-6 sm:px-14 pb-8 pt-2">
             <div className="max-w-6xl mx-auto border-y border-white/15 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] sm:text-xs text-white/55">
-              <span>&copy; 2026 KΛ ΛI &bull; Connected with Kollabrix. All rights reserved.</span>
+              <span>&copy; 2026 KΛ ΛI &bull; Built by Kollabrix. All rights reserved.</span>
               <div className="flex items-center gap-6">
                 <Link href="/terms" className="hover:text-white/90 transition-colors">
                   Terms of Service

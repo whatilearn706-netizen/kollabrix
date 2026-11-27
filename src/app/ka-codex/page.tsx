@@ -82,7 +82,7 @@ export default function KaCodexBrandPage() {
               KΛ CODEX
             </h2>
             <p className="text-[11px] sm:text-xs text-[#8C867E] mt-0.5">
-              Programming &amp; software engineering books &middot; Connected with Kollabrix
+              Programming &amp; software engineering books &middot; Built by Kollabrix
             </p>
           </div>
 
@@ -336,7 +336,7 @@ export default function KaCodexBrandPage() {
 
           {/* Legal Colophon Bar */}
           <div className="pt-2 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-mono text-[#6E6962]">
-            <span>&copy; 2026 KΛ CODEX &bull; Connected with Kollabrix</span>
+            <span>&copy; 2026 KΛ CODEX &bull; Built by Kollabrix</span>
             <span className="tracking-wider uppercase text-[10px]">
               12 VOLUMES &middot; DARK EDITORIAL ARCHIVE
             </span>

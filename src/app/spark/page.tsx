@@ -693,11 +693,15 @@ export default function SparkUniversalWorkspacePage() {
 
             <Link
               href="/ka-ai"
-              title="Back to KΛ ΛI Homepage"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-xs font-mono text-zinc-300 hover:text-white transition-colors"
+              title="Back to KΛ ΛI Homepage — Built by Kollabrix"
+              className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-b from-[#171C28] via-[#0E121B] to-[#080A10] border border-white/15 hover:border-sky-300/45 shadow-[0_0_18px_rgba(148,163,184,0.14)] transition-all"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">KΛ ΛI</span>
+              <ArrowLeft className="w-3.5 h-3.5 text-zinc-300 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="text-[11px] font-semibold tracking-tight text-white">KΛ ΛI</span>
+              <span className="h-3 w-px bg-white/15" />
+              <span className="text-[10px] font-mono text-zinc-300">
+                Built by <span className="text-sky-300 font-bold">Kollabrix</span>
+              </span>
             </Link>
 
             <div className="relative">
