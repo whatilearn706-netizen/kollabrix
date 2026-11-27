@@ -12,9 +12,13 @@ import { getKaAiHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 export default function KaAiBrandPage() {
   const [introDone, setIntroDone] = useState(false);
   const [introRunKey, setIntroRunKey] = useState(0);
-  const [contactName, setContactName] = useState('');
+    const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [contactLoading, setContactLoading] = useState(false);
   const [contactSent, setContactSent] = useState(false);
+  const [contactError, setContactError] = useState('');
 
   const handleIntroComplete = useCallback(() => {
     setIntroDone(true);
@@ -25,13 +29,46 @@ export default function KaAiBrandPage() {
     setIntroDone(false);
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactName.trim() || !contactEmail.trim()) return;
-    setContactSent(true);
-    setContactName('');
-    setContactEmail('');
-    setTimeout(() => setContactSent(false), 4500);
+    setContactError('');
+    if (!contactName.trim() || !contactEmail.trim() || !contactPhone.trim()) {
+      setContactError('Please fill in your name, email, and mobile number.');
+      return;
+    }
+
+    setContactLoading(true);
+    try {
+      // Connects directly to Linkora/Kollabrix Admin Feedback Center
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: contactName.trim(),
+          email: contactEmail.trim(),
+          category: 'general',
+          role: 'student',
+          rating: 5,
+          message: `[KΛ AI Lead] Mobile: ${contactPhone.trim()}${contactMessage.trim() ? ` | Query: ${contactMessage.trim()}` : ''}`,
+        }),
+      });
+
+      if (res.ok) {
+        setContactSent(true);
+        setContactName('');
+        setContactEmail('');
+        setContactPhone('');
+        setContactMessage('');
+        setTimeout(() => setContactSent(false), 5000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setContactError(data.error || 'Submission failed. Please try again.');
+      }
+    } catch (err) {
+      setContactError('Network error. Please try again.');
+    } finally {
+      setContactLoading(false);
+    }
   };
 
   return (
@@ -249,65 +286,134 @@ export default function KaAiBrandPage() {
   </div>
 </section>
 
-        {/* SECTION 2: GET IN TOUCH (Exact Match to pin.it/51DEzK4WU Lower Canvas) */}
+                {/* ========================================================= */}
+        {/* SECTION 2: HIGH-TECH CONTACT COCKPIT (Admin Connected)    */}
+        {/* ========================================================= */}
         <section
           id="contact"
-          className="relative py-24 sm:py-32 px-4 flex flex-col items-center text-center overflow-hidden"
+          className="relative py-20 sm:py-28 px-4 flex flex-col items-center text-center overflow-hidden"
         >
-          {/* Top Centered Hairline Rule */}
-          <div className="w-56 sm:w-80 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent mb-14" />
+          {/* Subtle Hairline Divider */}
+          <div className="w-56 sm:w-80 h-px bg-gradient-to-r from-transparent via-sky-400/30 to-transparent mb-12" />
 
-          {/* Upward Cobalt Aurora Mist at Bottom */}
+          {/* Ambient Blue Radial Glow Behind Card */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-56"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-96"
             style={{
               background:
-                'radial-gradient(ellipse 70% 80% at 50% 105%, rgba(37,99,235,0.45) 0%, rgba(15,41,109,0.28) 45%, transparent 78%)',
+                'radial-gradient(ellipse 65% 60% at 50% 100%, rgba(37,99,235,0.35) 0%, rgba(14,165,233,0.15) 35%, transparent 75%)',
             }}
           />
 
-          <h2 className="relative z-10 text-3xl sm:text-5xl font-medium tracking-[-0.03em] bg-gradient-to-r from-slate-500 via-white to-slate-500 bg-clip-text text-transparent">
-            Get in touch
-          </h2>
-          <p className="relative z-10 mt-3 max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
-            Got questions for hackathons or need technical AI assistance? KΛ ΛI is here to help. Reach out and we&apos;ll get back to you as soon as possible.
-          </p>
-
-          {/* Inline Glass Bar Form: Name | Email | Contact us */}
-          <form
-            onSubmit={handleContactSubmit}
-            className="relative z-10 mt-9 w-full max-w-2xl rounded-2xl bg-[#070E24]/75 border border-white/[0.1] backdrop-blur-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-[0_24px_70px_rgba(0,0,0,0.8)]"
-          >
-            <input
-              type="text"
-              required
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              placeholder="Name"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-[#040919]/90 border border-white/[0.06] focus:border-blue-400/50 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none"
-            />
-            <input
-              type="email"
-              required
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="Email"
-              className="flex-1 px-4 py-2.5 rounded-xl bg-[#040919]/90 border border-white/[0.06] focus:border-blue-400/50 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none"
-            />
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#0A132C] hover:bg-[#111E44] border border-white/15 text-xs sm:text-sm font-medium text-slate-100 whitespace-nowrap cursor-pointer transition-all"
-            >
-              Contact us
-            </button>
-          </form>
-
-          {contactSent && (
-            <p className="relative z-10 mt-3 text-xs font-mono text-sky-300">
-              Thanks! Your message has been queued for the KΛ ΛI team.
+          {/* Header Pill & Heading */}
+          <div className="relative z-10 flex flex-col items-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/25 text-[11px] font-mono tracking-widest text-sky-300 uppercase mb-3 backdrop-blur-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Direct Support Dispatch
+            </div>
+            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-slate-200 via-white to-slate-400 bg-clip-text text-transparent">
+              Connect with <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">KΛ Core</span>
+            </h2>
+            <p className="mt-3 max-w-lg text-xs sm:text-sm text-zinc-400 leading-relaxed">
+              Have questions about Collegiate Hackathons, KΛ AI Copilots, or enterprise campus deployment? Drop your coordinates below.
             </p>
-          )}
+          </div>
+
+          {/* High-Tech Tactical Glass Card */}
+          <div className="relative z-10 w-full max-w-xl rounded-2xl bg-gradient-to-b from-[#0B1226]/90 via-[#070B18]/95 to-[#03060E]/98 border border-white/10 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(56,189,248,0.12)] text-left">
+            <form onSubmit={handleContactSubmit} className="space-y-4">
+              {/* Row 1: Name & Mobile */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                    Your Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="e.g. Mayank Goyal"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                    Mobile Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Email */}
+              <div>
+                <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  placeholder="student@college.edu"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all"
+                />
+              </div>
+
+              {/* Row 3: Optional Query */}
+              <div>
+                <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
+                  How Can We Help? (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  placeholder="Hackathon query, campus ambassador, or tech stack..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all"
+                />
+              </div>
+
+              {/* Error Message */}
+              {contactError && (
+                <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-300">
+                  {contactError}
+                </div>
+              )}
+
+              {/* Success State */}
+              {contactSent && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-xs font-mono text-emerald-300 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span>Success! Your details have reached the Admin Control Center. We&apos;ll get back to you shortly.</span>
+                </div>
+              )}
+
+              {/* Action Button */}
+              <button
+                type="submit"
+                disabled={contactLoading || contactSent}
+                className="w-full mt-2 py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-mono text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-[0_0_24px_rgba(56,189,248,0.35)] hover:shadow-[0_0_36px_rgba(56,189,248,0.55)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              >
+                {contactLoading ? (
+                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>Dispatch Details</span>
+                    <span>→</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </section>
 
         {/* SECTION 3: COSMIC PLANETARY HORIZON FOOTER (Exact Match to pin.it/4w79gNvLO) */}
