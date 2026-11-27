@@ -1233,6 +1233,8 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     }
 
     // Compiler Execution (Python / Java / C++) — fail-fast on Case #1 for syntax/compile errors
+    // Smooth 0.3s–3s client jitter spreads simultaneous match submissions evenly while loading spinner runs
+    await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 2700)));
     const lang = activeTab === 'java' ? 'java' : activeTab === 'cpp' ? 'cpp' : 'python';
     const code = lang === 'python' ? pythonCode : lang === 'java' ? javaCode : cppCode;
     const tcs = activeQuestion.testCases || [];

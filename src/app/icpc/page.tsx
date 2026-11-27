@@ -611,7 +611,7 @@ export default function IcpcCollegiateArenaPage() {
   };
 
   const handleRunSample = async () => {
-    if (!activeProblem) return;
+    if (!activeProblem || consoleOutput?.status === 'running') return;
 
     if (!userCode.trim()) {
       setConsoleOutput({
@@ -624,6 +624,8 @@ export default function IcpcCollegiateArenaPage() {
     setConsoleOutput({ status: 'running', message: `Compiling ${selectedLanguage.toUpperCase()} and executing against sample testcase...` });
 
     try {
+      // Smooth 0.3s–3s client jitter spreads 1,000-user burst spikes evenly across the 8-core compiler
+      await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 2700)));
       const res = await fetch('/api/icpc/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -677,7 +679,7 @@ export default function IcpcCollegiateArenaPage() {
   };
 
   const handleSubmitSolution = async () => {
-    if (!activeProblem || !selectedContest) return;
+    if (!activeProblem || !selectedContest || consoleOutput?.status === 'running') return;
 
     if (!userCode.trim()) {
       setConsoleOutput({
@@ -694,6 +696,8 @@ export default function IcpcCollegiateArenaPage() {
     setConsoleOutput({ status: 'running', message: `Compiling ${selectedLanguage.toUpperCase()} & evaluating against ${testCases.length} collegiate testcases in batch...` });
 
     try {
+      // Smooth 0.3s–3s client jitter prevents thundering-herd CPU spikes on simultaneous contest submits
+      await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 2700)));
       const isExam = selectedContest.contestType !== 'practice';
       const res = await fetch('/api/icpc/submit', {
         method: 'POST',
