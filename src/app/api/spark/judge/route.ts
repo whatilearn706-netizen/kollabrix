@@ -124,8 +124,8 @@ export async function POST(request: NextRequest) {
           error:
             quota.error ||
             (userId
-              ? 'Judge Audit requires Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
-              : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to run AI Judge Audits.'),
+              ? 'Judge Audit requires Hackathon Pass (₹99 / 7 days) or KΛ Pro Builder (₹249/mo).'
+              : 'Sign in and unlock Hackathon Pass (₹99) or KΛ Pro Builder to run AI Judge Audits.'),
           requireAuth: Boolean(quota.requireAuth),
           upgradeRequired: Boolean(quota.upgradeRequired || !userId),
           entitlements: quota.entitlements,

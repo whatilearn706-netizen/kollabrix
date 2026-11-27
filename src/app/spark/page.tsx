@@ -602,7 +602,7 @@ export default function SparkUniversalWorkspacePage() {
             onClick={() => {
               if (tier === 'fast' && entitlements?.hackathonOnly && mode !== 'hackathon') {
                 setPricingReason(
-                  '₹49 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro anywhere!'
+                  '₹99 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Upgrade to KΛ Pro Builder (₹249/mo) to use KΛ-Pro anywhere!'
                 );
                 setPricingOpen(true);
                 return;
@@ -750,7 +750,7 @@ export default function SparkUniversalWorkspacePage() {
                       if (entitlements?.hackathonOnly && mode !== 'hackathon') {
                         setModelMenuOpen(false);
                         setPricingReason(
-                          '₹49 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro everywhere!'
+                          '₹99 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Upgrade to KΛ Pro Builder (₹249/mo) to use KΛ-Pro everywhere!'
                         );
                         setPricingOpen(true);
                         return;
@@ -774,7 +774,7 @@ export default function SparkUniversalWorkspacePage() {
                       </div>
                       <div className="text-[11px] text-zinc-400">
                         {entitlements?.hackathonOnly && mode !== 'hackathon'
-                          ? 'Hackathon Studio only on ₹49 Pass · Go Pro ₹149/mo'
+                          ? 'Hackathon Studio only on ₹99 Pass · Go Pro ₹249/mo'
                           : deepRemaining === 0 && entitlements?.nextResetAt
                           ? `Daily limit ended · Resets at ${new Date(entitlements.nextResetAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}`
                           : 'Deep reasoning for tough bugs & architecture'}
@@ -808,7 +808,7 @@ export default function SparkUniversalWorkspacePage() {
                 onClick={() => {
                   setPricingReason(
                     entitlements?.planId === 'hackathon_pass'
-                      ? 'Upgrade from ₹49 Hackathon Pass to KΛ Pro Builder (₹149/mo) to unlock KΛ-Pro across ALL modes!'
+                      ? 'Upgrade from ₹99 Hackathon Pass to KΛ Pro Builder (₹249/mo) to unlock KΛ-Pro across ALL modes!'
                       : undefined
                   );
                   setPricingOpen(true);

@@ -69,11 +69,9 @@ export interface SparkBlueprintResponse {
   matchScore?: number;
 }
 
-// KΛ-1 uses Gemini Flash; KΛ-Pro uses Gemini 4 Hydrogen & Gemini 3.1 Pro first
+// KΛ-1 uses Gemini Flash Lite; KΛ-Pro uses Gemini 3 Flash (fast, crisp, cost-safe)
 const FAST_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
 const DEEP_GEMINI_MODELS = [
-  'gemini-4-hydrogen',
-  'gemini-3.1-pro-preview',
   'gemini-3-flash-preview',
   'gemini-3.5-flash-lite',
 ];

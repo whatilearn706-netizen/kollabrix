@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       (externalLinkCount >= 2 && (action === 'ppt_deck' || action === 'jury_roast' || action === 'demo_qa' || action === 'repo_pack'));
     const tokenCost: 1 | 2 = isHeavyDeepAction ? 2 : 1;
 
-    // Enforces Hackathon Pass (₹49) OR KΛ Pro Builder (₹149/mo) with dynamic 1 or 2 token deduction
+    // Enforces Hackathon Pass (₹99) OR KΛ Pro Builder (₹249/mo) with dynamic 1 or 2 token deduction
     const quota = await consumeKaChatQuota(userId || ip, 'deep', userId, 'hackathon', tokenCost);
     if (!quota.allowed) {
       return NextResponse.json(
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
           error:
             quota.error ||
             (userId
-              ? 'Hackathon Sprint Kit requires Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
-              : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to access Hackathon Sprint Tools.'),
+              ? 'Hackathon Sprint Kit requires Hackathon Pass (₹99 / 7 days) or KΛ Pro Builder (₹249/mo).'
+              : 'Sign in and unlock Hackathon Pass (₹99) or KΛ Pro Builder to access Hackathon Sprint Tools.'),
           requireAuth: Boolean(quota.requireAuth),
           upgradeRequired: Boolean(quota.upgradeRequired || !userId),
           entitlements: quota.entitlements,

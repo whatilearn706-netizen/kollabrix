@@ -303,7 +303,7 @@ export function KaPricingModal({
             )}
           </div>
 
-          {/* 2. Hackathon Sprint Pass ₹49 */}
+          {/* 2. Hackathon Sprint Pass ₹99 */}
           <div className="relative rounded-2xl bg-gradient-to-b from-[#0E1524] to-[#080B13] border border-sky-400/35 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -316,7 +316,7 @@ export function KaPricingModal({
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-white">₹49</span>
+                <span className="text-3xl font-black text-white">₹99</span>
                 <span className="text-xs text-zinc-400">/ 7 days</span>
               </div>
               <p className="text-xs text-zinc-400">
@@ -347,7 +347,7 @@ export function KaPricingModal({
                 href="/login"
                 className="w-full py-2.5 rounded-xl bg-gradient-to-b from-white to-slate-200 text-slate-950 font-bold text-xs text-center hover:brightness-105 transition-all"
               >
-                Sign in to Unlock ₹49 Pass
+                Sign in to Unlock ₹99 Pass
               </Link>
             ) : currentPlan === 'hackathon_pass' ? (
               <button
@@ -372,8 +372,8 @@ export function KaPricingModal({
                   ) : null}
                   <span>
                     {razorpayConfig?.enabled
-                      ? 'Pay ₹49 via Razorpay / UPI'
-                      : 'Unlock ₹49 Pass (Instant Access)'}
+                      ? 'Pay ₹99 via Razorpay / UPI'
+                      : 'Unlock ₹99 Pass (Instant Access)'}
                   </span>
                 </button>
                 {!razorpayConfig?.enabled &&
@@ -407,7 +407,7 @@ export function KaPricingModal({
             )}
           </div>
 
-          {/* 3. KΛ Pro Builder ₹149/mo or ₹399/semester */}
+          {/* 3. KΛ Pro Builder ₹249/mo or ₹799/semester */}
           <div className="relative rounded-2xl bg-gradient-to-b from-[#141824] via-[#0B0E17] to-[#07090F] border border-slate-300/40 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_45px_rgba(226,232,240,0.12)] overflow-hidden">
             <div
               aria-hidden="true"
@@ -433,7 +433,7 @@ export function KaPricingModal({
                     proBilling === 'pro_monthly' ? 'bg-white text-slate-950' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  ₹149 / mo
+                  ₹249 / mo
                 </button>
                 <button
                   type="button"
@@ -442,13 +442,13 @@ export function KaPricingModal({
                     proBilling === 'pro_semester' ? 'bg-white text-slate-950' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  ₹399 / sem
+                  ₹799 / sem
                 </button>
               </div>
 
               <div className="flex items-baseline gap-1">
                 <span className="text-3xl font-black text-white">
-                  {proBilling === 'pro_monthly' ? '₹149' : '₹399'}
+                  {proBilling === 'pro_monthly' ? '₹249' : '₹799'}
                 </span>
                 <span className="text-xs text-zinc-400">
                   {proBilling === 'pro_monthly' ? '/ month' : '/ 6 months (Save 55%)'}
@@ -505,8 +505,8 @@ export function KaPricingModal({
                   ) : null}
                   <span>
                     {razorpayConfig?.enabled
-                      ? `Pay ${proBilling === 'pro_monthly' ? '₹149' : '₹399'} via Razorpay / UPI`
-                      : `Unlock ${proBilling === 'pro_monthly' ? '₹149/mo' : '₹399/sem'} (Instant Access)`}
+                      ? `Pay ${proBilling === 'pro_monthly' ? '₹249' : '₹799'} via Razorpay / UPI`
+                      : `Unlock ${proBilling === 'pro_monthly' ? '₹249/mo' : '₹799/sem'} (Instant Access)`}
                   </span>
                 </button>
                 {!razorpayConfig?.enabled &&

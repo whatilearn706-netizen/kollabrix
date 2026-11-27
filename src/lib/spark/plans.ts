@@ -49,7 +49,7 @@ export const KA_PLANS: Record<KaPlanId, KaPlanDefinition> = {
     id: 'hackathon_pass',
     name: 'Hackathon Sprint Pass',
     tagline: '7-day squad & judge war-room (Hackathon Studio only)',
-    priceInr: 49,
+    priceInr: 99,
     durationDays: 7,
     badge: 'IMPULSE PASS',
     hackathonOnly: true,
@@ -71,7 +71,7 @@ export const KA_PLANS: Record<KaPlanId, KaPlanDefinition> = {
     id: 'pro_monthly',
     name: 'KΛ Pro Builder',
     tagline: 'Sitewide KΛ-Pro across Coding, DSA & Hackathons',
-    priceInr: 149,
+    priceInr: 249,
     durationDays: 30,
     badge: 'MOST POPULAR',
     hackathonOnly: false,
@@ -92,8 +92,8 @@ export const KA_PLANS: Record<KaPlanId, KaPlanDefinition> = {
   pro_semester: {
     id: 'pro_semester',
     name: 'KΛ Pro Semester',
-    tagline: '6 months of uninterrupted KΛ Pro (Save 55%)',
-    priceInr: 399,
+    tagline: '6 months of uninterrupted KΛ Pro (Save 46%)',
+    priceInr: 799,
     durationDays: 180,
     badge: 'BEST VALUE',
     hackathonOnly: false,
@@ -107,7 +107,7 @@ export const KA_PLANS: Record<KaPlanId, KaPlanDefinition> = {
     highlights: [
       'Everything in KΛ Pro Builder across ALL modes for 180 days',
       'Covers full semester hackathons + placement OAs',
-      '~₹66/month effective cost',
+      '~₹133/month effective cost',
     ],
   },
 };
@@ -465,7 +465,7 @@ export async function consumeKaChatQuota(
   const { counter: usage, nextResetAt } = usageState;
   const resetText = formatResetMessage(nextResetAt);
 
-  // 1. Hackathon Pass (₹49 / 7 days) Isolation:
+  // 1. Hackathon Pass (₹99 / 7 days) Isolation:
   //    - KΛ-Pro & 10/day quota are ONLY allowed in Hackathon Studio (`contextMode === 'hackathon'`)
   //    - Outside Hackathon Studio (General, Code Sandbox, DSA), KΛ-Pro is blocked and KΛ-1 is capped at 4/day!
   if (def.hackathonOnly && contextMode !== 'hackathon') {
@@ -476,7 +476,7 @@ export async function consumeKaChatQuota(
         upgradeRequired: true,
         recommendedPlan: 'pro_monthly',
         error:
-          '₹49 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Switch to KΛ-1 (4/day) here or upgrade to KΛ Pro Builder (₹149/mo) to use KΛ-Pro anywhere on Kollabrix!',
+          '₹99 Hackathon Sprint Pass unlocks KΛ-Pro only inside Hackathon Studio. Switch to KΛ-1 (4/day) here or upgrade to KΛ Pro Builder (₹249/mo) to use KΛ-Pro anywhere on Kollabrix!',
         entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
@@ -489,7 +489,7 @@ export async function consumeKaChatQuota(
         effectiveTier: 'fast',
         upgradeRequired: true,
         recommendedPlan: 'pro_monthly',
-        error: `Daily KΛ-1 general limit reached (${generalFastLimit}/${generalFastLimit}). ${resetText} — or upgrade to KΛ Pro Builder (₹149/mo) for 30 KΛ-1 + 10 KΛ-Pro/day everywhere!`,
+        error: `Daily KΛ-1 general limit reached (${generalFastLimit}/${generalFastLimit}). ${resetText} — or upgrade to KΛ Pro Builder (₹249/mo) for 30 KΛ-1 + 10 KΛ-Pro/day everywhere!`,
         entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
@@ -513,7 +513,7 @@ export async function consumeKaChatQuota(
         allowed: false,
         effectiveTier: 'deep',
         requireAuth: true,
-        error: 'Sign in free for 4 daily KΛ-1 messages, or unlock KΛ-Pro with Hackathon Pass (₹49 / 7 days).',
+        error: 'Sign in free for 4 daily KΛ-1 messages, or unlock KΛ-Pro with Hackathon Pass (₹99 / 7 days).',
         entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
@@ -526,8 +526,8 @@ export async function consumeKaChatQuota(
         recommendedPlan: contextMode === 'hackathon' ? 'hackathon_pass' : 'pro_monthly',
         error:
           contextMode === 'hackathon'
-            ? 'KΛ-Pro Hackathon Studio is unlocked with Hackathon Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
-            : 'KΛ-Pro in Code Sandbox, DSA & General Chat requires KΛ Pro Builder (₹149/mo).',
+            ? 'KΛ-Pro Hackathon Studio is unlocked with Hackathon Pass (₹99 / 7 days) or KΛ Pro Builder (₹249/mo).'
+            : 'KΛ-Pro in Code Sandbox, DSA & General Chat requires KΛ Pro Builder (₹249/mo).',
         entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }
@@ -563,7 +563,7 @@ export async function consumeKaChatQuota(
       recommendedPlan: def.id === 'hackathon_pass' ? 'pro_monthly' : undefined,
       error:
         def.id === 'hackathon_pass'
-          ? `Daily KΛ-Pro limit reached (${deepLimit}/${deepLimit} used). ${resetText} — or upgrade to KΛ Pro Builder (₹149/mo) for fresh Pro access everywhere!`
+          ? `Daily KΛ-Pro limit reached (${deepLimit}/${deepLimit} used). ${resetText} — or upgrade to KΛ Pro Builder (₹249/mo) for fresh Pro access everywhere!`
           : `Daily KΛ-Pro limit reached (${deepLimit}/${deepLimit} used). ${resetText}. Switch to KΛ-1 if you still have fast messages remaining.`,
       entitlements: await getKaEntitlements(actorKey, userId, usageState),
     };
@@ -587,7 +587,7 @@ export async function consumeKaChatQuota(
       recommendedPlan: contextMode === 'hackathon' && def.id === 'free' ? 'hackathon_pass' : 'pro_monthly',
       error:
         def.id === 'free'
-          ? `Daily Free KΛ-1 limit reached (4/4). ${resetText} — or upgrade to Hackathon Pass (₹49) / KΛ Pro Builder (₹149/mo).`
+          ? `Daily Free KΛ-1 limit reached (4/4). ${resetText} — or upgrade to Hackathon Pass (₹99) / KΛ Pro Builder (₹249/mo).`
           : `Daily KΛ-1 limit reached (${fastLimit}/${fastLimit}). ${resetText}.`,
       entitlements: await getKaEntitlements(actorKey, userId, usageState),
     };
@@ -614,8 +614,8 @@ export async function consumeKaExplainQuota(
       remaining: 0,
       upgradeRequired: true,
       error: ent.isAuthenticated
-        ? `Bug Coach limit reached.${resetHint} Upgrade to KΛ Pro Builder (₹149/mo) for unlimited Practice IDE & Arena debugging hints!`
-        : 'Sign in free for 2 daily Bug Coach hints, or go KΛ Pro Builder (₹149/mo) for unlimited debugging.',
+        ? `Bug Coach limit reached.${resetHint} Upgrade to KΛ Pro Builder (₹249/mo) for unlimited Practice IDE & Arena debugging hints!`
+        : 'Sign in free for 2 daily Bug Coach hints, or go KΛ Pro Builder (₹249/mo) for unlimited debugging.',
     };
   }
   const planRec = await getUserActivePlan(userId);

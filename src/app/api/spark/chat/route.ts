@@ -201,6 +201,8 @@ export async function POST(request: NextRequest) {
 
     const systemPrompt = `${modeInstructions[mode] || modeInstructions.general}${blueprintCtx}${sketchDirective}\n\n${livePlatformContext}`;
     const attachmentNames = Array.isArray(attachments) ? attachments.map((a) => a.name).filter(Boolean) : [];
+    const isTinyCasualPrompt = !hasAttachments && promptText.trim().length <= 28;
+    const effectiveLlmTier = isTinyCasualPrompt ? 'fast' : quota.effectiveTier;
 
     // Real-time SSE Streaming path
     if (stream) {
@@ -210,7 +212,7 @@ export async function POST(request: NextRequest) {
         history: Array.isArray(messages) ? messages : [],
         attachments: Array.isArray(attachments) ? attachments : [],
         temperature: mode === 'code' || mode === 'dsa' ? 0.35 : 0.65,
-        tier: quota.effectiveTier,
+        tier: effectiveLlmTier,
       });
 
       const encoder = new TextEncoder();
@@ -297,7 +299,7 @@ export async function POST(request: NextRequest) {
       attachments: Array.isArray(attachments) ? attachments : [],
       jsonMode: false,
       temperature: mode === 'code' || mode === 'dsa' ? 0.35 : 0.65,
-      tier: quota.effectiveTier,
+      tier: effectiveLlmTier,
     });
 
     const reply = llmRes?.text || `${activeModelName} could not reach the model right now. Please try again in a moment.`;

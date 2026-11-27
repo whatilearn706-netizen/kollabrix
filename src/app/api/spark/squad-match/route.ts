@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: currentUserId
-            ? 'AI Squad Match & Workspace Launch requires Hackathon Sprint Pass (₹49 / 7 days) or KΛ Pro Builder (₹149/mo).'
-            : 'Sign in and unlock Hackathon Pass (₹49) or KΛ Pro Builder to use AI Squad Match.',
+            ? 'AI Squad Match & Workspace Launch requires Hackathon Sprint Pass (₹99 / 7 days) or KΛ Pro Builder (₹249/mo).'
+            : 'Sign in and unlock Hackathon Pass (₹99) or KΛ Pro Builder to use AI Squad Match.',
           requireAuth: !currentUserId,
           upgradeRequired: true,
         },

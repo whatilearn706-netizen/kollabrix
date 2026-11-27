@@ -3,8 +3,6 @@ import { SparkModelSettings } from '@/app/api/spark/settings/route';
 
 const FAST_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3-flash-preview'];
 const DEEP_GEMINI_MODELS = [
-  'gemini-4-hydrogen',
-  'gemini-3.1-pro-preview',
   'gemini-3-flash-preview',
   'gemini-3.5-flash-lite',
 ];
@@ -111,8 +109,8 @@ function resolveValidGeminiKeys(settingsKey?: string): string[] {
 
 /**
  * Shared 2-Tier LLM caller for all AI Spark capabilities:
- * - Fast tier: Gemini 3.5 Flash (instant, ultra-low cost)
- * - Deep tier: Gemini 4 Hydrogen (flagship reasoning & architecture)
+ * - Fast tier: Gemini 3.5 Flash Lite (instant, ultra-low cost)
+ * - Deep tier: Gemini 3 Flash (high-quality architecture, JSON & reasoning at ~1/15th Pro cost)
  */
 export async function callSparkLLM(opts: CallSparkLLMOptions): Promise<{ text: string; engine: string } | null> {
   const {
@@ -143,7 +141,7 @@ export async function callSparkLLM(opts: CallSparkLLMOptions): Promise<{ text: s
   if (geminiKeys.length > 0 && (preferredEngine === 'auto' || preferredEngine === 'gemini')) {
     const contents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-    for (const msg of history.slice(-10)) {
+    for (const msg of history.slice(-6)) {
       contents.push({
         role: msg.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: msg.content }],
@@ -170,9 +168,14 @@ export async function callSparkLLM(opts: CallSparkLLMOptions): Promise<{ text: s
           const timer = setTimeout(() => controller.abort(), attemptTimeout);
           const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-          const generationConfig: Record<string, any> = { temperature: temp };
+          const generationConfig: Record<string, any> = {
+            temperature: temp,
+            maxOutputTokens: jsonMode ? 4096 : 2048,
+          };
           if (jsonMode) generationConfig.responseMimeType = 'application/json';
-          if (model.includes('2.5') && model.includes('flash')) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+          if ((model.includes('2.5') || model.includes('3-')) && model.includes('flash') && (tier === 'fast' || jsonMode)) {
+            generationConfig.thinkingConfig = { thinkingBudget: 0 };
+          }
 
           const res = await fetch(url, {
             method: 'POST',
@@ -279,7 +282,7 @@ export async function streamSparkLLM(opts: CallSparkLLMOptions): Promise<{
   const modelChain = tier === 'deep' ? DEEP_GEMINI_MODELS : FAST_GEMINI_MODELS;
 
   const contents: Array<{ role: 'user' | 'model'; parts: Array<any> }> = [];
-  for (const msg of history.slice(-10)) {
+  for (const msg of history.slice(-6)) {
     contents.push({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }],
@@ -313,8 +316,13 @@ export async function streamSparkLLM(opts: CallSparkLLMOptions): Promise<{
         const timer = setTimeout(() => controller.abort(), isHydrogen ? 35000 : isPro ? 28000 : 18000);
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
-        const generationConfig: Record<string, any> = { temperature: temp };
-        if (model.includes('2.5') && model.includes('flash')) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        const generationConfig: Record<string, any> = {
+          temperature: temp,
+          maxOutputTokens: 2048,
+        };
+        if ((model.includes('2.5') || model.includes('3-')) && model.includes('flash') && tier === 'fast') {
+          generationConfig.thinkingConfig = { thinkingBudget: 0 };
+        }
 
         const res = await fetch(url, {
           method: 'POST',
