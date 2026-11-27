@@ -48,24 +48,24 @@ const FOLIO_CATEGORY_STYLES: Record<
   { gradient: string; accent: string }
 > = {
   Systems: {
-    gradient: 'from-rose-950/95 via-stone-900 to-[#0B0D14]',
-    accent: 'text-rose-300',
-  },
-  Algorithms: {
-    gradient: 'from-emerald-950/95 via-slate-900 to-[#0B0D14]',
-    accent: 'text-emerald-300',
-  },
-  Architecture: {
-    gradient: 'from-sky-950/95 via-slate-900 to-[#0B0D14]',
+    gradient: 'from-[#101829] via-[#090D16] to-[#05070C]',
     accent: 'text-sky-300',
   },
+  Algorithms: {
+    gradient: 'from-[#141A24] via-[#0A0D14] to-[#05070B]',
+    accent: 'text-slate-200',
+  },
+  Architecture: {
+    gradient: 'from-[#111528] via-[#090C16] to-[#05060C]',
+    accent: 'text-indigo-300',
+  },
   Craft: {
-    gradient: 'from-amber-950/95 via-stone-900 to-[#0B0D14]',
-    accent: 'text-amber-300',
+    gradient: 'from-[#111A1E] via-[#090E12] to-[#05070A]',
+    accent: 'text-emerald-300',
   },
   Interviews: {
-    gradient: 'from-lime-950/95 via-slate-900 to-[#0B0D14]',
-    accent: 'text-lime-300',
+    gradient: 'from-[#0E1822] via-[#080D14] to-[#04060A]',
+    accent: 'text-cyan-300',
   },
 };
 
@@ -501,7 +501,7 @@ export default function ResourcesPage() {
                     }}
                     className={`px-3 py-1 rounded-full text-[11px] font-mono cursor-pointer transition-all ${
                       bookTopic === topic
-                        ? 'bg-amber-400 text-slate-950 font-bold shadow-[0_0_14px_rgba(251,191,36,0.35)]'
+                        ? 'bg-gradient-to-b from-white to-slate-200 text-slate-950 font-bold shadow-[0_0_18px_rgba(226,232,240,0.3)]'
                         : 'bg-white/[0.04] hover:bg-white/[0.1] text-zinc-300 border border-white/10'
                     }`}
                   >

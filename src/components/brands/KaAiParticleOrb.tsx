@@ -5,6 +5,7 @@ import { Mic } from 'lucide-react';
 
 interface KaAiParticleOrbProps {
   onClick?: () => void;
+  size?: number;
 }
 
 /**
@@ -12,7 +13,7 @@ interface KaAiParticleOrbProps {
  * Renders layered latitude/longitude dotted contours with organic billowing crests
  * in electric cobalt & ice cyan around a dark central mic badge.
  */
-export function KaAiParticleOrb({ onClick }: KaAiParticleOrbProps) {
+export function KaAiParticleOrb({ onClick, size = 280 }: KaAiParticleOrbProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -22,7 +23,6 @@ export function KaAiParticleOrb({ onClick }: KaAiParticleOrbProps) {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = 280;
     canvas.width = size * dpr;
     canvas.height = size * dpr;
     canvas.style.width = `${size}px`;
@@ -55,7 +55,8 @@ export function KaAiParticleOrb({ onClick }: KaAiParticleOrbProps) {
 
       const cx = size / 2;
       const cy = size / 2;
-      const baseR = 96;
+      const baseR = Math.round(size * 0.343);
+      const scaleFactor = size / 280;
 
       // Soft dark sphere core & outer indigo bloom
       const coreGrad = ctx.createRadialGradient(cx, cy, 12, cx, cy, baseR + 22);
@@ -76,8 +77,9 @@ export function KaAiParticleOrb({ onClick }: KaAiParticleOrbProps) {
 
         // Organic harmonic wave displacement along upper-right & lower-left ridges
         const wave =
-          Math.sin(theta * 2.5 + phi * 2.0 - time * 1.4) * 9.5 +
-          Math.cos(phi * 3.2 - theta * 1.5 + time * 1.1) * 5.5;
+          (Math.sin(theta * 2.5 + phi * 2.0 - time * 1.4) * 9.5 +
+            Math.cos(phi * 3.2 - theta * 1.5 + time * 1.1) * 5.5) *
+          scaleFactor;
         const r = baseR + wave;
 
         const sx = r * Math.sin(phi) * Math.cos(theta);
@@ -118,19 +120,25 @@ export function KaAiParticleOrb({ onClick }: KaAiParticleOrbProps) {
 
     rafId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(rafId);
-  }, []);
+  }, [size]);
+
+  const badgeDim = size < 220 ? 'w-10 h-10' : 'w-14 h-14';
+  const iconDim = size < 220 ? 'w-4 h-4' : 'w-5 h-5';
 
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label="Activate KΛ ΛI Voice & Prompt Studio"
-      className="relative group inline-flex items-center justify-center w-[280px] h-[280px] cursor-pointer focus:outline-none"
+      style={{ width: `${size}px`, height: `${size}px` }}
+      className="relative group inline-flex items-center justify-center cursor-pointer focus:outline-none"
     >
       <canvas ref={canvasRef} className="block" />
       {/* Center dark circular badge + crisp white microphone */}
-      <span className="absolute w-14 h-14 rounded-full bg-[#06102B]/90 border border-blue-300/20 shadow-[0_0_28px_rgba(37,99,235,0.4)] flex items-center justify-center group-hover:scale-110 group-hover:border-sky-300/50 transition-all duration-300">
-        <Mic className="w-5 h-5 text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.75)]" />
+      <span
+        className={`absolute ${badgeDim} rounded-full bg-[#06102B]/90 border border-blue-300/20 shadow-[0_0_28px_rgba(37,99,235,0.4)] flex items-center justify-center group-hover:scale-110 group-hover:border-sky-300/50 transition-all duration-300`}
+      >
+        <Mic className={`${iconDim} text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.75)]`} />
       </span>
     </button>
   );

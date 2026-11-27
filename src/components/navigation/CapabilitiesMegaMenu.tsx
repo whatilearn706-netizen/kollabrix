@@ -129,7 +129,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   },
   {
     id: 'resources',
-    label: 'KΛ FOLIO · Resources',
+    label: 'KΛ FOLIO',
     group: 'build',
     href: '/resources',
     badge: 'FOLIO LIBRARY',
@@ -351,7 +351,7 @@ function PreviewVisual({ item }: { item: CapabilityItem }) {
   return (
     <div className="rounded-xl bg-[#05070c] border border-white/10 p-3 space-y-2 font-mono text-[9.5px]">
       <div className="text-cyan-300 font-bold">
-        {item.id === 'problems' ? 'VERIFIED CAMPUS BRIEF' : 'KΛ CODEX VOLUMES'}
+        {item.id === 'problems' ? 'VERIFIED CAMPUS BRIEF' : 'KΛ FOLIO VOLUMES'}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {(item.id === 'problems'

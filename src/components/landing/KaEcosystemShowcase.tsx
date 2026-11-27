@@ -3,20 +3,21 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { ArrowUpRight, BookOpen, CheckCircle2, Code2, Cpu, Layers, Sparkles } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CheckCircle2, Code2, Cpu, Layers, Terminal } from 'lucide-react';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { KaAiParticleOrb } from '@/components/brands/KaAiParticleOrb';
+import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
 
-const FOLIO_MINI_BOOKS = [
-  { code: 'VOL 01', title: 'DDIA', accent: 'from-rose-500/35 to-rose-950/80 border-rose-400/35', rot: '-rotate-6 translate-y-2' },
-  { code: 'VOL 02', title: 'Clean Code', accent: 'from-sky-500/35 to-slate-900/90 border-sky-400/35', rot: '-rotate-2 -translate-y-1' },
-  { code: 'VOL 04', title: 'CLRS', accent: 'from-amber-500/35 to-stone-900/90 border-amber-400/40', rot: 'rotate-2 -translate-y-2' },
-  { code: 'VOL 12', title: 'MIT SICP', accent: 'from-violet-500/35 to-slate-950/90 border-violet-400/35', rot: 'rotate-6 translate-y-2' },
+const FOLIO_SHOWCASE_BOOKS = [
+  { book: KA_CODEX_BOOKS[0], rot: '-rotate-8 translate-y-3', z: 'z-10' },  // DDIA
+  { book: KA_CODEX_BOOKS[1], rot: '-rotate-3 translate-y-0', z: 'z-20' },  // Clean Code
+  { book: KA_CODEX_BOOKS[3], rot: 'rotate-3 -translate-y-1', z: 'z-30' },  // CLRS
+  { book: KA_CODEX_BOOKS[11], rot: 'rotate-8 translate-y-3', z: 'z-20' },  // MIT SICP
 ];
 
 /**
  * Kollabrix Homepage Showcase Section for KΛ ΛI & KΛ FOLIO:
- * Placed directly beneath the Explore / Active Projects ribbon so visitors
- * immediately discover both standalone KΛ products built by Kollabrix.
+ * Features the live 3D Particle Orb from KΛ ΛI and real fanned book covers from KΛ FOLIO.
  */
 export function KaEcosystemShowcase() {
   return (
@@ -24,7 +25,7 @@ export function KaEcosystemShowcase() {
       id="ka-ecosystem"
       className="relative w-full bg-[#020306] border-t border-white/[0.06] py-20 sm:py-24 px-5 sm:px-8 lg:px-12 overflow-hidden"
     >
-      {/* Subtle Architectural Blueprint Grid + Dual Ambient Glow */}
+      {/* Subtle Architectural Blueprint Grid + Soft Dual Rim Light */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-[0.18]"
@@ -41,7 +42,7 @@ export function KaEcosystemShowcase() {
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-24 right-1/4 w-[420px] h-[320px] rounded-full bg-amber-500/[0.08] blur-[110px]"
+        className="pointer-events-none absolute -bottom-24 right-1/4 w-[420px] h-[320px] rounded-full bg-slate-200/[0.06] blur-[110px]"
       />
 
       <div className="relative z-10 max-w-6xl mx-auto space-y-10">
@@ -75,22 +76,21 @@ export function KaEcosystemShowcase() {
 
         {/* Interactive Dual Flagship Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* CARD 1: KΛ ΛI */}
+          {/* CARD 1: KΛ ΛI (with live 3D Particle Acoustic Orb from /ka-ai) */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.5 }}
-            className="group relative rounded-[28px] bg-gradient-to-b from-[#081024] via-[#060914] to-[#04060D] border border-white/10 hover:border-sky-400/40 p-6 sm:p-8 flex flex-col justify-between gap-6 overflow-hidden shadow-[0_28px_80px_rgba(0,0,0,0.85)] transition-colors"
+            className="group relative rounded-[28px] bg-gradient-to-b from-[#070E20] via-[#050914] to-[#03050B] border border-white/12 hover:border-sky-400/45 p-6 sm:p-8 flex flex-col justify-between gap-6 overflow-hidden shadow-[0_28px_80px_rgba(0,0,0,0.88)] transition-colors"
           >
-            {/* Horizon Ice-Blue Rim Glow */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/60 to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/70 to-transparent"
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[360px] h-[220px] rounded-full bg-sky-500/20 blur-[80px] group-hover:bg-sky-400/30 transition-colors duration-500"
+              className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[380px] h-[220px] rounded-full bg-sky-500/20 blur-[90px] group-hover:bg-sky-400/30 transition-colors duration-500"
             />
 
             <div className="relative z-10 space-y-5">
@@ -106,27 +106,29 @@ export function KaEcosystemShowcase() {
                 </span>
               </div>
 
-              {/* Creative Visual Preview: Holographic Core + Prompt Pills */}
-              <div className="relative h-44 rounded-2xl bg-[#040814]/90 border border-white/[0.08] overflow-hidden flex items-center justify-center p-4">
+              {/* Live 3D Particle Orb Stage (from /ka-ai) */}
+              <div className="relative h-48 rounded-2xl bg-[#030712]/95 border border-white/[0.09] overflow-hidden flex items-center justify-center">
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(56,189,248,0.22),transparent_65%)]"
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(56,189,248,0.22),transparent_65%)]"
                 />
-                {/* Orbital Ring */}
-                <div className="relative w-24 h-24 rounded-full border border-sky-300/30 flex items-center justify-center shadow-[0_0_45px_rgba(56,189,248,0.35)] group-hover:scale-105 transition-transform duration-500">
-                  <div className="w-16 h-16 rounded-full border border-dashed border-sky-200/45 animate-spin [animation-duration:18s] flex items-center justify-center" />
-                  <div className="absolute w-9 h-9 rounded-full bg-gradient-to-b from-sky-300 to-blue-600 flex items-center justify-center shadow-[0_0_24px_rgba(56,189,248,0.85)]">
-                    <Sparkles className="w-4 h-4 text-white" />
-                  </div>
-                </div>
 
-                {/* Floating Prompt Chips */}
-                <div className="absolute left-3 top-3 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10 text-[10px] font-mono text-sky-200 flex items-center gap-1.5">
+                <KaAiParticleOrb
+                  size={172}
+                  onClick={() => window.open('/spark', '_blank', 'noopener,noreferrer')}
+                />
+
+                {/* Floating Telemetry Chips */}
+                <div className="pointer-events-none absolute left-3 top-3 px-2.5 py-1 rounded-lg bg-white/[0.06] backdrop-blur-md border border-white/10 text-[10px] font-mono text-sky-200 flex items-center gap-1.5">
                   <Cpu className="w-3 h-3 text-sky-400" />
                   <span>Audit Repo</span>
                 </div>
-                <div className="absolute right-3 bottom-3 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/10 text-[10px] font-mono text-slate-200 flex items-center gap-1.5">
-                  <Code2 className="w-3 h-3 text-cyan-300" />
+                <div className="pointer-events-none absolute right-3 top-3 px-2.5 py-1 rounded-lg bg-white/[0.06] backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-200 flex items-center gap-1.5">
+                  <Terminal className="w-3 h-3 text-cyan-300" />
+                  <span>MVP Architect</span>
+                </div>
+                <div className="pointer-events-none absolute right-3 bottom-3 px-2.5 py-1 rounded-lg bg-white/[0.06] backdrop-blur-md border border-white/10 text-[10px] font-mono text-slate-200 flex items-center gap-1.5">
+                  <Code2 className="w-3 h-3 text-sky-300" />
                   <span>Run Sandbox</span>
                 </div>
               </div>
@@ -159,7 +161,8 @@ export function KaEcosystemShowcase() {
                 href="/spark"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white hover:bg-sky-50 text-slate-950 font-semibold text-xs transition-all shadow-[0_8px_24px_rgba(255,255,255,0.16)]"
+                style={{ backgroundColor: '#F4F3EF', color: '#07090E' }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full hover:opacity-95 font-semibold text-xs transition-all shadow-[0_8px_24px_rgba(244,243,239,0.18)]"
               >
                 <span>Launch KΛ ΛI Workspace</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -176,22 +179,21 @@ export function KaEcosystemShowcase() {
             </div>
           </motion.div>
 
-          {/* CARD 2: KΛ FOLIO */}
+          {/* CARD 2: KΛ FOLIO (with Real Fanned 3D Coding Book Covers) */}
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-50px' }}
             transition={{ duration: 0.5, delay: 0.08 }}
-            className="group relative rounded-[28px] bg-gradient-to-b from-[#17130E] via-[#0E0C0A] to-[#080706] border border-white/10 hover:border-amber-400/40 p-6 sm:p-8 flex flex-col justify-between gap-6 overflow-hidden shadow-[0_28px_80px_rgba(0,0,0,0.85)] transition-colors"
+            className="group relative rounded-[28px] bg-gradient-to-b from-[#131210] via-[#0B0A09] to-[#060605] border border-white/12 hover:border-zinc-300/40 p-6 sm:p-8 flex flex-col justify-between gap-6 overflow-hidden shadow-[0_28px_80px_rgba(0,0,0,0.88)] transition-colors"
           >
-            {/* Warm Editorial Amber Rim Glow */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-300/60 to-transparent"
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[360px] h-[220px] rounded-full bg-amber-500/15 blur-[80px] group-hover:bg-amber-400/25 transition-colors duration-500"
+              className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[380px] h-[220px] rounded-full bg-amber-400/12 blur-[90px] group-hover:bg-amber-300/20 transition-colors duration-500"
             />
 
             <div className="relative z-10 space-y-5">
@@ -203,32 +205,34 @@ export function KaEcosystemShowcase() {
                     KΛ FOLIO
                   </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-[10px] font-mono font-bold text-amber-200">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/15 text-[10px] font-mono font-bold text-zinc-200">
                   <BookOpen className="w-3 h-3 text-amber-300" />
                   <span>12 VOLUMES · DARK</span>
                 </span>
               </div>
 
-              {/* Creative Visual Preview: Fanned 3D Book Spine Cards */}
-              <div className="relative h-44 rounded-2xl bg-[#0B0A08]/90 border border-white/[0.08] overflow-hidden flex items-center justify-center px-4">
+              {/* Real Fanned 3D Coding Book Covers */}
+              <div className="relative h-48 rounded-2xl bg-[#090807]/95 border border-white/[0.09] overflow-hidden flex items-center justify-center px-4">
                 <div
                   aria-hidden="true"
-                  className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(245,158,11,0.16),transparent_65%)]"
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(244,243,239,0.11),transparent_65%)]"
                 />
-                <div className="relative flex items-center justify-center -space-x-3 group-hover:space-x-1 transition-all duration-500">
-                  {FOLIO_MINI_BOOKS.map((book) => (
-                    <div
-                      key={book.code}
-                      className={`w-20 h-28 rounded-xl bg-gradient-to-b ${book.accent} border p-2.5 flex flex-col justify-between shadow-[0_14px_30px_rgba(0,0,0,0.85)] transform ${book.rot} group-hover:rotate-0 group-hover:translate-y-0 transition-all duration-500`}
+                <div className="relative flex items-center justify-center -space-x-3 group-hover:space-x-1.5 transition-all duration-500">
+                  {FOLIO_SHOWCASE_BOOKS.map(({ book, rot, z }) => (
+                    <Link
+                      key={book.id}
+                      href={`/resources?section=books&book=${encodeURIComponent(book.id)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`Read ${book.title}`}
+                      className={`relative ${z} w-[76px] sm:w-[84px] aspect-[2/3] rounded-md overflow-hidden border border-white/25 bg-[#181613] shadow-[0_18px_36px_rgba(0,0,0,0.92)] transform ${rot} group-hover:rotate-0 group-hover:translate-y-0 hover:!scale-110 transition-all duration-500`}
                     >
-                      <span className="text-[8px] font-mono text-zinc-300">{book.code}</span>
-                      <div>
-                        <p className="text-[11px] font-serif font-bold text-white leading-tight">
-                          {book.title}
-                        </p>
-                        <div className="mt-1 h-px w-6 bg-white/30" />
-                      </div>
-                    </div>
+                      <img
+                        src={book.coverUrl}
+                        alt={book.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -245,11 +249,11 @@ export function KaEcosystemShowcase() {
 
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[#D6D1C7]">
                 <li className="flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <Layers className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
                   <span>12 Topic-Filtered Books</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <BookOpen className="w-3.5 h-3.5 text-zinc-300 shrink-0" />
                   <span>Interactive Chapter Reader</span>
                 </li>
               </ul>
@@ -261,7 +265,8 @@ export function KaEcosystemShowcase() {
                 href="/resources?section=books"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-[#F4F3EF] hover:bg-white text-[#121110] font-semibold text-xs transition-all shadow-[0_8px_24px_rgba(244,243,239,0.14)]"
+                style={{ backgroundColor: '#F4F3EF', color: '#07090E' }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full hover:opacity-95 font-semibold text-xs transition-all shadow-[0_8px_24px_rgba(244,243,239,0.18)]"
               >
                 <span>Open 12-Book Shelf</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />

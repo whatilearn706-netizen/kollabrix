@@ -226,11 +226,14 @@ export default function KaAiBrandPage() {
             {/* Footer Content Grid: Left Brand + Blurb + 3 Social Pills | Right 4 Inline Links */}
             <div className="relative z-10 max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-10">
               <div className="max-w-sm space-y-4">
-                {/* Geometric Split-Circle Ribbon Logo */}
-                <div className="w-10 h-10 rounded-full border-[3px] border-white flex items-center justify-center relative overflow-hidden">
-                  <span className="block w-12 h-[3px] bg-white -rotate-35" />
-                  <span className="font-black text-[11px] tracking-tighter text-white">KΛ</span>
-                </div>
+                {/* Official KΛ Brand Emblem */}
+                <Link
+                  href="/"
+                  title="KΛ · Built by Kollabrix"
+                  className="inline-flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 transition-all"
+                >
+                  <KaBrandEmblem size="md" />
+                </Link>
 
                 <p className="text-xs sm:text-[13px] text-white/80 leading-relaxed font-normal">
                   Architect hackathon breakthroughs, analyze technical stacks, and ship engineering projects faster—powered as an independent AI brand connected with Kollabrix.

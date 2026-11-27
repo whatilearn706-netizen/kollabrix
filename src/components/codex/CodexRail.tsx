@@ -53,7 +53,7 @@ export function CodexRail({ activeSection, onSelectSection, savedCount }: CodexR
                 aria-label={item.label}
                 className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer group ${
                   active
-                    ? 'bg-gradient-to-b from-amber-400 to-amber-500 text-zinc-950 shadow-[0_0_24px_rgba(251,191,36,0.45)] ring-4 ring-amber-400/15'
+                    ? 'bg-gradient-to-b from-white via-slate-200 to-slate-300 text-slate-950 shadow-[0_0_24px_rgba(226,232,240,0.38)] ring-4 ring-white/10'
                     : 'text-zinc-400 hover:text-white hover:bg-white/[0.07] border border-transparent hover:border-white/10'
                 }`}
               >
