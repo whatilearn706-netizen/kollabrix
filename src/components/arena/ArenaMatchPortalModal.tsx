@@ -8,6 +8,7 @@ import {
   Bug,
   Check,
   Globe,
+  Lock,
   SlidersHorizontal,
   Swords,
   Users,
@@ -356,20 +357,32 @@ export function ArenaMatchPortalModal({
 
                 {isCustomMode && (
                   <div className="inline-flex gap-1 p-1 rounded-xl bg-black/50 border border-white/10">
-                    {(['1v1', '2v2'] as const).map((sz) => (
-                      <button
-                        key={sz}
-                        type="button"
-                        onClick={() => engine.setTeamSize(sz)}
-                        className={`px-3 py-1 rounded-lg font-mono text-[10px] font-bold cursor-pointer ${
-                          engine.teamSize === sz
-                            ? 'bg-gradient-to-r from-[#FBBF24] to-[#EA580C] text-[#07090E]'
-                            : 'text-zinc-400 hover:text-white'
-                        }`}
-                      >
-                        {sz}
-                      </button>
-                    ))}
+                    {(['1v1', '2v2'] as const).map((sz) => {
+                      const isLocked = sz === '2v2';
+                      const isActive = !isLocked && engine.teamSize === sz;
+                      return (
+                        <button
+                          key={sz}
+                          type="button"
+                          disabled={isLocked}
+                          aria-disabled={isLocked}
+                          title={isLocked ? '2v2 Squad Duels — Locked (Coming Soon)' : '1v1 Private Duel'}
+                          onClick={() => {
+                            if (!isLocked) engine.setTeamSize(sz);
+                          }}
+                          className={`px-3 py-1 rounded-lg font-mono text-[10px] font-bold inline-flex items-center gap-1 transition-all ${
+                            isLocked
+                              ? 'bg-white/[0.03] text-zinc-500 border border-white/10 opacity-60 cursor-not-allowed pointer-events-none select-none'
+                              : isActive
+                                ? 'bg-gradient-to-r from-[#FBBF24] to-[#EA580C] text-[#07090E] cursor-pointer'
+                                : 'text-zinc-400 hover:text-white cursor-pointer'
+                          }`}
+                        >
+                          {isLocked && <Lock className="w-2.5 h-2.5 text-zinc-400" />}
+                          <span>{sz}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
