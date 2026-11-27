@@ -158,7 +158,7 @@ export default function ResourcesPage() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Deep-link from KΛ FOLIO (?section=books&book=<id>) straight to Section 02 Bookshelf & open reader
+  // Deep-link from KΛ FOLIO (?section=books&book=<id>) straight to Section 02 Bookshelf focused on that book
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -168,11 +168,11 @@ export default function ResourcesPage() {
     if (sectionParam === 'books' || bookParam) {
       setActiveSection('books');
       setBookTopic('All');
+      setActiveModalVolume(null);
       if (bookParam) {
         const idx = FOLIO_12_BOOKS.findIndex((b) => b.id === bookParam);
         if (idx >= 0) {
           setCarouselIndices((prev) => ({ ...prev, books: idx }));
-          setActiveModalVolume(FOLIO_12_BOOKS[idx]);
           setLastVisitedId(FOLIO_12_BOOKS[idx].id);
         }
       }

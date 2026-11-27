@@ -290,7 +290,7 @@ int main() {
         title: 'STL Powerhouse: vector, set, map & lambda sorts',
         instructor: 'KΛ Competitive',
         duration: '36m',
-        youtubeId: 'RRVYpLYX4-Y',
+        youtubeId: 'okhdtEk1iKk',
         summary:
           'Use std::sort with custom lambdas, lower_bound binary search, and ordered std::set / std::priority_queue fluently.',
         keyTakeaways: [

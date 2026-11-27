@@ -299,15 +299,22 @@ interface PracticeStageProps {
 }
 
 /**
- * Decluttered practice challenge list with collapsible hints/expected output.
+ * Decluttered practice challenge list with hints & expected output hidden by default until clicked.
  */
 export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(questions[0]?.id || null);
+  const [openHints, setOpenHints] = useState<Record<string, boolean>>({});
+  const [openOutputs, setOpenOutputs] = useState<Record<string, boolean>>({});
+
+  React.useEffect(() => {
+    setOpenHints({});
+    setOpenOutputs({});
+  }, [questions]);
 
   return (
     <div className="space-y-4 max-w-4xl">
       {questions.map((q, idx) => {
-        const isExpanded = expandedId === q.id;
+        const hintVisible = Boolean(openHints[q.id]);
+        const outputVisible = Boolean(openOutputs[q.id]);
         return (
           <div
             key={q.id}
@@ -331,15 +338,30 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {q.hints && q.hints.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenHints((prev) => ({ ...prev, [q.id]: !hintVisible }))}
+                    className={`inline-flex items-center gap-1 px-3 py-2 rounded-full border text-[11px] font-mono cursor-pointer transition-all ${
+                      hintVisible
+                        ? 'bg-sky-400/15 border-sky-400/40 text-sky-200'
+                        : 'bg-white/[0.04] border-white/10 hover:border-white/25 text-zinc-300'
+                    }`}
+                  >
+                    <Lightbulb className="w-3 h-3 text-amber-300" />
+                    <span>{hintVisible ? 'Hide Hint' : 'Show Hint'}</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setExpandedId(isExpanded ? null : q.id)}
+                  onClick={() => setOpenOutputs((prev) => ({ ...prev, [q.id]: !outputVisible }))}
                   className="inline-flex items-center gap-1 px-3 py-2 rounded-full bg-white/[0.04] border border-white/10 hover:border-white/25 text-[11px] font-mono text-zinc-300 cursor-pointer transition-all"
                 >
-                  <span>{isExpanded ? 'Hide Hints' : 'Output & Hints'}</span>
+                  <span>{outputVisible ? 'Hide Output' : 'Expected Output'}</span>
                   <ChevronDown
-                    className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`w-3.5 h-3.5 transition-transform ${outputVisible ? 'rotate-180' : ''}`}
                   />
                 </button>
 
@@ -354,15 +376,17 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
               </div>
             </div>
 
-            {isExpanded && (
+            {(hintVisible || outputVisible) && (
               <div className="px-5 sm:px-6 pb-5 pt-3 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-2 gap-3 bg-[#07090E]/70">
-                <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.07] font-mono text-xs">
-                  <div className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1.5">
-                    Expected Output
+                {outputVisible && (
+                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.07] font-mono text-xs">
+                    <div className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1.5">
+                      Expected Output
+                    </div>
+                    <pre className="text-emerald-300 whitespace-pre-wrap">{q.expectedOutput}</pre>
                   </div>
-                  <pre className="text-emerald-300 whitespace-pre-wrap">{q.expectedOutput}</pre>
-                </div>
-                {q.hints && q.hints.length > 0 && (
+                )}
+                {hintVisible && q.hints && q.hints.length > 0 && (
                   <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.07] font-mono text-xs">
                     <div className="text-sky-300 text-[10px] uppercase tracking-wider mb-1.5">
                       Hints
