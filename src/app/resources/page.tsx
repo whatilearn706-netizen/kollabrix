@@ -419,35 +419,20 @@ export default function ResourcesPage() {
         )}
         {/* Minimal Studio Top Strip */}
         <header className="h-[72px] px-5 sm:px-10 lg:px-14 flex items-center justify-between gap-4 border-b border-white/[0.06]">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex items-center p-0.5 rounded-full bg-gradient-to-b from-[#171C28] via-[#0E121B] to-[#080A10] border border-white/15 shadow-[0_0_18px_rgba(148,163,184,0.14)]">
-              <Link
-                href="/ka-codex"
-                title="Back to KΛ FOLIO Homepage"
-                className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full hover:bg-white/[0.08] transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-zinc-300 group-hover:-translate-x-0.5 transition-transform" />
-                <KaBrandEmblem className="w-4 h-3" />
-                <span className="text-[11px] font-semibold tracking-tight text-white">KΛ FOLIO</span>
-              </Link>
-              <span className="h-3.5 w-px bg-white/15 hidden sm:inline" />
-              <Link
-                href="/"
-                title="Visit Kollabrix"
-                className="hidden sm:inline-block px-2.5 py-1 rounded-full hover:bg-white/[0.08] text-[10px] font-mono text-zinc-300 hover:text-white transition-colors"
-              >
-                Built by <span className="text-amber-300 font-bold">Kollabrix</span>
-              </Link>
-            </div>
-            <span className="text-zinc-700 hidden md:inline">/</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs sm:text-sm font-black tracking-[0.22em] uppercase text-white">
-                KOLLΛBRIX <span className="text-sky-300 font-semibold">FOLIO</span>
-              </span>
-              <span className="hidden md:inline-block px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-[9px] font-mono uppercase tracking-widest text-zinc-400">
-                Library & Tracks
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              title="Go to Kollabrix Home"
+              className="text-xs sm:text-sm font-black tracking-[0.22em] uppercase text-white hover:text-sky-200 transition-colors"
+            >
+              KOLLΛBRIX
+            </Link>
+            <span className="text-xs sm:text-sm font-semibold tracking-[0.22em] uppercase text-sky-300">
+              FOLIO
+            </span>
+            <span className="hidden md:inline-block px-2 py-0.5 rounded-full bg-white/[0.05] border border-white/10 text-[9px] font-mono uppercase tracking-widest text-zinc-400">
+              Library & Tracks
+            </span>
           </div>
 
           <div className="flex items-center gap-2.5 sm:gap-3">
@@ -473,18 +458,6 @@ export default function ResourcesPage() {
                 )}
               </div>
             )}
-
-            {/* Quick KΛ ΛI New-Tab Studio Launcher */}
-            <Link
-              href="/spark"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open KΛ ΛI Studio in a new tab"
-              className="group relative inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white/[0.04] hover:bg-white/[0.09] border border-white/15 hover:border-sky-400/50 transition-all"
-            >
-              <KaBrandEmblem className="w-5 h-3" />
-              <ArrowUpRight className="w-3 h-3 text-zinc-400 group-hover:text-sky-300 transition-colors" />
-            </Link>
           </div>
         </header>
 
