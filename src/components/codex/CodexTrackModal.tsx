@@ -216,11 +216,11 @@ export function CodexTrackModal({
 
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-mono text-sky-300">
+                  <p className="text-xs font-mono font-semibold text-sky-300">
                     {activeLesson.instructor} · {activeLesson.duration}
                   </p>
-                  <h3 className="text-lg font-serif font-semibold text-white">{activeLesson.title}</h3>
-                  <p className="text-sm text-zinc-400 mt-1 leading-relaxed">{activeLesson.summary}</p>
+                  <h3 className="text-lg font-bold text-white mt-0.5">{activeLesson.title}</h3>
+                  <p className="text-sm font-medium text-[#DCE3EE] mt-1.5 leading-relaxed">{activeLesson.summary}</p>
                 </div>
 
                 <button
@@ -244,10 +244,10 @@ export function CodexTrackModal({
           )}
 
           {activeLesson && focusTab === 'notes' && (
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0B0F18] divide-y divide-white/[0.06]">
+            <div className="rounded-2xl border border-white/[0.12] bg-[#0F1624] divide-y divide-white/[0.08]">
               {activeLesson.keyTakeaways.map((point, idx) => (
-                <div key={point} className="p-4 flex items-start gap-3 text-sm text-zinc-200 leading-relaxed">
-                  <span className="text-xs font-mono text-sky-300 shrink-0 pt-0.5">
+                <div key={point} className="p-4 flex items-start gap-3 text-[15px] font-medium text-[#F1F5F9] leading-relaxed">
+                  <span className="text-xs font-mono font-bold text-sky-300 shrink-0 pt-0.5">
                     0{idx + 1}
                   </span>
                   <span>{point}</span>

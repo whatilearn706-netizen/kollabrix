@@ -97,14 +97,14 @@ export function VideoStage({
         {/* Minimal Sub-Player Caption Bar */}
         <div className="px-5 sm:px-7 py-4 bg-[#0A0E17] border-t border-white/[0.07] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5 min-w-0">
-            <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-sky-300">
+            <p className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
               {activeVideo?.instructor || 'KΛ Folio'} {activeVideo?.duration ? `· ${activeVideo.duration}` : ''}
             </p>
-            <h3 className="text-sm sm:text-base font-semibold text-white truncate">
+            <h3 className="text-base sm:text-lg font-bold text-white truncate">
               {activeVideo?.title || currentStep.title}
             </h3>
             {activeVideo?.notes && (
-              <p className="text-xs text-zinc-400 leading-relaxed pt-0.5">{activeVideo.notes}</p>
+              <p className="text-sm text-[#D5DFEE] leading-relaxed pt-1">{activeVideo.notes}</p>
             )}
           </div>
 
@@ -186,9 +186,9 @@ export function StudyStage({
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Editorial Overview */}
-      <div className="rounded-3xl border border-white/[0.08] bg-[#0A0E17]/90 p-6 sm:p-8 space-y-4">
+      <div className="rounded-3xl border border-white/[0.15] bg-[#0F1624] p-6 sm:p-8 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-sky-300">
+          <span className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
             Concept Overview · {currentStep.topic}
           </span>
           {currentStep.studyMaterial.officialDocUrl && (
@@ -196,28 +196,28 @@ export function StudyStage({
               href={currentStep.studyMaterial.officialDocUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/15 text-xs font-mono font-medium text-[#E2E8F0] hover:text-white hover:border-white/30 transition-colors"
             >
               <span>Official Docs</span>
               <ExternalLink className="w-3 h-3" />
             </a>
           )}
         </div>
-        <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
+        <p className="text-[15px] sm:text-base font-medium text-[#F1F5F9] leading-[1.78]">
           {currentStep.studyMaterial.overview}
         </p>
       </div>
 
       {/* Numbered Core Takeaways */}
       <div className="space-y-3">
-        <h3 className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-          <Lightbulb className="w-3.5 h-3.5 text-sky-300" />
+        <h3 className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-[#CBD5E1] flex items-center gap-2">
+          <Lightbulb className="w-4 h-4 text-sky-300" />
           <span>Core Rules &amp; Takeaways</span>
         </h3>
-        <div className="rounded-3xl border border-white/[0.08] bg-[#0A0E17]/70 divide-y divide-white/[0.06] overflow-hidden">
+        <div className="rounded-3xl border border-white/[0.14] bg-[#0E1523] divide-y divide-white/[0.08] overflow-hidden shadow-lg">
           {currentStep.studyMaterial.keyPoints.map((pt, i) => (
-            <div key={i} className="px-5 py-4 flex items-start gap-4 text-sm text-zinc-200 leading-relaxed">
-              <span className="text-xs font-mono text-sky-300 pt-0.5 shrink-0">
+            <div key={i} className="px-5 sm:px-6 py-4 flex items-start gap-4 text-[15px] font-medium text-[#EEF2F7] leading-[1.7] hover:bg-white/[0.02] transition-colors">
+              <span className="w-6 h-6 rounded-md bg-sky-400/15 border border-sky-400/30 text-xs font-mono font-bold text-sky-300 flex items-center justify-center mt-0.5 shrink-0">
                 {String(i + 1).padStart(2, '0')}
               </span>
               <span>{pt}</span>
@@ -229,31 +229,31 @@ export function StudyStage({
       {/* Clean Code Walkthrough */}
       {currentStep.studyMaterial.codeExamples && currentStep.studyMaterial.codeExamples.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <Code2 className="w-3.5 h-3.5 text-sky-300" />
+          <h3 className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-[#CBD5E1] flex items-center gap-2">
+            <Code2 className="w-4 h-4 text-sky-300" />
             <span>Code Walkthrough</span>
           </h3>
           {currentStep.studyMaterial.codeExamples.map((ex, i) => (
             <div
               key={i}
-              className="rounded-3xl border border-white/10 bg-[#05070C] overflow-hidden shadow-xl"
+              className="rounded-3xl border border-white/[0.15] bg-[#060911] overflow-hidden shadow-xl"
             >
-              <div className="px-5 py-3 bg-[#0B0F18] border-b border-white/[0.07] flex items-center justify-between gap-3">
-                <span className="text-xs font-mono text-zinc-200">{ex.title}</span>
+              <div className="px-5 py-3.5 bg-[#0F1624] border-b border-white/[0.1] flex items-center justify-between gap-3">
+                <span className="text-xs sm:text-[13px] font-mono font-semibold text-white">{ex.title}</span>
                 <button
                   type="button"
                   onClick={() => onOpenInSandbox(ex.code)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FAF8F5] text-[#07090E] hover:bg-sky-100 text-[11px] font-semibold cursor-pointer transition-all"
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#FAF8F5] text-[#07090E] hover:bg-sky-100 text-xs font-bold cursor-pointer transition-all shadow-sm"
                 >
                   <Play className="w-3 h-3 fill-current" />
                   <span>Try in Sandbox</span>
                 </button>
               </div>
-              <pre className="p-5 text-xs sm:text-sm font-mono text-slate-200 overflow-x-auto leading-relaxed">
+              <pre className="p-5 text-[13px] sm:text-sm font-mono text-[#E8F1FF] overflow-x-auto leading-[1.68]">
                 <code>{ex.code}</code>
               </pre>
               {ex.explanation && (
-                <div className="px-5 py-3 bg-white/[0.02] border-t border-white/[0.06] text-xs text-zinc-400">
+                <div className="px-5 py-3.5 bg-[#0C1220] border-t border-white/[0.08] text-[13px] sm:text-sm font-medium text-[#D5DFEE] leading-relaxed">
                   {ex.explanation}
                 </div>
               )}
@@ -264,14 +264,14 @@ export function StudyStage({
 
       {/* Quick Cheatsheet */}
       {currentStep.studyMaterial.cheatsheet && currentStep.studyMaterial.cheatsheet.length > 0 && (
-        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6 space-y-2.5">
-          <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400">
+        <div className="rounded-3xl border border-white/[0.14] bg-[#0E1523] p-5 sm:p-6 space-y-3">
+          <p className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
             Quick Syntax Cheatsheet
           </p>
-          <ul className="space-y-1.5 text-xs sm:text-sm font-mono text-slate-300">
+          <ul className="space-y-2 text-[13px] sm:text-sm font-mono text-[#E2E8F0] leading-relaxed">
             {currentStep.studyMaterial.cheatsheet.map((rule, idx) => (
               <li key={idx} className="flex items-start gap-2.5">
-                <span className="text-sky-300">—</span>
+                <span className="text-sky-300 font-bold">—</span>
                 <span>{rule}</span>
               </li>
             ))}
@@ -315,24 +315,36 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
       {questions.map((q, idx) => {
         const hintVisible = Boolean(openHints[q.id]);
         const outputVisible = Boolean(openOutputs[q.id]);
+        const diffLower = String(q.difficulty || '').toLowerCase();
+        const diffClasses =
+          diffLower === 'hard'
+            ? 'bg-rose-500/15 border-rose-400/35 text-rose-300'
+            : diffLower === 'medium'
+              ? 'bg-amber-500/15 border-amber-400/35 text-amber-300'
+              : 'bg-emerald-500/15 border-emerald-400/35 text-emerald-300';
+
         return (
           <div
             key={q.id}
-            className="rounded-3xl border border-white/[0.09] bg-[#0A0E17]/90 overflow-hidden transition-colors hover:border-white/20"
+            className="rounded-3xl border border-white/[0.14] bg-[#0F1624] overflow-hidden transition-all hover:border-sky-400/35 shadow-[0_14px_36px_rgba(0,0,0,0.45)]"
           >
             <div className="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                <span className="w-8 h-8 rounded-full bg-white/[0.05] border border-white/10 text-xs font-mono text-zinc-300 flex items-center justify-center shrink-0 mt-0.5">
+              <div className="flex items-start gap-4 min-w-0 flex-1">
+                <span className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-400/30 text-xs font-mono font-bold text-sky-200 flex items-center justify-center shrink-0 mt-0.5">
                   {String(idx + 1).padStart(2, '0')}
                 </span>
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="text-base font-semibold text-white">{q.title}</h4>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-white/[0.05] border border-white/10 text-sky-300">
+                <div className="min-w-0 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <h4 className="text-base sm:text-[17px] font-bold text-white tracking-tight">
+                      {q.title}
+                    </h4>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${diffClasses}`}
+                    >
                       {q.difficulty}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed whitespace-pre-line">
+                  <p className="text-sm sm:text-[15px] font-medium text-[#DCE3EE] leading-[1.68] whitespace-pre-line">
                     {q.description}
                   </p>
                 </div>
@@ -343,13 +355,13 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
                   <button
                     type="button"
                     onClick={() => setOpenHints((prev) => ({ ...prev, [q.id]: !hintVisible }))}
-                    className={`inline-flex items-center gap-1 px-3 py-2 rounded-full border text-[11px] font-mono cursor-pointer transition-all ${
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-mono font-medium cursor-pointer transition-all ${
                       hintVisible
-                        ? 'bg-sky-400/15 border-sky-400/40 text-sky-200'
-                        : 'bg-white/[0.04] border-white/10 hover:border-white/25 text-zinc-300'
+                        ? 'bg-sky-400/20 border-sky-400/50 text-sky-100'
+                        : 'bg-[#161F33] border-white/[0.16] hover:border-white/35 text-[#E2E8F0]'
                     }`}
                   >
-                    <Lightbulb className="w-3 h-3 text-amber-300" />
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-300" />
                     <span>{hintVisible ? 'Hide Hint' : 'Show Hint'}</span>
                   </button>
                 )}
@@ -357,7 +369,11 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
                 <button
                   type="button"
                   onClick={() => setOpenOutputs((prev) => ({ ...prev, [q.id]: !outputVisible }))}
-                  className="inline-flex items-center gap-1 px-3 py-2 rounded-full bg-white/[0.04] border border-white/10 hover:border-white/25 text-[11px] font-mono text-zinc-300 cursor-pointer transition-all"
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-mono font-medium cursor-pointer transition-all ${
+                    outputVisible
+                      ? 'bg-emerald-500/20 border-emerald-400/45 text-emerald-100'
+                      : 'bg-[#161F33] border-white/[0.16] hover:border-white/35 text-[#E2E8F0]'
+                  }`}
                 >
                   <span>{outputVisible ? 'Hide Output' : 'Expected Output'}</span>
                   <ChevronDown
@@ -368,7 +384,7 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
                 <button
                   type="button"
                   onClick={() => onSolveQuestion(q)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FAF8F5] text-[#07090E] hover:bg-sky-100 text-xs font-semibold cursor-pointer shadow-sm transition-all"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#FAF8F5] text-[#07090E] hover:bg-sky-100 text-xs font-bold cursor-pointer shadow-sm transition-all"
                 >
                   <Terminal className="w-3.5 h-3.5" />
                   <span>Solve</span>
@@ -377,24 +393,24 @@ export function PracticeStage({ questions, onSolveQuestion }: PracticeStageProps
             </div>
 
             {(hintVisible || outputVisible) && (
-              <div className="px-5 sm:px-6 pb-5 pt-3 border-t border-white/[0.06] grid grid-cols-1 md:grid-cols-2 gap-3 bg-[#07090E]/70">
+              <div className="px-5 sm:px-6 pb-5 pt-4 border-t border-white/[0.08] grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-[#090E18]">
                 {outputVisible && (
-                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.07] font-mono text-xs">
-                    <div className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1.5">
+                  <div className="p-4 rounded-2xl bg-[#0F1624] border border-emerald-400/25 font-mono text-xs sm:text-[13px]">
+                    <div className="text-emerald-300 text-[11px] font-bold uppercase tracking-wider mb-2">
                       Expected Output
                     </div>
-                    <pre className="text-emerald-300 whitespace-pre-wrap">{q.expectedOutput}</pre>
+                    <pre className="text-emerald-200 whitespace-pre-wrap leading-relaxed">{q.expectedOutput}</pre>
                   </div>
                 )}
                 {hintVisible && q.hints && q.hints.length > 0 && (
-                  <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.07] font-mono text-xs">
-                    <div className="text-sky-300 text-[10px] uppercase tracking-wider mb-1.5">
+                  <div className="p-4 rounded-2xl bg-[#0F1624] border border-sky-400/25 font-mono text-xs sm:text-[13px]">
+                    <div className="text-sky-300 text-[11px] font-bold uppercase tracking-wider mb-2">
                       Hints
                     </div>
-                    <ul className="space-y-1 text-zinc-300">
+                    <ul className="space-y-1.5 text-[#E2E8F0] leading-relaxed">
                       {q.hints.map((hint, hi) => (
                         <li key={hi} className="flex items-start gap-2">
-                          <CheckCircle2 className="w-3 h-3 text-sky-400 mt-0.5 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-sky-400 mt-0.5 shrink-0" />
                           <span>{hint}</span>
                         </li>
                       ))}

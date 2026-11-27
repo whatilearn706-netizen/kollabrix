@@ -61,18 +61,18 @@ export function CodexReaderModal({
   if (volume.kind === 'book') {
     const chapter = volume.chapters[chapterIndex] || volume.chapters[0];
     return (
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-        <div className="relative w-full max-w-5xl rounded-3xl bg-[#090C14] border border-white/12 shadow-[0_35px_120px_rgba(0,0,0,0.92)] overflow-hidden my-auto max-h-[90vh] flex flex-col">
-          <div className="px-5 sm:px-7 py-4 border-b border-white/[0.08] bg-[#0B0F19] flex flex-wrap items-center justify-between gap-3">
+      <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="relative w-full max-w-5xl rounded-3xl bg-[#0B101B] border border-white/[0.16] shadow-[0_35px_120px_rgba(0,0,0,0.92)] overflow-hidden my-auto max-h-[90vh] flex flex-col">
+          <div className="px-5 sm:px-7 py-4 border-b border-white/[0.1] bg-[#0F1625] flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-white/[0.07] border border-white/15 flex items-center justify-center">
                 <BookOpen className={`w-5 h-5 ${volume.accentColor}`} />
               </div>
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-400">
-                  {volume.edition} · {volume.pagesCount} Pages
+                <p className="text-[11px] font-mono font-medium uppercase tracking-[0.18em] text-[#CBD5E1]">
+                  {volume.edition} · {volume.pagesCount} Pages · KΛ Synthesis
                 </p>
-                <h2 className="text-lg sm:text-xl font-serif font-bold text-white">
+                <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                   {volume.title}
                 </h2>
               </div>
@@ -82,10 +82,10 @@ export function CodexReaderModal({
               <button
                 type="button"
                 onClick={onToggleSave}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border text-xs font-mono font-medium cursor-pointer transition-colors ${
                   isSaved
-                    ? 'bg-amber-400/15 border-amber-400/40 text-amber-200'
-                    : 'bg-white/[0.04] border-white/10 text-zinc-300 hover:text-white'
+                    ? 'bg-amber-400/20 border-amber-400/45 text-amber-200'
+                    : 'bg-[#172033] border-white/20 text-[#E2E8F0] hover:text-white hover:border-white/35'
                 }`}
               >
                 <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-amber-300 text-amber-300' : ''}`} />
@@ -95,7 +95,7 @@ export function CodexReaderModal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close reader"
-                className="w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center cursor-pointer"
+                className="w-9 h-9 rounded-full bg-[#172033] border border-white/20 text-[#E2E8F0] hover:text-white flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -104,8 +104,8 @@ export function CodexReaderModal({
 
           <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12">
             {/* Chapter Table of Contents */}
-            <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-white/[0.08] p-4 sm:p-5 space-y-2 bg-[#070A10]">
-              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-400 px-1 mb-2">
+            <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-white/[0.1] p-4 sm:p-5 space-y-2.5 bg-[#090D16]">
+              <p className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-sky-300 px-1 mb-2">
                 Volume Chapters ({volume.chapters.length})
               </p>
               {volume.chapters.map((ch, idx) => (
@@ -116,47 +116,47 @@ export function CodexReaderModal({
                     setChapterIndex(idx);
                     setOutput(null);
                   }}
-                  className={`w-full text-left p-3 rounded-2xl border transition-all cursor-pointer ${
+                  className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
                     chapterIndex === idx
-                      ? 'bg-white/[0.08] border-sky-400/40 text-white'
-                      : 'bg-white/[0.02] border-white/[0.06] text-zinc-400 hover:text-white'
+                      ? 'bg-sky-500/15 border-sky-400/50 text-white shadow-sm'
+                      : 'bg-[#101727] border-white/[0.09] text-[#DCE3EE] hover:bg-white/[0.08] hover:text-white'
                   }`}
                 >
-                  <p className="text-[10px] font-mono uppercase text-zinc-500">
+                  <p className={`text-[11px] font-mono font-medium uppercase ${chapterIndex === idx ? 'text-sky-300' : 'text-[#9FB0C8]'}`}>
                     Chapter {idx + 1} · {ch.readTime}
                   </p>
-                  <p className="text-sm font-semibold mt-0.5">{ch.title}</p>
+                  <p className="text-sm font-semibold mt-1 leading-snug">{ch.title}</p>
                 </button>
               ))}
             </aside>
 
             {/* Editorial Chapter Content */}
-            <article className="md:col-span-8 p-5 sm:p-7 space-y-5">
+            <article className="md:col-span-8 p-5 sm:p-8 space-y-6 bg-[#0C121F]">
               {chapter && (
                 <>
                   <div>
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-sky-300">
+                    <span className="text-xs font-mono font-semibold uppercase tracking-wider text-sky-300">
                       Chapter {chapterIndex + 1} of {volume.chapters.length} · {chapter.readTime}
                     </span>
-                    <h3 className="text-2xl font-serif font-bold text-white mt-1">
+                    <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight text-white mt-1.5 leading-snug">
                       {chapter.title}
                     </h3>
-                    <p className="text-sm sm:text-base text-zinc-300 leading-relaxed mt-3">
+                    <p className="text-[15px] sm:text-base font-medium text-[#EBF0F7] leading-[1.78] mt-3.5">
                       {chapter.overview}
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400">
-                      Field Rules & Takeaways
+                  <div className="space-y-2.5">
+                    <p className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
+                      Field Rules &amp; Takeaways
                     </p>
-                    <ul className="space-y-2">
+                    <ul className="space-y-2.5">
                       {chapter.keyRules.map((rule) => (
                         <li
                           key={rule}
-                          className="text-sm text-zinc-200 bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-3 leading-relaxed flex gap-2.5"
+                          className="text-sm sm:text-[15px] font-medium text-[#F1F5F9] bg-[#121A2C] border border-white/[0.12] rounded-xl px-4 py-3.5 leading-[1.68] flex gap-3"
                         >
-                          <span className="text-sky-400 font-bold">→</span>
+                          <span className="text-sky-300 font-bold shrink-0">→</span>
                           <span>{rule}</span>
                         </li>
                       ))}

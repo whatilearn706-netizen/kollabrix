@@ -6,6 +6,7 @@ import { motion, type MotionValue, useScroll, useTransform } from 'motion/react'
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import type { CodingBook } from '@/data/kaCodexBooks';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 import { getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 interface KaFolioScrollWalkHeroProps {
@@ -139,27 +140,25 @@ function PavementBookLayer({
         className="absolute inset-0 translate-x-[2px] translate-y-[3px] rounded-[7px] bg-[#D6D1C7]/25"
       />
 
-      {/* Clickable Real Coding Volume Cover */}
+      {/* Clickable Custom KΛ FOLIO Dark Monograph Volume Cover */}
       <Link
         href={`/resources?section=books&book=${encodeURIComponent(book.id)}`}
-        className="group relative block w-full h-full rounded-[7px] overflow-hidden border border-white/20 bg-[#181613] shadow-[0_24px_60px_rgba(0,0,0,0.92)] cursor-pointer"
+        className="group relative block w-full h-full rounded-[8px] overflow-hidden border border-white/25 bg-[#11100E] shadow-[0_24px_60px_rgba(0,0,0,0.92)] cursor-pointer"
       >
-        <img
-          src={book.coverUrl}
-          alt={book.title}
-          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-        />
+        <div className="w-full h-full group-hover:scale-[1.025] transition-transform duration-300">
+          <KaMonographCover book={book} size="lg" />
+        </div>
 
-        {/* Subtle Low-Sun Specular Raking Light across Paper Cover */}
+        {/* Subtle Low-Sun Specular Raking Light across Monograph Cover */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-50/15 via-transparent to-black/45"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-50/10 via-transparent to-black/35"
         />
 
         {/* Clean Hover Read Prompt */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-between text-[10px] font-mono text-white">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 z-20 px-3 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-white/25 flex items-center justify-between text-[11px] font-mono text-white">
           <span>Open in Bookshelf</span>
-          <ArrowUpRight className="w-3 h-3" />
+          <ArrowUpRight className="w-3.5 h-3.5" />
         </div>
       </Link>
     </motion.div>
@@ -351,8 +350,8 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
                 <ArrowUpRight className="w-5 h-5 text-[#9A938A] group-hover:text-white shrink-0 transition-colors" />
               </Link>
 
-              <p className="text-xs sm:text-sm text-[#A8A196]">
-                {activeBook.author} &middot; {activeBook.pages} pages &middot; Scroll to peel the stack &middot; click cover to read
+              <p className="text-xs sm:text-sm text-[#D6D1C7]">
+                Notes &amp; Synthesis &middot; {activeBook.author} &middot; {activeBook.pages} pages &middot; Scroll to peel the stack &middot; click cover to read
               </p>
             </div>
 

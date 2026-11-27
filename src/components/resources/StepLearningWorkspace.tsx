@@ -276,10 +276,10 @@ export function StepLearningWorkspace({
         </div>
 
         {/* Open Airy Step Headline */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-white/[0.08]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-5 border-b border-white/[0.1]">
           <div className="space-y-2 max-w-3xl">
-            <div className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold uppercase tracking-[0.18em] text-[#CBD5E1]">
+              <span className="w-2 h-2 rounded-full bg-sky-400" />
               <span>
                 Step {String(currentStep.stepNumber).padStart(2, '0')} of{' '}
                 {String(curriculum.steps.length).padStart(2, '0')}
@@ -287,19 +287,19 @@ export function StepLearningWorkspace({
               <span>·</span>
               <span>{currentStep.estimatedTime}</span>
             </div>
-            <h1 className="text-2xl sm:text-4xl font-serif font-semibold tracking-tight text-white leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white leading-tight">
               {currentStep.title}
             </h1>
-            <p className="text-sm text-zinc-400 leading-relaxed">{currentStep.summary}</p>
+            <p className="text-sm sm:text-[15px] font-medium text-[#D5DFEE] leading-[1.7]">{currentStep.summary}</p>
           </div>
 
           <button
             type="button"
             onClick={() => toggleStepCompleted(currentStep.stepNumber)}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono border transition-all cursor-pointer shrink-0 w-fit ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-semibold border transition-all cursor-pointer shrink-0 w-fit ${
               isCurrentDone
-                ? 'bg-emerald-500/15 border-emerald-400/35 text-emerald-300'
-                : 'bg-white/[0.04] border-white/10 text-zinc-300 hover:border-white/25 hover:text-white'
+                ? 'bg-emerald-500/20 border-emerald-400/45 text-emerald-200'
+                : 'bg-[#12192A] border-white/20 text-[#E2E8F0] hover:border-white/40 hover:text-white'
             }`}
           >
             <Check className="w-3.5 h-3.5" />
@@ -309,7 +309,7 @@ export function StepLearningWorkspace({
 
         {/* Calm 4-Mode Focus Switcher (One view at a time — Zero Brain Fog) */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-[#0A0E17] border border-white/[0.08]">
+          <div className="inline-flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-[#0E1523] border border-white/[0.12]">
             {focusTabs.map((tab) => {
               const active = activeTab === tab.id;
               return (
@@ -317,10 +317,10 @@ export function StepLearningWorkspace({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono transition-all cursor-pointer ${
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-medium transition-all cursor-pointer ${
                     active
-                      ? 'bg-[#FAF8F5] text-[#07090E] font-semibold shadow-sm'
-                      : 'text-zinc-400 hover:text-white hover:bg-white/[0.05]'
+                      ? 'bg-[#FAF8F5] text-[#07090E] font-bold shadow-sm'
+                      : 'text-[#CBD5E1] hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
                   {tab.icon}

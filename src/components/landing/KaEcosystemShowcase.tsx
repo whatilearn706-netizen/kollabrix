@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowUpRight, BookOpen, CheckCircle2, Code2, Cpu, Layers, Terminal } from 'lucide-react';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 import { KaAiParticleOrb } from '@/components/brands/KaAiParticleOrb';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
 
@@ -226,13 +227,9 @@ export function KaEcosystemShowcase() {
                       target="_blank"
                       rel="noopener noreferrer"
                       title={`Read ${book.title}`}
-                      className={`relative ${z} w-[76px] sm:w-[84px] aspect-[2/3] rounded-md overflow-hidden border border-white/25 bg-[#181613] shadow-[0_18px_36px_rgba(0,0,0,0.92)] transform ${rot} group-hover:rotate-0 group-hover:translate-y-0 hover:!scale-110 transition-all duration-500`}
+                      className={`relative ${z} w-[76px] sm:w-[84px] aspect-[2/3] rounded-md overflow-hidden border border-white/25 bg-[#11100E] shadow-[0_18px_36px_rgba(0,0,0,0.92)] transform ${rot} group-hover:rotate-0 group-hover:translate-y-0 hover:!scale-110 transition-all duration-500`}
                     >
-                      <img
-                        src={book.coverUrl}
-                        alt={book.title}
-                        className="w-full h-full object-cover"
-                      />
+                      <KaMonographCover book={book} size="xs" />
                     </Link>
                   ))}
                 </div>

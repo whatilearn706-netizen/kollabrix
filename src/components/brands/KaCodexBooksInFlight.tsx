@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { BookOpen } from 'lucide-react';
 import type { CodingBook } from '@/data/kaCodexBooks';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 
 interface KaCodexBooksInFlightProps {
   books: CodingBook[];
@@ -54,8 +54,6 @@ function FloatingBookCard({
   mouseOffset: { x: number; y: number };
   onSelect: () => void;
 }) {
-  const [imgFailed, setImgFailed] = useState(false);
-
   const slot = SLOT_OFFSETS[relSlot % SLOT_OFFSETS.length];
   const depthFactor = Math.max(0.28, 1 - relSlot * 0.075);
   const blurPx = isFocused ? 0 : Math.min(3.8, Math.max(0.3, (relSlot - 1) * 0.45));
@@ -112,33 +110,11 @@ function FloatingBookCard({
           isFocused
             ? 'border-[#F4F3EF]/45 shadow-[0_25px_65px_rgba(0,0,0,0.92)] ring-1 ring-white/20'
             : 'border-white/15 group-hover:border-white/50'
-        } bg-[#181614]`}
+        } bg-[#11100E]`}
       >
-        {!imgFailed ? (
-          <img
-            src={book.coverUrl}
-            alt={book.title}
-            loading="eager"
-            onError={() => setImgFailed(true)}
-            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
-          />
-        ) : (
-          <div
-            style={{ background: `linear-gradient(155deg, ${book.spineColor}, #141210)` }}
-            className="w-full h-full p-3.5 flex flex-col justify-between text-left"
-          >
-            <div className="flex items-center justify-between text-white/75">
-              <BookOpen className="w-4 h-4" />
-              <span className="font-mono text-[9px] uppercase">{book.year}</span>
-            </div>
-            <div>
-              <p className="font-sans font-bold text-xs sm:text-sm text-[#F4F3EF] leading-tight">
-                {book.title}
-              </p>
-              <p className="font-mono text-[9px] text-white/70 mt-1">{book.author}</p>
-            </div>
-          </div>
-        )}
+        <div className="w-full h-full group-hover:scale-[1.03] transition-transform duration-500">
+          <KaMonographCover book={book} size="md" />
+        </div>
 
         {/* Hover Tap Indicator */}
         <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">

@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, ArrowRight, BookOpen, Check, Copy, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Copy, X } from 'lucide-react';
 import type { CodingBook } from '@/data/kaCodexBooks';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 
 interface KaCodexBookReaderModalProps {
   book: CodingBook;
@@ -24,7 +25,6 @@ export function KaCodexBookReaderModal({
   const [chapterIdx, setChapterIdx] = useState(0);
   const [flipKey, setFlipKey] = useState(0);
   const [flipDir, setFlipDir] = useState<1 | -1>(1);
-  const [imgFailed, setImgFailed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const chapter = book.chapters[chapterIdx] || book.chapters[0];
@@ -157,54 +157,37 @@ export function KaCodexBookReaderModal({
                   {/* Book Plate with Cover & Editorial Metadata */}
                   <div className="flex items-start gap-4 sm:gap-5">
                     <div
-                      style={{ borderColor: `${book.accentHex}50` }}
-                      className="relative w-24 sm:w-28 aspect-[2/3] rounded-[4px] overflow-hidden border shadow-[0_14px_30px_rgba(0,0,0,0.85)] shrink-0 bg-[#141210]"
+                      style={{ borderColor: `${book.accentHex}60` }}
+                      className="relative w-24 sm:w-28 aspect-[2/3] rounded-[5px] overflow-hidden border shadow-[0_14px_30px_rgba(0,0,0,0.85)] shrink-0 bg-[#11100E]"
                     >
-                      {!imgFailed ? (
-                        <img
-                          src={book.coverUrl}
-                          alt={book.title}
-                          onError={() => setImgFailed(true)}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div
-                          style={{ background: `linear-gradient(155deg, ${book.spineColor}, #141210)` }}
-                          className="w-full h-full p-2.5 flex flex-col justify-between"
-                        >
-                          <BookOpen className="w-4 h-4 text-white/75" />
-                          <span className="font-semibold text-[11px] leading-tight text-white">
-                            {book.shortTitle}
-                          </span>
-                        </div>
-                      )}
+                      <KaMonographCover book={book} size="sm" />
                     </div>
 
                     <div className="min-w-0 space-y-1.5">
-                      <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-[#F4F3EF] leading-snug">
+                      <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-[#FAF9F6] leading-snug">
                         {book.title}
                       </h2>
-                      <p className="text-xs font-mono text-[#A8A196]">
-                        {book.author} &bull; {book.year}
+                      <p className="text-xs font-mono text-[#D6D1C7]">
+                        Synthesis &bull; {book.author} &bull; {book.year}
                       </p>
-                      <p className="text-xs text-[#C7C1B7] leading-relaxed pt-1">
+                      <p className="text-sm text-[#E5E0D7] leading-relaxed pt-1">
                         {book.tagline}
                       </p>
                     </div>
                   </div>
 
                   {/* Current Spread Narrative */}
-                  <div className="pt-3 border-t border-white/[0.08] space-y-2">
+                  <div className="pt-3 border-t border-white/[0.1] space-y-2.5">
                     <span
                       style={{ color: book.accentHex }}
-                      className="font-mono text-[10px] uppercase tracking-[0.22em]"
+                      className="font-mono text-xs font-semibold uppercase tracking-[0.2em]"
                     >
                       Chapter {chapter.number}
                     </span>
-                    <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#F4F3EF]">
+                    <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-white">
                       {chapter.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-[#D6D1C7] leading-[1.7]">
+                    <p className="text-sm sm:text-[15px] text-[#E8E4DC] leading-[1.75]">
                       {chapter.summary}
                     </p>
                   </div>

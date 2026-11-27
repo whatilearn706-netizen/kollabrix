@@ -6,6 +6,7 @@ import { ArrowUpRight, X } from 'lucide-react';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
 import { KaFolioScrollWalkHero } from '@/components/brands/KaFolioScrollWalkHero';
 import { KaCodexSpotlightStage } from '@/components/brands/KaCodexSpotlightStage';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 import { getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 export default function KaCodexBrandPage() {
@@ -207,25 +208,21 @@ export default function KaCodexBrandPage() {
                   onClick={() => setShowIndexOverlay(false)}
                   className="group text-left rounded-2xl bg-[#161513] hover:bg-[#1E1C19] border border-white/[0.09] hover:border-white/25 p-4 flex items-start gap-4 transition-all"
                 >
-                  <div className="w-16 aspect-[2/3] rounded-md overflow-hidden border border-white/15 shrink-0 bg-[#1F1D1A] relative">
-                    <img
-                      src={book.coverUrl}
-                      alt={book.title}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-16 aspect-[2/3] rounded-md overflow-hidden border border-white/20 shrink-0 bg-[#11100E] relative">
+                    <KaMonographCover book={book} size="xs" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono text-[#8C867E]">
+                    <div className="flex items-center justify-between text-[10px] font-mono text-[#B7B0A5]">
                       <span>VOL. {String(book.index).padStart(2, '0')}</span>
                       <span>{book.category}</span>
                     </div>
-                    <h3 className="font-semibold text-sm text-[#F4F3EF] group-hover:text-white leading-snug">
+                    <h3 className="font-semibold text-sm text-[#FAF9F6] group-hover:text-white leading-snug">
                       {book.title}
                     </h3>
-                    <p className="text-[11px] font-mono text-[#8C867E]">
-                      {book.author} &bull; {book.year}
+                    <p className="text-[11px] font-mono text-[#C7C1B7]">
+                      Synthesis &bull; {book.author} &bull; {book.year}
                     </p>
-                    <p className="text-xs text-[#B7B0A5] line-clamp-2 pt-0.5">
+                    <p className="text-xs text-[#E5E0D7]/90 line-clamp-2 pt-0.5 leading-relaxed">
                       {book.tagline}
                     </p>
                   </div>

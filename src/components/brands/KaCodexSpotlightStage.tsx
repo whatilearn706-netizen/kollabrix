@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { ArrowUpRight, BookOpen, Compass, Play, Sparkles, Youtube } from 'lucide-react';
 import { KA_CODEX_BOOKS, type CodingBook } from '@/data/kaCodexBooks';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
 
 interface VideoTopicItem {
   id: string;
@@ -214,11 +215,7 @@ export function KaCodexSpotlightStage() {
                     }}
                     className="hidden sm:flex pointer-events-none absolute inset-y-0 left-1/2 right-0 z-30 bg-[#181614] border-l border-white/15 rounded-r-[14px] overflow-hidden shadow-2xl"
                   >
-                    <img
-                      src={activeBook.coverUrl}
-                      alt={activeBook.title}
-                      className="w-full h-full object-cover opacity-90"
-                    />
+                    <KaMonographCover book={activeBook} size="lg" />
                   </motion.div>
 
                   {/* Left Bound Page: Curved Paper Highlight + Cover Plate + Metadata */}
@@ -240,31 +237,29 @@ export function KaCodexSpotlightStage() {
                     />
 
                     <div className="space-y-4 relative z-[2]">
-                      <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-[#8C867E]">
+                      <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-widest text-[#D6D1C7]">
                         <span>{activeBook.category}</span>
                         <span>VOL. {String(activeBook.index).padStart(2, '0')}</span>
                       </div>
 
                       <div className="flex items-start gap-3.5">
-                        <img
-                          src={activeBook.coverUrl}
-                          alt={activeBook.title}
-                          className="w-20 aspect-[2/3] rounded object-cover border border-white/15 shadow-[0_12px_28px_rgba(0,0,0,0.75)] shrink-0 bg-[#121110]"
-                        />
+                        <div className="w-20 aspect-[2/3] rounded-md overflow-hidden border border-white/20 shadow-[0_12px_28px_rgba(0,0,0,0.75)] shrink-0 bg-[#121110]">
+                          <KaMonographCover book={activeBook} size="xs" />
+                        </div>
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-base text-[#F4F3EF] leading-snug">
+                          <h3 className="font-semibold text-base text-[#FAF9F6] leading-snug">
                             {activeBook.title}
                           </h3>
-                          <p className="font-mono text-[11px] text-[#A8A196] mt-1">
-                            {activeBook.author}
+                          <p className="font-mono text-xs text-[#D6D1C7] mt-1">
+                            Synthesis &bull; {activeBook.author}
                           </p>
-                          <p className="font-mono text-[10px] text-[#6E6962] mt-0.5">
+                          <p className="font-mono text-[11px] text-[#B7B0A5] mt-0.5">
                             {activeBook.pages} pages &bull; {activeBook.year}
                           </p>
                         </div>
                       </div>
 
-                      <p className="text-xs text-[#C7C1B7] leading-relaxed">
+                      <p className="text-sm text-[#E5E0D7] leading-relaxed">
                         {activeBook.tagline}
                       </p>
                     </div>
@@ -293,23 +288,23 @@ export function KaCodexSpotlightStage() {
                       }}
                     />
 
-                    <div className="space-y-3 relative z-[2]">
+                    <div className="space-y-3.5 relative z-[2]">
                       <span
                         style={{ color: activeBook.accentHex }}
-                        className="font-mono text-[10px] uppercase tracking-[0.2em]"
+                        className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em]"
                       >
                         CH. 01 &bull; {activeBook.chapters[0]?.title}
                       </span>
-                      <p className="text-xs text-[#D6D1C7] leading-relaxed">
+                      <p className="text-sm text-[#EAE6DD] leading-[1.68]">
                         {activeBook.chapters[0]?.summary}
                       </p>
 
-                      <ul className="space-y-1.5 pt-1">
+                      <ul className="space-y-2 pt-1">
                         {activeBook.chapters[0]?.takeaways.slice(0, 3).map((pt) => (
-                          <li key={pt} className="text-[11px] text-[#E5E0D7] flex items-start gap-2">
+                          <li key={pt} className="text-xs sm:text-[13px] text-[#F1EEE8] leading-relaxed flex items-start gap-2">
                             <span
                               style={{ backgroundColor: activeBook.accentHex }}
-                              className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
+                              className="w-1.5 h-1.5 rounded-full mt-2 shrink-0"
                             />
                             <span>{pt}</span>
                           </li>

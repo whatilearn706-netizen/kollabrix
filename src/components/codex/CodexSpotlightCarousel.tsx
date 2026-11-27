@@ -17,6 +17,7 @@ import type {
   CodexLanguageTrack,
   CodexPatternVolume,
 } from '@/data/codexCatalog';
+import { getMonographSpec } from '@/lib/codex/monographArt';
 
 export type CodexVolume = CodexLanguageTrack | CodexBookVolume | CodexPatternVolume;
 
@@ -175,7 +176,7 @@ export function CodexSpotlightCarousel({
             </span>
           </div>
 
-          <p className="text-sm text-zinc-300/90 leading-relaxed max-w-xl">
+          <p className="text-sm sm:text-[15px] font-medium text-[#E2E8F0] leading-[1.7] max-w-xl">
             {active.spotlightBio}
           </p>
         </div>
@@ -239,31 +240,49 @@ export function CodexSpotlightCarousel({
                   </span>
                 </div>
 
-                {/* Cover Centerpiece Emblem / Title */}
-                <div className="relative z-10 pl-6 pr-5 my-auto space-y-3">
-                  <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.06] border border-white/15 backdrop-blur-md">
-                    {item.kind === 'track' ? (
-                      <Code2 className={`w-5 h-5 ${item.accentColor}`} />
-                    ) : item.kind === 'book' ? (
-                      <BookOpen className={`w-5 h-5 ${item.accentColor}`} />
-                    ) : (
-                      <Zap className={`w-5 h-5 ${item.accentColor}`} />
-                    )}
-                  </div>
+                {/* Cover Centerpiece Emblem / Bespoke Monograph Graphic / Title */}
+                <div className="relative z-10 pl-6 pr-5 my-auto space-y-2.5">
+                  {item.kind === 'book' ? (
+                    <div
+                      className={`rounded-xl bg-black/40 border border-white/[0.12] flex items-center justify-center ${
+                        isCenter ? 'w-full h-24 sm:h-28 p-2' : 'w-12 h-11 p-1.5'
+                      }`}
+                    >
+                      <svg
+                        viewBox="0 0 160 120"
+                        className={`w-full h-full ${item.accentColor}`}
+                        dangerouslySetInnerHTML={{
+                          __html: getMonographSpec({
+                            id: item.id,
+                            index: idx + 1,
+                            category: 'Systems',
+                          }).svgPaths,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.08] border border-white/20 backdrop-blur-md">
+                      {item.kind === 'track' ? (
+                        <Code2 className={`w-5 h-5 ${item.accentColor}`} />
+                      ) : (
+                        <Zap className={`w-5 h-5 ${item.accentColor}`} />
+                      )}
+                    </div>
+                  )}
 
                   <div>
-                    <p className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-400">
-                      KOLLΛBRIX FOLIO · {getVolumeMonogram(item)}
+                    <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-[#CBD5E1]">
+                      KΛ FOLIO · {getVolumeMonogram(item)}
                     </p>
                     <h3
-                      className={`font-serif font-semibold text-white leading-tight mt-1 ${
-                        isCenter ? 'text-2xl sm:text-[26px]' : 'text-lg'
+                      className={`font-bold text-white leading-tight mt-1 ${
+                        isCenter ? 'text-xl sm:text-[23px]' : 'text-base sm:text-lg'
                       }`}
                     >
                       {item.title}
                     </h3>
                     {isCenter && (
-                      <p className="text-xs text-zinc-300/80 leading-relaxed mt-2 line-clamp-3">
+                      <p className="text-xs sm:text-[13px] font-medium text-[#DCE3EE] leading-relaxed mt-1.5 line-clamp-2">
                         {item.subtitle}
                       </p>
                     )}
@@ -271,12 +290,12 @@ export function CodexSpotlightCarousel({
                 </div>
 
                 {/* Cover Footer + 3D Page Thickness Illusion */}
-                <div className="relative z-10 pl-6 pr-4 pb-4 pt-2 border-t border-white/10 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-zinc-300/80 truncate">
+                <div className="relative z-10 pl-6 pr-4 pb-4 pt-2 border-t border-white/15 flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-medium text-[#E2E8F0] truncate">
                     {isCenter ? 'Click to Open →' : item.badgeText}
                   </span>
-                  <span className="text-[10px] font-mono text-zinc-400">
-                    0{idx + 1}
+                  <span className="text-[10px] font-mono font-semibold text-[#CBD5E1]">
+                    {String(idx + 1).padStart(2, '0')}
                   </span>
                 </div>
 
