@@ -63,8 +63,8 @@ export const KA_PLANS: Record<KaPlanId, KaPlanDefinition> = {
     highlights: [
       '10 KΛ-Pro + 10 KΛ-1/day (Hackathon Studio only)',
       '4 KΛ-1/day in General, Code & DSA modes',
-      'Screening PPT Deck (.pptx) + Pick Winning PS Cut-List',
-      '2-Min Demo Timer + Tough Judge Q&A + README/SQL + Re-Audit',
+      'Bespoke Varied PPT Deck (.pptx) + Repeat New Design',
+      'AI 3-Judge Roast Q&A + 1-Click Working Starter Repo + Re-Audit',
     ],
   },
   pro_monthly: {
@@ -444,10 +444,12 @@ export async function consumeKaChatQuota(
   actorKey: string,
   requestedTier: 'fast' | 'deep',
   userId: string | null,
-  contextMode: KaQuotaContext = 'general'
+  contextMode: KaQuotaContext = 'general',
+  tokenCost = 1
 ): Promise<{
   allowed: boolean;
   effectiveTier: 'fast' | 'deep';
+  tokensUsed?: number;
   requireAuth?: boolean;
   upgradeRequired?: boolean;
   recommendedPlan?: 'pro_monthly' | 'hackathon_pass';
@@ -455,6 +457,7 @@ export async function consumeKaChatQuota(
   note?: string;
   entitlements: KaEntitlementSummary;
 }> {
+  const safeCost = Math.max(1, Math.min(2, Math.floor(tokenCost || 1)));
   const isAuth = Boolean(userId);
   const planRec = await getUserActivePlan(userId);
   const def = KA_PLANS[planRec.planId] || KA_PLANS.free;
@@ -529,12 +532,25 @@ export async function consumeKaChatQuota(
       };
     }
 
-    if (usage.deep < deepLimit) {
-      usage.deep += 1;
+    const remainingDeep = Math.max(0, deepLimit - usage.deep);
+    if (remainingDeep >= safeCost) {
+      usage.deep += safeCost;
       await saveUsageCounter(actorKey, usage);
       return {
         allowed: true,
         effectiveTier: 'deep',
+        tokensUsed: safeCost,
+        entitlements: await getKaEntitlements(actorKey, userId, usageState),
+      };
+    }
+
+    if (remainingDeep > 0 && remainingDeep < safeCost) {
+      return {
+        allowed: false,
+        effectiveTier: 'deep',
+        upgradeRequired: def.id === 'hackathon_pass',
+        recommendedPlan: def.id === 'hackathon_pass' ? 'pro_monthly' : undefined,
+        error: `This deep multi-link scan requires ${safeCost} KΛ-Pro tokens, and you have ${remainingDeep} remaining today. ${resetText} — remove external links for a 1-token run or upgrade to KΛ Pro Builder.`,
         entitlements: await getKaEntitlements(actorKey, userId, usageState),
       };
     }

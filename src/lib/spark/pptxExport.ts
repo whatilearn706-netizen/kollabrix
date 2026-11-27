@@ -15,6 +15,11 @@ export interface ScreeningSlide {
   speakerNotes: string;
   recommendedVisual?: string;
   kpis?: Array<{ value: string; label: string }>;
+  chartData?: {
+    title: string;
+    labels: string[];
+    values: number[];
+  };
   stackGrid?: Array<{ category: string; items: string[] }>;
   riskPairs?: Array<{ risk: string; mitigation: string }>;
   redFlagFix?: { weakClaim: string; improvedClaim: string };
@@ -25,12 +30,25 @@ export type PptxThemePalette =
   | 'medical_teal'
   | 'emerald_civic'
   | 'violet_agentic'
-  | 'royal_indigo';
+  | 'royal_indigo'
+  | 'cyber_crimson'
+  | 'arctic_obsidian'
+  | 'aurora_graphite';
+
+export type PptxLayoutStyle =
+  | 'bento_dark'
+  | 'editorial_split'
+  | 'cyber_grid'
+  | 'orbital_flow'
+  | 'minimal_swiss';
 
 export interface ScreeningDeck {
   deckTitle: string;
   hackathonName: string;
   themePalette?: PptxThemePalette;
+  layoutStyle?: PptxLayoutStyle;
+  deckStyleNote?: string;
+  variationSeed?: number;
   repoUrl?: string;
   liveDemoUrl?: string;
   shortlistScoreForecast: number;

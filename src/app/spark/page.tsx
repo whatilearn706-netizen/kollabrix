@@ -27,6 +27,7 @@ import {
   ChevronDown,
   Zap,
   Image as ImageIcon,
+  BookOpen,
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { SparkBlueprintStudio } from '@/components/spark/SparkBlueprintStudio';
@@ -34,6 +35,7 @@ import { SparkChatMessage } from '@/components/spark/SparkSuperpowersPanel';
 import { SparkMarkdown } from '@/components/spark/SparkMarkdown';
 import { SparkSidebar, SparkMode, StoredSparkThread } from '@/components/spark/SparkSidebar';
 import { KaPricingModal } from '@/components/spark/KaPricingModal';
+import { KaBuilderMemoryModal } from '@/components/spark/KaBuilderMemoryModal';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 import { getKaAiHomePath } from '@/lib/kaBrandDomains';
 import type { KaEntitlementSummary } from '@/lib/spark/plans';
@@ -85,9 +87,10 @@ const QUICK_SUGGESTIONS: Array<{
     iconColor: 'text-emerald-400',
   },
   {
-    label: 'Analyze Screenshot or PDF',
+    label: 'Sketch / UI → Working App + SQL',
     mode: 'general',
     pickFile: true,
+    prompt: 'Convert this uploaded sketch/UI/PDF into: 1) Mermaid Architecture Diagram, 2) SQL Database Schema, and 3) Working React + API Code.',
     icon: ImageIcon,
     iconColor: 'text-violet-400',
   },
@@ -143,6 +146,7 @@ export default function SparkUniversalWorkspacePage() {
   const [entitlements, setEntitlements] = useState<KaEntitlementSummary | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [pricingReason, setPricingReason] = useState<string | undefined>(undefined);
+  const [memoryOpen, setMemoryOpen] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
@@ -789,6 +793,15 @@ export default function SparkUniversalWorkspacePage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMemoryOpen(true)}
+              title="Configure Personal Builder Memory & synced Arena ELO"
+              className="px-3 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/10 border border-white/10 text-xs font-medium text-zinc-200 flex items-center gap-1.5 cursor-pointer transition-colors"
+            >
+              <Brain className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Memory</span>
+            </button>
             {(!entitlements || entitlements.planId === 'free' || entitlements.planId === 'hackathon_pass') && (
               <button
                 type="button"
@@ -891,6 +904,7 @@ export default function SparkUniversalWorkspacePage() {
                       type="button"
                       onClick={() => {
                         if (item.pickFile) {
+                          if (item.prompt && !input.trim()) setInput(item.prompt);
                           fileInputRef.current?.click();
                         } else if (item.mode === 'hackathon') {
                           setMode('hackathon');
@@ -981,6 +995,10 @@ export default function SparkUniversalWorkspacePage() {
                                     ? Terminal
                                     : act.kind === 'teammates'
                                     ? Users
+                                    : act.kind === 'folio'
+                                    ? BookOpen
+                                    : act.kind === 'hackathon'
+                                    ? Trophy
                                     : Rocket;
                                 return (
                                   <Link
@@ -1023,6 +1041,12 @@ export default function SparkUniversalWorkspacePage() {
           setErrorMsg('');
           setQuotaNote('');
         }}
+      />
+
+      <KaBuilderMemoryModal
+        open={memoryOpen}
+        onClose={() => setMemoryOpen(false)}
+        user={user}
       />
     </div>
   );

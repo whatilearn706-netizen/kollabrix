@@ -8,6 +8,9 @@ import { DEFAULT_CAMPUS_WAR_CONFIG, CampusWarConfig } from '@/types/campusWar';
 import { STARTER_KITS } from '@/data/starterKits';
 import { STUDENT_PERKS } from '@/data/studentPerks';
 import { IcpcContest } from '@/types/icpc';
+import { CODEX_LANGUAGE_TRACKS, CODEX_BOOKS, CODEX_PATTERNS } from '@/data/codexCatalog';
+import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { getBuilderMemoryWithArena, formatBuilderMemoryPrompt } from '@/lib/spark/builderMemory';
 
 function getServiceClient() {
   if (!isSupabaseConfigured()) return null;
@@ -28,20 +31,20 @@ const KOLLABRIX_PLATFORM_MAP = `KOLLABRIX FULL WEBSITE & FEATURE MAP (Real Live 
 - **Faculty Problem Bank** ([Problem Bank](/problems)), **Post Problem** ([Post Problem](/problems/new)) & **Faculty Portal** ([Faculty Dashboard](/teacher/dashboard)): Real-world engineering challenges posted by professors & mentors where squads submit solutions and receive faculty feedback.
 - **Deadlines Countdown** ([Deadlines](/deadlines)): Live countdown calendar aggregating hackathons, ICPC contests, and campus submission deadlines.
 - **Builder Passport** ([Passport](/passport)): Holographic Verified Developer Passport & Flight Recorder skill proofs verifiable at \`/verify/[id]\`.
-- **Starter Kits** ([Starter Kits](/starter-kits)), **Student Perks** ([Perks](/perks)) & **Resources** ([Resources](/resources)): 1-click full-stack/AI hackathon templates, free student developer credits (GitHub Student Pack, cloud/dev tools), and structured coding curriculum tracks.
+- **KΛ FOLIO — Coding Library & Guided Tracks** ([KΛ FOLIO](/ka-codex) & [Resources Studio](/resources)): Video language tracks (Java Mastery, C++ & STL Speedrun, Python Engineering, TypeScript & Next.js, DSA & System Design), 12 curated engineering books (DDIA, Clean Code, Pragmatic Programmer, SICP, Java Field Manual, C++ Handbook, System Design Vol. 1, etc.), and interactive step-by-step pattern tracks.
+- **Starter Kits** ([Starter Kits](/starter-kits)), **Student Perks** ([Perks](/perks)) & **Resources** ([KΛ FOLIO Resources](/resources)): 1-click full-stack/AI hackathon templates, free student developer credits (GitHub Student Pack, cloud/dev tools), and structured coding curriculum tracks.
 - **AI Project Planner** ([Planner](/planner)) & **College Analytics** ([Analytics](/analytics)): Break projects into AI sprints/milestones and inspect institutional campus metrics.
 - **KΛ ΛI & Studios** ([KΛ ΛI](/spark)): **KΛ-1** (fast answers & live site intelligence), **KΛ-Pro** (deep reasoning & architecture), plus sidebar modes for **Code Sandbox**, **DSA & Placements**, and **Hackathon Studio**.`;
 
-const RESPONSE_BEHAVIOR_RULES = `BEHAVIOR FOR WEBSITE QUESTIONS vs. OTHER QUESTIONS:
-1. **Website, Feature, or Live Data Queries** (when the user asks about Kollabrix, its features, navigation, projects, hackathons, teammates, duels, contests, leaderboard, deadlines, perks, starter kits, passport, faculty portal, or "how do I ... here"):
-   - Answer directly using **Kollabrix's real features and LIVE DATA below**.
-   - Explain exact workflows step-by-step with clickable Markdown links like [Feature Name](/route) and [Item Title](/projects/id) so the user can jump straight there.
-   - Never suggest third-party competitors (like Devpost, Unstop, LeetCode, Discord) when Kollabrix already provides that capability.
-   - Never invent fake projects, fake deadlines, fake usernames, or features not listed in the map/data below.
-2. **Other Questions** (general programming, debugging, DSA/algorithms, system design, interview prep, math, science, writing, career advice, or casual chat):
-   - Always give a **complete, accurate, direct answer** to the user's actual question FIRST. Never refuse or deflect general questions.
-   - If the topic naturally connects to coding, DSA/placements, building projects, hackathons, or teaming up, add a concise 1–2 line **"On Kollabrix"** next step with real clickable links (e.g. practice in [Practice IDE](/icpc), duel in [1v1 Battle Arena](/arena), find builders on [Teammates](/teammates), or launch via [Create Project](/projects/new)).
-   - If the question is pure unrelated trivia or non-tech (e.g. history, cooking, general facts), answer cleanly WITHOUT forcing irrelevant Kollabrix links.`;
+const RESPONSE_BEHAVIOR_RULES = `BEHAVIOR FOR WEBSITE QUESTIONS, KΛ FOLIO, ARENA & OTHER QUESTIONS:
+1. **Interconnected Ecosystem (Kollabrix + KΛ AI + KΛ FOLIO + Battle Arena)**:
+   - When the user asks about Kollabrix features, projects, hackathons, teammates, duels, contests, leaderboard, deadlines, perks, starter kits, OR learning resources/books/tracks on KΛ FOLIO: answer directly using **real features and LIVE DATA below** with clickable Markdown links like [Title](/route) or [Open in KΛ FOLIO](/resources).
+   - Never suggest third-party competitors (Devpost, Unstop, LeetCode, Discord, external Udemy/Coursera) when Kollabrix or KΛ FOLIO already provides that exact resource or workflow.
+   - Never invent fake projects, fake deadlines, fake usernames, or non-existent routes.
+2. **Coding, DSA, Architecture & General Questions**:
+   - Always give a **complete, accurate, direct answer** to the user's actual question FIRST.
+   - Whenever the topic involves a programming language, DSA pattern (e.g., Sliding Window, DP, Graphs, Binary Search), or System Design, attach a crisp **"Connected Ecosystem Next Steps"** section pointing to the exact matching KΛ FOLIO track/book/pattern ([Watch / Read in KΛ FOLIO](/resources)), [Practice IDE](/icpc), or [1v1 Battle Arena](/arena).
+   - If the user attaches a sketch, whiteboard photo, Figma UI screenshot, or assignment PDF, output a complete structured build response: 1) Architecture Diagram (\`\`\`mermaid\`), 2) Database SQL Schema (\`\`\`sql\`), and 3) Production-ready React/API code (\`\`\`tsx / \`\`\`ts).`;
 
 /**
  * Fetches fresh, real-time data from Supabase & Master Control based on prompt intent
@@ -96,11 +99,14 @@ export async function buildKollabrixLiveContext(
 
   const wantsPerksOrKits =
     isAboutWebsite ||
-    /\b(perk|perks|credit|credits|swag|free|github student|starter|template|templates|boilerplate|kit|kits|resource|resources|learn|curriculum|course|tutorial)\b/.test(
+    /\b(perk|perks|credit|credits|swag|free|github student|starter|template|templates|boilerplate|kit|kits|resource|resources|learn|curriculum|course|tutorial|book|books|folio|codex|java|c\+\+|cpp|python|typescript|next\.?js|system design|sliding window|dynamic programming|dp|bfs|graph|trees|handbook|manual|notes|video)\b/.test(
       lower
     );
 
-  // Pure unrelated non-platform prompt still gets full Platform Map + dual behavior guidance
+  // Load Personal Builder Memory + Arena Telemetry even on general/technical prompts
+  const builderMemPromise = userId ? getBuilderMemoryWithArena(userId) : Promise.resolve(null);
+
+  // Pure unrelated non-platform prompt still gets Platform Map + Builder Memory + behavior rules
   if (
     !wantsProjects &&
     !wantsHackathons &&
@@ -110,12 +116,23 @@ export async function buildKollabrixLiveContext(
     !wantsLeaderboardOrWar &&
     !wantsPerksOrKits
   ) {
-    return `${KOLLABRIX_PLATFORM_MAP}\n\n${RESPONSE_BEHAVIOR_RULES}`;
+    const memData = await builderMemPromise;
+    const memBlock = memData ? formatBuilderMemoryPrompt(memData.memory, memData.arenaStats) : '';
+    return [KOLLABRIX_PLATFORM_MAP, memBlock, RESPONSE_BEHAVIOR_RULES].filter(Boolean).join('\n\n');
   }
 
   const client = getServiceClient();
   const sections: string[] = [KOLLABRIX_PLATFORM_MAP];
   const tasks: Promise<void>[] = [];
+
+  tasks.push(
+    builderMemPromise.then((memData) => {
+      if (memData) {
+        const block = formatBuilderMemoryPrompt(memData.memory, memData.arenaStats);
+        if (block) sections.push(block);
+      }
+    })
+  );
 
   // 0. Logged-in user's personal profile
   if (client && userId) {
@@ -363,14 +380,29 @@ export async function buildKollabrixLiveContext(
     );
   }
 
-  // 7. Live Starter Kits & Student Perks
-  if (wantsPerksOrKits) {
+  // 7. Live Starter Kits, Student Perks & KΛ FOLIO Library (Tracks, Books, Patterns)
+  if (wantsPerksOrKits || wantsArenaOrPractice) {
     const kitLines = STARTER_KITS.slice(0, 4).map(
       (k) => `- ${k.title} (${k.difficulty} · ${k.techStack.slice(0, 3).join(', ')})`
     );
     const perkLines = STUDENT_PERKS.slice(0, 4).map((p) => `- ${p.title} (${p.value}) — ${p.provider}`);
+    const trackLines = CODEX_LANGUAGE_TRACKS.map(
+      (t) => `- [${t.title}](/resources) (${t.subtitle})`
+    );
+    const allBookLines = [
+      ...CODEX_BOOKS.map((b) => `- [${b.title}](/resources) — ${b.subtitle}`),
+      ...KA_CODEX_BOOKS.slice(0, 7).map((b) => `- [${b.title}](/resources) (${b.category})`),
+    ];
+    const patternLines = CODEX_PATTERNS.map(
+      (p) => `- [${p.title}](/resources) — ${p.subtitle}`
+    );
+
     sections.push(
-      `AVAILABLE STARTER KITS ([Starter Kits](/starter-kits)):\n${kitLines.join(
+      `KΛ FOLIO CODING LIBRARY ([Open KΛ FOLIO](/ka-codex) · [Interactive Resources Studio](/resources)):\nGuided Tracks:\n${trackLines.join(
+        '\n'
+      )}\nTechnical Booksheet:\n${allBookLines.slice(0, 12).join('\n')}\nProblem-Solving Patterns:\n${patternLines.join(
+        '\n'
+      )}\n\nAVAILABLE STARTER KITS ([Starter Kits](/starter-kits)):\n${kitLines.join(
         '\n'
       )}\nSTUDENT PERKS VAULT ([Perks](/perks)):\n${perkLines.join('\n')}`
     );

@@ -114,7 +114,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const quota = await consumeKaChatQuota(userId || ip, 'deep', userId, 'hackathon');
+    const judgeTokenCost: 1 | 2 =
+      [repoUrl.trim(), hackathonUrl.trim(), liveDemoUrl.trim()].filter(Boolean).length >= 2 ? 2 : 1;
+
+    const quota = await consumeKaChatQuota(userId || ip, 'deep', userId, 'hackathon', judgeTokenCost);
     if (!quota.allowed) {
       return NextResponse.json(
         {
@@ -257,6 +260,7 @@ ${blueprint ? `\nBlueprint Context: ${blueprint.title} — ${blueprint.summary}`
       repoScanned,
       liveDemoStatus,
       entitlements: quota.entitlements,
+      tokensUsed: quota.tokensUsed || judgeTokenCost,
       scoreDelta: typeof previousScore === 'number' ? score - previousScore : null,
       audit: {
         totalScore: score,

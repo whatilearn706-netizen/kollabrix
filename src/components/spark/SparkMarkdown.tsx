@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Check, Copy, Play, Loader2, Terminal, ArrowUpRight } from 'lucide-react';
+import { Check, Copy, Play, Loader2, Terminal, ArrowUpRight, Wand2, ShieldCheck } from 'lucide-react';
 
 const RUNNABLE_LANG_MAP: Record<string, string> = {
   python: 'python',
@@ -15,23 +15,31 @@ const RUNNABLE_LANG_MAP: Record<string, string> = {
 };
 
 function CodeBlockCard({ lang, code }: { lang: string; code: string }) {
+  const [displayedCode, setDisplayedCode] = useState(code);
   const [copied, setCopied] = useState(false);
   const [running, setRunning] = useState(false);
+  const [healing, setHealing] = useState(false);
   const [runResult, setRunResult] = useState<{ ok: boolean; output: string; time?: string } | null>(null);
+  const [healLog, setHealLog] = useState<{
+    verified: boolean;
+    healed: boolean;
+    attempts: Array<{ attempt: number; status: string; passed: boolean; fixNote?: string }>;
+  } | null>(null);
 
   const normalizedLang = (lang || 'text').toLowerCase().trim();
   const judgeLang = RUNNABLE_LANG_MAP[normalizedLang];
 
   const handleRun = async () => {
-    if (!judgeLang || running) return;
+    if (!judgeLang || running || healing) return;
     setRunning(true);
     setRunResult(null);
+    setHealLog(null);
     try {
       const res = await fetch('/api/icpc/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sourceCode: code,
+          sourceCode: displayedCode,
           language: judgeLang,
           stdin: '',
         }),
@@ -50,10 +58,47 @@ function CodeBlockCard({ lang, code }: { lang: string; code: string }) {
     }
   };
 
+  const handleAutoHeal = async () => {
+    if (!judgeLang || healing || running) return;
+    setHealing(true);
+    setHealLog(null);
+    try {
+      const res = await fetch('/api/spark/auto-heal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: displayedCode,
+          language: judgeLang,
+        }),
+      });
+      const data = await res.json();
+      if (data?.finalCode) {
+        setDisplayedCode(data.finalCode);
+      }
+      const out = data.stdout || data.stderr || data.error || '(no output)';
+      setRunResult({
+        ok: Boolean(data.verified),
+        output: String(out).trim(),
+        time: data.time,
+      });
+      if (Array.isArray(data?.attempts)) {
+        setHealLog({
+          verified: Boolean(data.verified),
+          healed: Boolean(data.healed),
+          attempts: data.attempts,
+        });
+      }
+    } catch {
+      setRunResult({ ok: false, output: 'Auto-heal verification failed to connect.' });
+    } finally {
+      setHealing(false);
+    }
+  };
+
   return (
     <div className="my-3 rounded-xl overflow-hidden border border-white/12 bg-[#05080F] shadow-md">
       {/* Mac-style code header */}
-      <div className="px-3.5 py-2 bg-[#0B101B] border-b border-white/10 flex items-center justify-between gap-2">
+      <div className="px-3.5 py-2 bg-[#0B101B] border-b border-white/10 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500/70" />
@@ -63,24 +108,42 @@ function CodeBlockCard({ lang, code }: { lang: string; code: string }) {
           <span className="text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider ml-1">
             {normalizedLang || 'code'}
           </span>
+          {healLog?.verified && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/35 text-[10px] font-bold text-emerald-300">
+              <ShieldCheck className="w-3 h-3" />
+              <span>{healLog.healed ? 'Auto-Fixed & Verified' : 'Verified in Judge0'}</span>
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {judgeLang && (
-            <button
-              type="button"
-              onClick={handleRun}
-              disabled={running}
-              className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-50"
-            >
-              {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
-              <span>{running ? 'Running...' : 'Run in Sandbox'}</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleRun}
+                disabled={running || healing}
+                className="px-2.5 py-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-50"
+              >
+                {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-current" />}
+                <span>{running ? 'Running...' : 'Run'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleAutoHeal}
+                disabled={healing || running}
+                title="Run in Judge0 & auto-fix any errors with KΛ AI"
+                className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all disabled:opacity-50"
+              >
+                {healing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                <span>{healing ? 'Verifying & Fixing...' : runResult && !runResult.ok ? 'Auto-Fix Error' : 'Verify & Auto-Fix'}</span>
+              </button>
+            </>
           )}
           <button
             type="button"
             onClick={() => {
-              navigator.clipboard.writeText(code);
+              navigator.clipboard.writeText(displayedCode);
               setCopied(true);
               setTimeout(() => setCopied(false), 1800);
             }}
@@ -94,8 +157,32 @@ function CodeBlockCard({ lang, code }: { lang: string; code: string }) {
 
       {/* Code Body */}
       <pre className="p-3.5 text-xs font-mono text-cyan-100 overflow-x-auto leading-relaxed">
-        <code>{code}</code>
+        <code>{displayedCode}</code>
       </pre>
+
+      {/* Auto-Heal Trail */}
+      {healLog && healLog.attempts.length > 0 && (
+        <div className="px-3.5 py-2 border-t border-white/10 bg-[#0A0E17] space-y-1">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+            Judge0 Auto-Verify Trail
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {healLog.attempts.map((a) => (
+              <span
+                key={a.attempt}
+                className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                  a.passed
+                    ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+                    : 'bg-rose-500/15 border-rose-500/35 text-rose-300'
+                }`}
+              >
+                #{a.attempt}: {a.status}
+                {a.fixNote ? ` → ${a.fixNote}` : ''}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Live Compiler Output */}
       {runResult && (

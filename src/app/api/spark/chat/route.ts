@@ -22,33 +22,52 @@ export type SparkChatMode = 'general' | 'code' | 'dsa' | 'hackathon';
 function inferKollabrixActions(
   mode: SparkChatMode,
   userMessage: string,
-): Array<{ label: string; href: string; kind: 'arena' | 'icpc' | 'teammates' | 'workspace' }> {
+): Array<{ label: string; href: string; kind: 'arena' | 'icpc' | 'teammates' | 'workspace' | 'folio' | 'hackathon' }> {
   const promptLower = userMessage.toLowerCase().trim();
-  if (promptLower.length < 10) return [];
+  if (promptLower.length < 8) return [];
 
-  const actions: Array<{ label: string; href: string; kind: 'arena' | 'icpc' | 'teammates' | 'workspace' }> = [];
+  const actions: Array<{ label: string; href: string; kind: 'arena' | 'icpc' | 'teammates' | 'workspace' | 'folio' | 'hackathon' }> = [];
 
-  if (
-    mode === 'dsa' ||
-    /\b(two sum|binary search|dynamic programming|leetcode|algorithm|time complexity|tle|sliding window|linked list|interview prep|online assessment)\b/.test(
+  const isLearningOrResource =
+    /\b(folio|codex|resource|resources|book|books|track|tracks|learn|java|c\+\+|cpp|python|typescript|next\.?js|spring boot|system design|sliding window|two pointers|dynamic programming|dp|bfs|graph|tree|binary search|oop|hashmap|stl)\b/.test(
       promptLower
-    )
-  ) {
-    actions.push({ label: 'Practice in IDE', href: '/icpc', kind: 'icpc' });
-    actions.push({ label: '1v1 Arena Duel', href: '/arena', kind: 'arena' });
+    );
+
+  const isDsaOrCoding =
+    mode === 'dsa' ||
+    mode === 'code' ||
+    /\b(two sum|binary search|dynamic programming|leetcode|algorithm|time complexity|tle|sliding window|linked list|interview prep|online assessment|arena|duel|bug)\b/.test(
+      promptLower
+    );
+
+  const isHackathonOrProject =
+    mode === 'hackathon' ||
+    /\b(hackathon|sih|mvp|teammate|find squad|build an app|build a platform|project idea|startup idea|create a project|architecture|schema|sketch|wireframe)\b/.test(
+      promptLower
+    );
+
+  if (isLearningOrResource) {
+    actions.push({ label: 'Watch / Read in KΛ FOLIO', href: '/resources', kind: 'folio' });
   }
 
-  if (
-    mode === 'hackathon' ||
-    /\b(hackathon|sih|mvp|teammate|find squad|build an app|build a platform|project idea|startup idea|create a project)\b/.test(
-      promptLower
-    )
-  ) {
+  if (isDsaOrCoding) {
+    actions.push({ label: 'Test Yourself in 1v1 Arena', href: '/arena', kind: 'arena' });
+    actions.push({ label: 'Practice in IDE', href: '/icpc', kind: 'icpc' });
+  }
+
+  if (isHackathonOrProject) {
+    actions.push({ label: 'Browse Hackathons', href: '/hackathons', kind: 'hackathon' });
     actions.push({ label: 'Find Campus Teammates', href: '/teammates', kind: 'teammates' });
     actions.push({ label: 'Launch Project Workspace', href: '/projects/new', kind: 'workspace' });
   }
 
-  return actions.slice(0, 2);
+  // Deduplicate by href and limit to 3 crisp ecosystem chips
+  const seen = new Set<string>();
+  return actions.filter((a) => {
+    if (seen.has(a.href)) return false;
+    seen.add(a.href);
+    return true;
+  }).slice(0, 3);
 }
 
 async function persistSparkSession(
@@ -173,9 +192,14 @@ export async function POST(request: NextRequest) {
       ? `\n\nActive Project Blueprint Context:\nTitle: ${blueprint.title}\nTagline: ${blueprint.tagline}\nSummary: ${blueprint.summary}\nTech: ${(blueprint.technologies || []).join(', ')}`
       : '';
 
+    const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
+    const sketchDirective = hasAttachments
+      ? `\n\nATTACHMENT / SKETCH-TO-WORKING-APP DIRECTIVE:\nThe user attached image(s)/PDF(s). Inspect every visual element carefully. If it looks like a wireframe, whiteboard diagram, architecture sketch, Figma UI, or project assignment PDF, deliver a complete Sketch-to-App output containing:\n1. \`\`\`mermaid architecture diagram\n2. \`\`\`sql database schema (CREATE TABLE statements)\n3. \`\`\`tsx or \`\`\`ts working frontend + API route code ready to drop into Next.js/React.`
+      : '';
+
     const livePlatformContext = await buildKollabrixLiveContext(promptText, userId);
 
-    const systemPrompt = `${modeInstructions[mode] || modeInstructions.general}${blueprintCtx}\n\n${livePlatformContext}`;
+    const systemPrompt = `${modeInstructions[mode] || modeInstructions.general}${blueprintCtx}${sketchDirective}\n\n${livePlatformContext}`;
     const attachmentNames = Array.isArray(attachments) ? attachments.map((a) => a.name).filter(Boolean) : [];
 
     // Real-time SSE Streaming path

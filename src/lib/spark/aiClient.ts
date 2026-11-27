@@ -23,7 +23,7 @@ export interface SparkChatMessage {
   createdAt?: string;
   engine?: string;
   attachmentNames?: string[];
-  actions?: Array<{ label: string; href: string; kind: 'arena' | 'icpc' | 'teammates' | 'workspace' }>;
+  actions?: Array<{ label: string; href: string; kind: 'arena' | 'icpc' | 'teammates' | 'workspace' | 'folio' | 'hackathon' }>;
 }
 
 export interface CallSparkLLMOptions {

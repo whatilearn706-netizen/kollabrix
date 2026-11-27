@@ -329,7 +329,11 @@ export function KaPricingModal({
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
-                  <span>AI Screening PPT Deck (.pptx) &amp; Cut-List</span>
+                  <span>Creative Bespoke PPT Deck (.pptx) + Repeat Redesign</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+                  <span>AI 3-Judge Roast Q&amp;A + 1-Click Working Starter Repo</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
