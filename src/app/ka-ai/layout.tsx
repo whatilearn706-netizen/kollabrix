@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(origin),
     title: {
-      default: 'KΛ ΛI (KA AI) — Engineering Copilot & Code Studio | Built by Kollabrix',
+      absolute: 'KΛ ΛI (KA AI) — Engineering Copilot & Code Studio | Built by Kollabrix',
       template: '%s | KΛ ΛI',
     },
     description:

@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(origin),
     title: {
-      default: 'KΛ FOLIO (KA Folio) — 12 Coding Classics & Guided Tracks | Built by Kollabrix',
+      absolute: 'KΛ FOLIO (KA Folio) — 12 Coding Classics & Guided Tracks | Built by Kollabrix',
       template: '%s | KΛ FOLIO',
     },
     description:
