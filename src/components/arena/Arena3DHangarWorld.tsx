@@ -9,8 +9,13 @@ import { buildCyberDuelist3D } from './Arena3DHangarCharacter';
 interface Arena3DHangarWorldProps {
   avatarId: string;
   algoLanguage: string;
+  combatMode?: string;
+  playerName?: string;
+  playerCollege?: string;
+  tier?: string;
   elo?: number;
   wins?: number;
+  losses?: number;
   winStreak?: number;
   teamSize?: string;
   paused?: boolean;
@@ -64,8 +69,14 @@ function createRadialGlowTexture(
  */
 export function Arena3DHangarWorld({
   avatarId,
+  algoLanguage,
+  combatMode = 'blitz',
+  playerName = 'Builder',
+  playerCollege = 'KOLLABRIX',
+  tier = 'SILVER I',
   elo = 1200,
   wins = 0,
+  losses = 0,
   winStreak = 0,
   teamSize = '1v1',
   paused = false,
@@ -81,6 +92,35 @@ export function Arena3DHangarWorld({
   winsRef.current = wins;
   const streakRef = useRef(winStreak);
   streakRef.current = winStreak;
+  const duelistInstanceRef = useRef<ReturnType<typeof buildCyberDuelist3D> | null>(null);
+  const profileSnapshotRef = useRef({
+    avatarId,
+    playerName,
+    playerCollege,
+    tier,
+    elo,
+    wins,
+    losses,
+    winStreak,
+    algoLanguage,
+    combatMode,
+  });
+  profileSnapshotRef.current = {
+    avatarId,
+    playerName,
+    playerCollege,
+    tier,
+    elo,
+    wins,
+    losses,
+    winStreak,
+    algoLanguage,
+    combatMode,
+  };
+
+  useEffect(() => {
+    duelistInstanceRef.current?.updateProfile(profileSnapshotRef.current);
+  }, [avatarId, algoLanguage, combatMode, playerName, playerCollege, tier, elo, wins, losses, winStreak]);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -500,12 +540,9 @@ export function Arena3DHangarWorld({
       const embers = new THREE.Points(emberGeo, emberMat);
       scene.add(embers);
 
-      // --- CENTER 3D CYBER-DUELIST MODEL ---
-      const duelist = buildCyberDuelist3D(avatarIdRef.current, {
-        elo: eloRef.current,
-        wins: winsRef.current,
-        streak: streakRef.current,
-      });
+      // --- CENTER 3D FLOATING HOLOGRAPHIC PROFILE TABLET ---
+      const duelist = buildCyberDuelist3D(avatarIdRef.current, profileSnapshotRef.current);
+      duelistInstanceRef.current = duelist;
       duelist.root.position.set(0, 0.06, 0);
       duelist.root.scale.setScalar(1.06);
       scene.add(duelist.root);
@@ -593,6 +630,7 @@ export function Arena3DHangarWorld({
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
         window.removeEventListener('resize', onResize);
+        duelistInstanceRef.current = null;
         duelist.dispose();
         geos.forEach((g) => g.dispose());
         mats.forEach((m) => m.dispose());
@@ -612,7 +650,7 @@ export function Arena3DHangarWorld({
     } catch {
       return () => {};
     }
-  }, [avatarId, elo, wins, winStreak, teamSize]);
+  }, [teamSize]);
 
   return (
     <div

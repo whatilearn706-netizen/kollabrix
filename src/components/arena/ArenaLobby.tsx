@@ -54,13 +54,18 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
 
   return (
     <div className="relative z-10 min-h-screen w-full flex flex-col justify-between p-4 sm:p-6 lg:px-8 overflow-hidden pointer-events-none">
-      {/* FULL-SCREEN INTERACTIVE 3D CYBER-COLOSSEUM & TACTICAL CYBER-DUELIST */}
+      {/* FULL-SCREEN INTERACTIVE 3D CYBER-COLOSSEUM & FLOATING PROFILE TABLET */}
       <div className="pointer-events-auto">
         <Arena3DHangarWorld
           avatarId={engine.selectedAvatarId}
           algoLanguage={engine.algoLanguage}
+          combatMode={engine.combatMode}
+          playerName={engine.playerName}
+          playerCollege={engine.playerCollege}
+          tier={engine.stats.tier}
           elo={engine.stats.elo}
           wins={engine.stats.wins}
+          losses={engine.stats.losses}
           winStreak={engine.stats.winStreak}
           teamSize={engine.teamSize}
           paused={showMatchPortal || showIdentityModal || needsFirstSetup}

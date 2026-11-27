@@ -6,87 +6,390 @@ export interface CharacterPalette {
   visorGlow: number;
   accentTrim: number;
   wingGlow: number;
-  suitUnder: number;
+  hexPrimary: string;
+  hexAccent: string;
+  skinTitle: string;
 }
 
 export const AVATAR_3D_PALETTES: Record<string, CharacterPalette> = {
-  // Cyber Architect: Matte Graphite Armor + Ice-Cyan Neon Visor & Wings
   walker: {
-    armorMain: 0x1e293b,
-    armorDark: 0x0b101b,
+    armorMain: 0x161f2e,
+    armorDark: 0x070b14,
     visorGlow: 0x38bdf8,
     accentTrim: 0x67e8f9,
     wingGlow: 0x0ea5e9,
-    suitUnder: 0x111827,
+    hexPrimary: '#38BDF8',
+    hexAccent: '#67E8F9',
+    skinTitle: 'CYBER ARCHITECT',
   },
-  // Compiler Knight: Cobalt Tactical Plate + Electric Sky Visor
   ronin: {
-    armorMain: 0x1d3b72,
-    armorDark: 0x091326,
+    armorMain: 0x172554,
+    armorDark: 0x070d1f,
     visorGlow: 0x60a5fa,
     accentTrim: 0x93c5fd,
     wingGlow: 0x3b82f6,
-    suitUnder: 0x0f172a,
+    hexPrimary: '#60A5FA',
+    hexAccent: '#93C5FD',
+    skinTitle: 'COMPILER KNIGHT',
   },
-  // Kernel Phantom: Crimson Spec-Ops + Molten Gold/Red Visor
   sentinel: {
-    armorMain: 0x5f1322,
-    armorDark: 0x14070b,
+    armorMain: 0x3f0d19,
+    armorDark: 0x110508,
     visorGlow: 0xf43f5e,
     accentTrim: 0xfbbf24,
     wingGlow: 0xe11d48,
-    suitUnder: 0x180b10,
+    hexPrimary: '#F43F5E',
+    hexAccent: '#FBBF24',
+    skinTitle: 'KERNEL PHANTOM',
   },
-  // Syntax Prodigy: Dark Jade Stealth + Neon Emerald Core
   coder: {
-    armorMain: 0x114b3f,
-    armorDark: 0x061915,
+    armorMain: 0x0b3b30,
+    armorDark: 0x051410,
     visorGlow: 0x34d399,
     accentTrim: 0x6ee7b7,
     wingGlow: 0x10b981,
-    suitUnder: 0x0a1916,
+    hexPrimary: '#34D399',
+    hexAccent: '#6EE7B7',
+    skinTitle: 'SYNTAX PRODIGY',
   },
-  // Glitch Viper: Obsidian-Violet Apex + Hyper Gold Visor
   glitch: {
-    armorMain: 0x3b1e6d,
-    armorDark: 0x120822,
+    armorMain: 0x2e1065,
+    armorDark: 0x0e061e,
     visorGlow: 0xfacc15,
     accentTrim: 0xc084fc,
     wingGlow: 0xa855f7,
-    suitUnder: 0x150d24,
+    hexPrimary: '#C084FC',
+    hexAccent: '#FACC15',
+    skinTitle: 'GLITCH VIPER',
   },
 };
+
+export interface DuelistTabletProfile {
+  avatarId: string;
+  playerName: string;
+  playerCollege: string;
+  tier: string;
+  elo: number;
+  wins: number;
+  losses: number;
+  winStreak: number;
+  algoLanguage: string;
+  combatMode: string;
+}
 
 export interface Built3DDuelist {
   root: THREE.Group;
   update: (t: number) => void;
+  updateProfile: (next: Partial<DuelistTabletProfile>) => void;
   dispose: () => void;
 }
 
+function createRoundedRectShape(w: number, h: number, r: number): THREE.Shape {
+  const s = new THREE.Shape();
+  const x = -w / 2;
+  const y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h);
+  s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r);
+  s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawFrontScreen(canvas: HTMLCanvasElement, profile: DuelistTabletProfile) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const pal = AVATAR_3D_PALETTES[profile.avatarId] || AVATAR_3D_PALETTES.walker;
+  const W = canvas.width;
+  const H = canvas.height;
+
+  // Deep obsidian glass gradient
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#09101D');
+  bg.addColorStop(0.55, '#050811');
+  bg.addColorStop(1, '#0A0F1C');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Radial accent spotlight
+  const rad = ctx.createRadialGradient(W * 0.5, H * 0.28, 20, W * 0.5, H * 0.28, 320);
+  rad.addColorStop(0, `${pal.hexPrimary}38`);
+  rad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle tactical microgrid
+  ctx.strokeStyle = 'rgba(255,255,255,0.035)';
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx < W; gx += 32) {
+    ctx.beginPath();
+    ctx.moveTo(gx, 0);
+    ctx.lineTo(gx, H);
+    ctx.stroke();
+  }
+  for (let gy = 0; gy < H; gy += 32) {
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(W, gy);
+    ctx.stroke();
+  }
+
+  // Outer HUD Inset Frame
+  ctx.strokeStyle = `${pal.hexPrimary}55`;
+  ctx.lineWidth = 2;
+  roundRectPath(ctx, 20, 20, W - 40, H - 40, 24);
+  ctx.stroke();
+
+  // Top Header Bar
+  ctx.fillStyle = pal.hexAccent;
+  ctx.font = '700 15px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('KΛ ARENA  //  DUELIST ID', 42, 60);
+
+  // Live Green Dot + Tier Badge
+  ctx.fillStyle = '#34D399';
+  ctx.beginPath();
+  ctx.arc(W - 140, 55, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#E2E8F0';
+  ctx.font = '700 14px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(profile.tier.toUpperCase(), W - 42, 60);
+
+  // Divider line
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(40, 82);
+  ctx.lineTo(W - 40, 82);
+  ctx.stroke();
+
+  // Central Glowing Hex Rank Crest
+  const cx = W / 2;
+  const cy = 200;
+  ctx.save();
+  ctx.strokeStyle = pal.hexPrimary;
+  ctx.lineWidth = 3;
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 2;
+    const px = cx + Math.cos(a) * 66;
+    const py = cy + Math.sin(a) * 66;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Inner Glowing KΛ Mark inside Hex Crest
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '900 40px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('KΛ', cx, cy + 2);
+  ctx.restore();
+
+  // Skin Class Tag Pill
+  ctx.fillStyle = `${pal.hexPrimary}28`;
+  roundRectPath(ctx, cx - 108, 286, 216, 28, 14);
+  ctx.fill();
+  ctx.strokeStyle = `${pal.hexAccent}88`;
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  ctx.fillStyle = pal.hexAccent;
+  ctx.font = '700 12px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(pal.skinTitle, cx, 300);
+
+  // Player Callsign & College
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '800 34px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  const safeName = (profile.playerName || 'DUELIST').slice(0, 16);
+  ctx.fillText(safeName, cx, 362);
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '600 16px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.fillText((profile.playerCollege || 'KOLLABRIX').slice(0, 26), cx, 392);
+
+  // Big Glowing ELO Showcase Box
+  roundRectPath(ctx, 42, 422, W - 84, 110, 18);
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = '700 13px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.fillText('COMPETITIVE RATING', cx, 452);
+
+  ctx.fillStyle = '#FBBF24';
+  ctx.font = '900 48px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.fillText(`${profile.elo.toLocaleString()} ELO`, cx, 506);
+
+  // 3-Column Stats Row (WINS | WIN % | STREAK)
+  const totalMatches = profile.wins + profile.losses;
+  const winPct = totalMatches > 0 ? Math.round((profile.wins / totalMatches) * 100) : 0;
+  const stats = [
+    { label: 'WINS', val: String(profile.wins), col: '#34D399' },
+    { label: 'WIN %', val: `${winPct}%`, col: '#F8FAFC' },
+    { label: 'STREAK', val: `${profile.winStreak}x`, col: '#FBBF24' },
+  ];
+  const cardW = (W - 108) / 3;
+  stats.forEach((st, i) => {
+    const bx = 42 + i * (cardW + 12);
+    roundRectPath(ctx, bx, 552, cardW, 92, 14);
+    ctx.fillStyle = 'rgba(7, 11, 20, 0.9)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.09)';
+    ctx.stroke();
+
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '700 12px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.fillText(st.label, bx + cardW / 2, 580);
+
+    ctx.fillStyle = st.col;
+    ctx.font = '900 28px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.fillText(st.val, bx + cardW / 2, 622);
+  });
+
+  // Footer Active Weapon & Combat Mode Pill
+  roundRectPath(ctx, 42, 666, W - 84, 58, 14);
+  ctx.fillStyle = `${pal.hexPrimary}1F`;
+  ctx.fill();
+  ctx.strokeStyle = `${pal.hexPrimary}66`;
+  ctx.stroke();
+
+  const langLabel =
+    profile.algoLanguage === 'cpp'
+      ? 'C++20 STL'
+      : profile.algoLanguage === 'java'
+      ? 'JAVA 21'
+      : profile.algoLanguage === 'web'
+      ? 'HTML / JS'
+      : 'PYTHON 3';
+  const modeLabel =
+    profile.combatMode === 'bug_hunt'
+      ? '60S BUG HUNT'
+      : profile.combatMode === 'web_clash'
+      ? 'WEB PIXEL CLASH'
+      : profile.combatMode === 'custom'
+      ? 'CUSTOM ARENA'
+      : '1V1 QUICK BLITZ';
+
+  ctx.fillStyle = '#F8FAFC';
+  ctx.font = '700 15px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.fillText(`${langLabel}   •   ${modeLabel}`, cx, 701);
+}
+
+function drawBackPlate(canvas: HTMLCanvasElement, profile: DuelistTabletProfile) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const pal = AVATAR_3D_PALETTES[profile.avatarId] || AVATAR_3D_PALETTES.walker;
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, '#0D131F');
+  bg.addColorStop(0.5, '#070A12');
+  bg.addColorStop(1, '#111827');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = `${pal.hexPrimary}44`;
+  ctx.lineWidth = 2;
+  roundRectPath(ctx, 24, 24, W - 48, H - 48, 22);
+  ctx.stroke();
+
+  // Circuit Spine Line down the back
+  ctx.strokeStyle = pal.hexPrimary;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 70);
+  ctx.lineTo(W / 2, H - 70);
+  ctx.stroke();
+
+  // Emblem Box
+  roundRectPath(ctx, W / 2 - 90, H / 2 - 90, 180, 180, 28);
+  ctx.fillStyle = '#060910';
+  ctx.fill();
+  ctx.strokeStyle = pal.hexAccent;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '900 72px system-ui, -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('KΛ', W / 2, H / 2);
+
+  ctx.fillStyle = pal.hexAccent;
+  ctx.font = '700 14px ui-monospace, SFMono-Regular, Menlo, monospace';
+  ctx.fillText('KOLLABRIX ARENA HARDWARE', W / 2, 110);
+  ctx.fillStyle = '#94A3B8';
+  ctx.fillText(`SERIAL // S01-${(profile.playerName || 'USER').slice(0, 10).toUpperCase()}`, W / 2, H - 96);
+}
+
 /**
- * Builds an elite stylized 3D Tactical Cyber-Duelist / Esports Armored Operator:
- * - Angular stealth helmet with glowing curved tactical visor & comm-fins
- * - V-tapered carbon-fiber chest armor with glowing KΛ reactor core
- * - Twin rear holographic energy wing blades (intensity scales with Rank/Streak)
- * - Floating holographic code-cube drone orbiting the right shoulder
- * - Athletic combat stance with greaves, gauntlets, and armored boots
+ * Builds the interactive 3D Floating Holographic Duelist Profile Tablet ("KΛ Cyber-Slate"):
+ * - Chamfered Carbon-Titanium Chassis with glowing neon armor trim
+ * - Crisp live high-DPI Front Screen displaying live ELO, Callsign, Tier, Wins, Streak & Weapon Loadout
+ * - Engraved Titanium Backplate with glowing KΛ hardware spine (looks sleek from all 360° drag angles)
+ * - Orbiting tilted wireframe halo ring & twin floating holo-crystals
  */
 export function buildCyberDuelist3D(
   avatarId: string,
-  opts?: { elo?: number; wins?: number; streak?: number }
+  opts?: Partial<DuelistTabletProfile>
 ): Built3DDuelist {
-  const pal = AVATAR_3D_PALETTES[avatarId] || AVATAR_3D_PALETTES.walker;
-  const elo = opts?.elo ?? 1200;
-  const wins = opts?.wins ?? 0;
-  const streak = opts?.streak ?? 0;
+  let currentProfile: DuelistTabletProfile = {
+    avatarId,
+    playerName: opts?.playerName || 'Builder',
+    playerCollege: opts?.playerCollege || 'KOLLABRIX',
+    tier: opts?.tier || 'SILVER I',
+    elo: opts?.elo ?? 1200,
+    wins: opts?.wins ?? 0,
+    losses: opts?.losses ?? 0,
+    winStreak: opts?.winStreak ?? 0,
+    algoLanguage: opts?.algoLanguage || 'python',
+    combatMode: opts?.combatMode || 'blitz',
+  };
 
-  const rankColor =
-    elo >= 1800 ? 0xc026d3 : elo >= 1300 ? 0xf59e0b : pal.wingGlow;
-  const wingScale = 1 + Math.min(0.45, wins * 0.04 + streak * 0.06);
+  let pal = AVATAR_3D_PALETTES[currentProfile.avatarId] || AVATAR_3D_PALETTES.walker;
 
   const root = new THREE.Group();
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
+  const textures: THREE.Texture[] = [];
 
   const tg = <T extends THREE.BufferGeometry>(g: T): T => {
     geometries.push(g);
@@ -97,290 +400,169 @@ export function buildCyberDuelist3D(
     return m;
   };
 
-  const armorMat = tm(
+  const tablet = new THREE.Group();
+  tablet.position.set(0, 1.18, 0);
+  root.add(tablet);
+
+  // 1. Beveled Titanium-Obsidian Tablet Chassis (1.22 x 1.72)
+  const chassisShape = createRoundedRectShape(1.22, 1.72, 0.085);
+  const chassisGeo = tg(
+    new THREE.ExtrudeGeometry(chassisShape, {
+      depth: 0.048,
+      bevelEnabled: true,
+      bevelThickness: 0.016,
+      bevelSize: 0.016,
+      bevelSegments: 4,
+    })
+  );
+  chassisGeo.center();
+
+  const chassisMat = tm(
     new THREE.MeshStandardMaterial({
       color: pal.armorMain,
-      roughness: 0.34,
-      metalness: 0.72,
+      metalness: 0.85,
+      roughness: 0.24,
     })
   );
-  const darkPlateMat = tm(
+  const chassisMesh = new THREE.Mesh(chassisGeo, chassisMat);
+  tablet.add(chassisMesh);
+
+  // Side Glowing Neon Trim Rails
+  const railMat = tm(new THREE.MeshBasicMaterial({ color: pal.visorGlow }));
+  [-0.63, 0.63].forEach((rx) => {
+    const rail = new THREE.Mesh(tg(new THREE.BoxGeometry(0.018, 1.32, 0.024)), railMat);
+    rail.position.set(rx, 0, 0);
+    tablet.add(rail);
+  });
+
+  // 4 Corner Armor Anchor Brackets
+  const bracketMat = tm(
     new THREE.MeshStandardMaterial({
-      color: pal.armorDark,
-      roughness: 0.48,
-      metalness: 0.62,
+      color: 0x0b1120,
+      metalness: 0.9,
+      roughness: 0.2,
     })
   );
-  const underSuitMat = tm(
-    new THREE.MeshStandardMaterial({
-      color: pal.suitUnder,
-      roughness: 0.78,
-      metalness: 0.18,
-    })
-  );
-  const visorMat = tm(
+  [
+    [-0.58, 0.82],
+    [0.58, 0.82],
+    [-0.58, -0.82],
+    [0.58, -0.82],
+  ].forEach(([bx, by]) => {
+    const bracket = new THREE.Mesh(tg(new THREE.BoxGeometry(0.14, 0.14, 0.092)), bracketMat);
+    bracket.position.set(bx, by, 0);
+    tablet.add(bracket);
+  });
+
+  // 2. Live High-DPI Front Profile Screen CanvasTexture
+  const frontCanvas = document.createElement('canvas');
+  frontCanvas.width = 512;
+  frontCanvas.height = 768;
+  drawFrontScreen(frontCanvas, currentProfile);
+  const frontTex = new THREE.CanvasTexture(frontCanvas);
+  frontTex.colorSpace = THREE.SRGBColorSpace;
+  frontTex.anisotropy = 4;
+  textures.push(frontTex);
+
+  const frontScreenMat = tm(
     new THREE.MeshBasicMaterial({
-      color: pal.visorGlow,
+      map: frontTex,
     })
   );
-  const trimMat = tm(
-    new THREE.MeshBasicMaterial({
-      color: pal.accentTrim,
-    })
-  );
-  const wingMat = tm(
-    new THREE.MeshBasicMaterial({
-      color: rankColor,
+  const frontScreen = new THREE.Mesh(tg(new THREE.PlaneGeometry(1.12, 1.62)), frontScreenMat);
+  frontScreen.position.z = 0.044;
+  tablet.add(frontScreen);
+
+  // Subtle Glossy Glass Reflection Overlay on Front Screen
+  const glassSheenMat = tm(
+    new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.42,
-      side: THREE.DoubleSide,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+      opacity: 0.05,
+      roughness: 0.08,
+      metalness: 0.1,
+      clearcoat: 1.0,
     })
   );
-  const wingWireMat = tm(
+  const glassSheen = new THREE.Mesh(tg(new THREE.PlaneGeometry(1.12, 1.62)), glassSheenMat);
+  glassSheen.position.z = 0.046;
+  tablet.add(glassSheen);
+
+  // 3. Engraved Titanium Backplate (360° Drag View)
+  const backCanvas = document.createElement('canvas');
+  backCanvas.width = 512;
+  backCanvas.height = 768;
+  drawBackPlate(backCanvas, currentProfile);
+  const backTex = new THREE.CanvasTexture(backCanvas);
+  backTex.colorSpace = THREE.SRGBColorSpace;
+  textures.push(backTex);
+
+  const backPlateMat = tm(new THREE.MeshBasicMaterial({ map: backTex }));
+  const backPlate = new THREE.Mesh(tg(new THREE.PlaneGeometry(1.12, 1.62)), backPlateMat);
+  backPlate.position.z = -0.044;
+  backPlate.rotation.y = Math.PI;
+  tablet.add(backPlate);
+
+  // 4. Orbiting Holographic Halo & Twin Wireframe Code Crystals
+  const orbitHaloMat = tm(
     new THREE.MeshBasicMaterial({
       color: pal.accentTrim,
       wireframe: true,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.35,
     })
   );
+  const orbitHalo = new THREE.Mesh(tg(new THREE.TorusGeometry(1.12, 0.01, 6, 64)), orbitHaloMat);
+  orbitHalo.rotation.set(1.18, 0.28, 0);
+  tablet.add(orbitHalo);
 
-  const duelist = new THREE.Group();
-  root.add(duelist);
-
-  // =========================================================================
-  // 1. ATHLETIC COMBAT BOOTS, GREAVES & KNEE PLATES (y = 0.0 -> 0.88)
-  // =========================================================================
-  [-1, 1].forEach((side) => {
-    const leg = new THREE.Group();
-    leg.position.set(side * 0.17, 0, 0);
-    leg.rotation.y = side * 0.1;
-    leg.rotation.z = side * -0.04;
-    duelist.add(leg);
-
-    const bootSole = new THREE.Mesh(tg(new THREE.BoxGeometry(0.145, 0.05, 0.3)), darkPlateMat);
-    bootSole.position.set(0, 0.025, 0.04);
-    leg.add(bootSole);
-
-    const bootUpper = new THREE.Mesh(tg(new THREE.BoxGeometry(0.13, 0.14, 0.25)), armorMat);
-    bootUpper.position.set(0, 0.11, 0.03);
-    leg.add(bootUpper);
-
-    const bootTrim = new THREE.Mesh(tg(new THREE.BoxGeometry(0.136, 0.018, 0.255)), trimMat);
-    bootTrim.position.set(0, 0.06, 0.03);
-    leg.add(bootTrim);
-
-    const shin = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.075, 0.064, 0.36, 8)), armorMat);
-    shin.position.set(0, 0.34, 0);
-    leg.add(shin);
-
-    const knee = new THREE.Mesh(tg(new THREE.OctahedronGeometry(0.078, 0)), darkPlateMat);
-    knee.position.set(0, 0.52, 0.045);
-    knee.scale.set(0.9, 1.15, 0.65);
-    leg.add(knee);
-
-    const thigh = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.095, 0.078, 0.36, 8)), underSuitMat);
-    thigh.position.set(0, 0.71, 0);
-    leg.add(thigh);
-
-    const thighPlate = new THREE.Mesh(tg(new THREE.BoxGeometry(0.11, 0.24, 0.14)), armorMat);
-    thighPlate.position.set(side * 0.025, 0.72, 0.01);
-    leg.add(thighPlate);
-  });
-
-  // =========================================================================
-  // 2. TACTICAL BELT & V-TAPERED TORSO ARMOR (y = 0.88 -> 1.48)
-  // =========================================================================
-  const upperBody = new THREE.Group();
-  upperBody.position.set(0, 0.9, 0);
-  duelist.add(upperBody);
-
-  const belt = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.19, 0.18, 0.11, 10)), darkPlateMat);
-  belt.position.set(0, 0.02, 0);
-  belt.scale.set(1.15, 1, 0.75);
-  upperBody.add(belt);
-
-  const beltBuckle = new THREE.Mesh(tg(new THREE.BoxGeometry(0.1, 0.06, 0.04)), visorMat);
-  beltBuckle.position.set(0, 0.02, 0.14);
-  upperBody.add(beltBuckle);
-
-  const abdomen = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.21, 0.165, 0.24, 10)), underSuitMat);
-  abdomen.position.set(0, 0.18, 0);
-  abdomen.scale.set(1.15, 1, 0.75);
-  upperBody.add(abdomen);
-
-  const chest = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.275, 0.205, 0.32, 10)), armorMat);
-  chest.position.set(0, 0.42, 0);
-  chest.scale.set(1.16, 1, 0.78);
-  upperBody.add(chest);
-
-  const frontRig = new THREE.Mesh(tg(new THREE.BoxGeometry(0.32, 0.22, 0.08)), darkPlateMat);
-  frontRig.position.set(0, 0.43, 0.155);
-  upperBody.add(frontRig);
-
-  const reactorCore = new THREE.Mesh(tg(new THREE.OctahedronGeometry(0.058, 0)), visorMat);
-  reactorCore.position.set(0, 0.44, 0.2);
-  reactorCore.scale.set(1.0, 1.3, 0.4);
-  upperBody.add(reactorCore);
-
-  [-1, 1].forEach((side) => {
-    const chevron = new THREE.Mesh(tg(new THREE.BoxGeometry(0.16, 0.02, 0.02)), trimMat);
-    chevron.position.set(side * 0.095, 0.47, 0.2);
-    chevron.rotation.z = side * 0.42;
-    upperBody.add(chevron);
-  });
-
-  const collar = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.13, 0.16, 0.12, 12)), darkPlateMat);
-  collar.position.set(0, 0.59, -0.01);
-  upperBody.add(collar);
-
-  // =========================================================================
-  // 3. TWIN REAR HOLOGRAPHIC ENERGY WINGS (Esports Aura)
-  // =========================================================================
-  const wingsGroup = new THREE.Group();
-  wingsGroup.position.set(0, 0.46, -0.18);
-  wingsGroup.scale.setScalar(wingScale);
-  upperBody.add(wingsGroup);
-
-  [-1, 1].forEach((side) => {
-    const wingShape = new THREE.Shape();
-    wingShape.moveTo(0, 0);
-    wingShape.lineTo(side * 0.62, 0.34);
-    wingShape.lineTo(side * 0.78, 0.16);
-    wingShape.lineTo(side * 0.34, -0.26);
-    wingShape.lineTo(0, -0.14);
-    wingShape.closePath();
-
-    const wingGeo = tg(new THREE.ShapeGeometry(wingShape));
-    const wingMesh = new THREE.Mesh(wingGeo, wingMat);
-    wingMesh.position.set(side * 0.1, 0.06, -0.02);
-    wingMesh.rotation.y = side * -0.22;
-    wingsGroup.add(wingMesh);
-
-    const wingFrame = new THREE.Mesh(wingGeo, wingWireMat);
-    wingFrame.position.set(side * 0.1, 0.06, -0.025);
-    wingFrame.rotation.y = side * -0.22;
-    wingsGroup.add(wingFrame);
-  });
-
-  // =========================================================================
-  // 4. PAULDRONS, ARTICULATED ARMS & HOLO-GAUNTLETS
-  // =========================================================================
-  const leftArm = new THREE.Group();
-  const rightArm = new THREE.Group();
-  [
-    { arm: leftArm, side: -1 },
-    { arm: rightArm, side: 1 },
-  ].forEach(({ arm, side }) => {
-    arm.position.set(side * 0.34, 0.51, 0);
-    arm.rotation.z = side * 0.14;
-    upperBody.add(arm);
-
-    const pauldron = new THREE.Mesh(tg(new THREE.BoxGeometry(0.17, 0.14, 0.2)), armorMat);
-    pauldron.position.set(side * 0.02, 0.03, 0);
-    pauldron.rotation.z = side * -0.22;
-    arm.add(pauldron);
-
-    const pauldronTrim = new THREE.Mesh(tg(new THREE.BoxGeometry(0.175, 0.02, 0.205)), trimMat);
-    pauldronTrim.position.set(side * 0.02, 0.075, 0);
-    pauldronTrim.rotation.z = side * -0.22;
-    arm.add(pauldronTrim);
-
-    const upperArm = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.064, 0.056, 0.24, 8)), underSuitMat);
-    upperArm.position.set(0, -0.12, 0);
-    arm.add(upperArm);
-
-    const gauntlet = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.066, 0.054, 0.24, 8)), darkPlateMat);
-    gauntlet.position.set(0, -0.35, 0.02);
-    gauntlet.rotation.x = -0.16;
-    arm.add(gauntlet);
-
-    const wristGlow = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.069, 0.069, 0.026, 8)), visorMat);
-    wristGlow.position.set(0, -0.36, 0.02);
-    wristGlow.rotation.x = -0.16;
-    arm.add(wristGlow);
-
-    const fist = new THREE.Mesh(tg(new THREE.BoxGeometry(0.085, 0.09, 0.095)), armorMat);
-    fist.position.set(0, -0.49, 0.045);
-    arm.add(fist);
-  });
-
-  // =========================================================================
-  // 5. STEALTH CYBER-HELMET & GLOWING TACTICAL VISOR (y = 0.68 -> 1.02)
-  // =========================================================================
-  const head = new THREE.Group();
-  head.position.set(0, 0.77, 0.01);
-  upperBody.add(head);
-
-  const cranium = new THREE.Mesh(tg(new THREE.SphereGeometry(0.175, 16, 14)), armorMat);
-  cranium.scale.set(0.92, 1.08, 1.04);
-  head.add(cranium);
-
-  const jawMask = new THREE.Mesh(tg(new THREE.CylinderGeometry(0.12, 0.095, 0.12, 8)), darkPlateMat);
-  jawMask.position.set(0, -0.09, 0.045);
-  jawMask.scale.set(1.0, 1, 1.15);
-  head.add(jawMask);
-
-  const visor = new THREE.Mesh(
-    tg(new THREE.CylinderGeometry(0.168, 0.168, 0.072, 16, 1, false, -Math.PI * 0.34, Math.PI * 0.68)),
-    visorMat
+  const crystalMat = tm(
+    new THREE.MeshBasicMaterial({
+      color: pal.visorGlow,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.85,
+    })
   );
-  visor.position.set(0, 0.018, 0.028);
-  head.add(visor);
+  const crystalGeo = tg(new THREE.OctahedronGeometry(0.11, 0));
+  const crystalTopRight = new THREE.Mesh(crystalGeo, crystalMat);
+  crystalTopRight.position.set(0.84, 0.62, 0.14);
+  tablet.add(crystalTopRight);
 
-  const crestFin = new THREE.Mesh(tg(new THREE.BoxGeometry(0.028, 0.085, 0.22)), trimMat);
-  crestFin.position.set(0, 0.155, -0.01);
-  crestFin.rotation.x = -0.18;
-  head.add(crestFin);
-
-  [-1, 1].forEach((side) => {
-    const earFin = new THREE.Mesh(tg(new THREE.BoxGeometry(0.032, 0.14, 0.1)), darkPlateMat);
-    earFin.position.set(side * 0.165, 0.02, -0.02);
-    earFin.rotation.x = -0.25;
-    head.add(earFin);
-
-    const earGlow = new THREE.Mesh(tg(new THREE.BoxGeometry(0.036, 0.06, 0.025)), visorMat);
-    earGlow.position.set(side * 0.167, 0.03, -0.02);
-    head.add(earGlow);
-  });
-
-  // =========================================================================
-  // 6. FLOATING HOLOGRAPHIC COMPANION DRONE (Right Shoulder Orbit)
-  // =========================================================================
-  const drone = new THREE.Group();
-  drone.position.set(0.56, 0.78, 0.08);
-  upperBody.add(drone);
-
-  const droneCore = new THREE.Mesh(tg(new THREE.OctahedronGeometry(0.075, 0)), visorMat);
-  drone.add(droneCore);
-
-  const droneRing = new THREE.Mesh(tg(new THREE.TorusGeometry(0.11, 0.008, 8, 28)), trimMat);
-  droneRing.rotation.x = Math.PI / 3;
-  drone.add(droneRing);
+  const crystalBottomLeft = new THREE.Mesh(crystalGeo, crystalMat);
+  crystalBottomLeft.position.set(-0.84, -0.58, 0.12);
+  tablet.add(crystalBottomLeft);
 
   return {
     root,
+    updateProfile: (next) => {
+      currentProfile = { ...currentProfile, ...next };
+      pal = AVATAR_3D_PALETTES[currentProfile.avatarId] || AVATAR_3D_PALETTES.walker;
+      chassisMat.color.setHex(pal.armorMain);
+      railMat.color.setHex(pal.visorGlow);
+      orbitHaloMat.color.setHex(pal.accentTrim);
+      crystalMat.color.setHex(pal.visorGlow);
+      drawFrontScreen(frontCanvas, currentProfile);
+      frontTex.needsUpdate = true;
+      drawBackPlate(backCanvas, currentProfile);
+      backTex.needsUpdate = true;
+    },
     update: (t: number) => {
-      const breath = Math.sin(t * 2.2) * 0.018;
-      upperBody.position.y = 0.9 + breath;
-      upperBody.rotation.y = Math.sin(t * 1.1) * 0.045;
-      head.rotation.y = Math.sin(t * 0.9) * 0.06;
-      head.rotation.x = Math.sin(t * 1.6) * 0.025;
+      // Smooth zero-gravity levitation & subtle combat pitch
+      tablet.position.y = 1.18 + Math.sin(t * 1.9) * 0.055;
+      tablet.rotation.x = -0.05 + Math.sin(t * 1.3) * 0.025;
+      tablet.rotation.z = Math.cos(t * 1.1) * 0.02;
 
-      leftArm.rotation.x = Math.sin(t * 2.0) * 0.04;
-      rightArm.rotation.x = -Math.sin(t * 2.0) * 0.04;
-
-      wingMat.opacity = 0.36 + Math.sin(t * 3.0) * 0.12;
-
-      drone.position.y = 0.78 + Math.sin(t * 2.6) * 0.06;
-      drone.rotation.y = t * 1.8;
-      droneRing.rotation.z = t * 2.4;
+      orbitHalo.rotation.z = t * 0.45;
+      crystalTopRight.rotation.y = t * 1.4;
+      crystalTopRight.position.y = 0.62 + Math.sin(t * 2.4) * 0.05;
+      crystalBottomLeft.rotation.y = -t * 1.4;
+      crystalBottomLeft.position.y = -0.58 + Math.cos(t * 2.4) * 0.05;
     },
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
+      textures.forEach((tx) => tx.dispose());
     },
   };
 }
