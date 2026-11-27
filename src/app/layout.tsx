@@ -369,17 +369,7 @@ export default function RootLayout({
       <head>
         <meta name="google-site-verification" content="wm68NYFDShG-kXFb2jCPuUuSNRoOvIMk1ufsUt8Ih6s" />
         <meta name="google-site-verification" content="_9e80URLBq4PkCGyKTfFe_xXUFATPCms4P4zxPGcJk4" />
-        <link rel="icon" href="/kollabrix-favicon-v2.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="48x48" href="/kollabrix-icon-48.png" />
-        <link rel="icon" type="image/png" sizes="96x96" href="/kollabrix-icon-96.png" />
-        <link rel="icon" type="image/png" sizes="144x144" href="/kollabrix-icon-144.png" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/kollabrix-icon-192.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/kollabrix-apple-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="application-name" content="Kollabrix" />
-        <meta name="apple-mobile-web-app-title" content="Kollabrix" />
-        <meta name="site_name" content="Kollabrix" />
-        <meta property="og:site_name" content="Kollabrix" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

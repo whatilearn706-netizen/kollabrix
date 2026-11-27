@@ -18,6 +18,12 @@ export async function middleware(request: NextRequest) {
   const shareDomain = isKollabrixProdDomain(host);
   const { pathname } = request.nextUrl;
 
+  if (brand && pathname === '/favicon.ico') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/ka-favicon.ico';
+    return NextResponse.rewrite(url);
+  }
+
   if (brand && pathname === '/sitemap.xml') {
     const url = request.nextUrl.clone();
     url.pathname = '/api/ka-sitemap';
@@ -133,5 +139,6 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|brand/|api/compiler/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm|pdf|pptx)$).*)',
     '/sitemap.xml',
     '/robots.txt',
+    '/favicon.ico',
   ],
 };
