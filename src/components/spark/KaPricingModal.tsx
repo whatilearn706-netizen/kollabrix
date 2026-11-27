@@ -104,7 +104,7 @@ export function KaPricingModal({
           email: orderData.userEmail || '',
         },
         theme: {
-          color: '#f59e0b',
+          color: '#e2e8f0',
         },
         handler: async function (response: any) {
           try {
@@ -197,7 +197,11 @@ export function KaPricingModal({
       aria-labelledby="ka-pricing-title"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-5 overflow-y-auto"
     >
-      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#0b0d13] border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.85)] p-5 sm:p-6 text-white my-auto">
+      <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-3xl bg-[#05070C] border border-white/12 shadow-[0_32px_100px_rgba(0,0,0,0.95)] p-5 sm:p-6 text-white my-auto">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-slate-300/60 to-transparent"
+        />
         <button
           type="button"
           onClick={onClose}
@@ -209,23 +213,26 @@ export function KaPricingModal({
 
         {/* Header */}
         <div className="text-center max-w-xl mx-auto space-y-1.5 mb-5">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[11px] font-bold tracking-wider uppercase">
-            <Crown className="w-3.5 h-3.5" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/15 text-slate-200 text-[11px] font-mono font-bold tracking-wider uppercase">
+            <Crown className="w-3.5 h-3.5 text-slate-300" />
             <span>KΛ ΛI Builder Plans</span>
           </div>
-          <h2 id="ka-pricing-title" className="text-xl sm:text-2xl font-black tracking-tight">
+          <h2
+            id="ka-pricing-title"
+            className="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent"
+          >
             Win Hackathons &amp; Crack Placements Faster
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400">
             Low-friction student UPI pricing. Unlock Judge Audits, AI Squad Matching, Unlimited Bug Coach &amp; Verified Passport.
           </p>
           {reason && (
-            <div className="mt-3 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-400/30 text-xs text-amber-200 font-medium">
+            <div className="mt-3 px-3.5 py-2 rounded-xl bg-white/[0.05] border border-white/15 text-xs text-slate-200 font-medium">
               {reason}
             </div>
           )}
           {entitlements && entitlements.planId !== 'free' && (
-            <div className="mt-2 px-3.5 py-2 rounded-xl bg-cyan-500/10 border border-cyan-400/30 text-[11px] text-cyan-200">
+            <div className="mt-2 px-3.5 py-2 rounded-xl bg-sky-500/10 border border-sky-400/25 text-[11px] text-sky-200">
               Active Plan: <strong className="text-white">{entitlements.planName}</strong>
               {entitlements.expiresAt ? ` · Valid until ${new Date(entitlements.expiresAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}
               {entitlements.nextResetAt ? ` · Daily quota resets at ${new Date(entitlements.nextResetAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}` : ''}
@@ -297,19 +304,19 @@ export function KaPricingModal({
           </div>
 
           {/* 2. Hackathon Sprint Pass ₹49 */}
-          <div className="relative rounded-2xl bg-[#0f1824] border border-cyan-400/40 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#0E1524] to-[#080B13] border border-sky-400/35 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_30px_rgba(56,189,248,0.08)]">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1">
                   <Zap className="w-3.5 h-3.5" />
                   Hackathon Pass
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-[10px] font-bold text-cyan-300">
+                <span className="px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/25 text-[10px] font-mono font-bold text-sky-200">
                   7-DAY SPRINT
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black text-cyan-300">₹49</span>
+                <span className="text-3xl font-black text-white">₹49</span>
                 <span className="text-xs text-zinc-400">/ 7 days</span>
               </div>
               <p className="text-xs text-zinc-400">
@@ -317,15 +324,15 @@ export function KaPricingModal({
               </p>
               <ul className="space-y-2 pt-2 text-xs text-zinc-200">
                 <li className="flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                  <span className="font-semibold text-cyan-200">10 KΛ-Pro + 10 KΛ-1 msgs/day (Hackathon Studio only)</span>
+                  <Sparkles className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
+                  <span className="font-semibold text-sky-200">10 KΛ-Pro + 10 KΛ-1 msgs/day (Hackathon Studio only)</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
                   <span>AI Screening PPT Deck (.pptx) &amp; Cut-List</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                  <Check className="w-3.5 h-3.5 text-sky-400 shrink-0 mt-0.5" />
                   <span>2-Min Demo Timer, Repo README/SQL &amp; Judge Re-Audit</span>
                 </li>
               </ul>
@@ -334,7 +341,7 @@ export function KaPricingModal({
             {!isAuth ? (
               <Link
                 href="/login"
-                className="w-full py-2.5 rounded-xl bg-cyan-400 text-zinc-950 font-bold text-xs text-center hover:bg-cyan-300 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-b from-white to-slate-200 text-slate-950 font-bold text-xs text-center hover:brightness-105 transition-all"
               >
                 Sign in to Unlock ₹49 Pass
               </Link>
@@ -342,7 +349,7 @@ export function KaPricingModal({
               <button
                 type="button"
                 disabled
-                className="w-full py-2.5 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 font-bold text-xs"
+                className="w-full py-2.5 rounded-xl bg-sky-500/15 border border-sky-400/35 text-sky-200 font-bold text-xs"
               >
                 Active Sprint Pass
               </button>
@@ -352,7 +359,7 @@ export function KaPricingModal({
                   type="button"
                   disabled={loadingPlan === 'hackathon_pass'}
                   onClick={() => handleActivate('hackathon_pass', 'activate_demo')}
-                  className="w-full py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 shadow-glow"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-b from-white to-slate-200 hover:brightness-105 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-60"
                 >
                   {loadingPlan === 'hackathon_pass' ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -397,25 +404,29 @@ export function KaPricingModal({
           </div>
 
           {/* 3. KΛ Pro Builder ₹149/mo or ₹399/semester */}
-          <div className="rounded-2xl bg-gradient-to-b from-[#1a1625] to-[#12131c] border border-amber-400/45 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_40px_rgba(245,158,11,0.12)]">
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#141824] via-[#0B0E17] to-[#07090F] border border-slate-300/40 p-5 flex flex-col justify-between space-y-5 shadow-[0_0_45px_rgba(226,232,240,0.12)] overflow-hidden">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/75 to-transparent"
+            />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-slate-200" />
                   KΛ Pro Builder
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-[10px] font-bold text-amber-300">
+                <span className="px-2 py-0.5 rounded-full bg-white/15 border border-white/25 text-[10px] font-mono font-bold text-white">
                   POPULAR
                 </span>
               </div>
 
               {/* Monthly vs Semester Toggle */}
-              <div className="inline-flex p-0.5 rounded-lg bg-black/40 border border-white/10 text-[11px]">
+              <div className="inline-flex p-0.5 rounded-lg bg-black/50 border border-white/12 text-[11px]">
                 <button
                   type="button"
                   onClick={() => setProBilling('pro_monthly')}
-                  className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer ${
-                    proBilling === 'pro_monthly' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer transition-colors ${
+                    proBilling === 'pro_monthly' ? 'bg-white text-slate-950' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   ₹149 / mo
@@ -423,8 +434,8 @@ export function KaPricingModal({
                 <button
                   type="button"
                   onClick={() => setProBilling('pro_semester')}
-                  className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer ${
-                    proBilling === 'pro_semester' ? 'bg-amber-400 text-zinc-950' : 'text-zinc-400 hover:text-white'
+                  className={`px-2.5 py-1 rounded-md font-semibold cursor-pointer transition-colors ${
+                    proBilling === 'pro_semester' ? 'bg-white text-slate-950' : 'text-zinc-400 hover:text-white'
                   }`}
                 >
                   ₹399 / sem
@@ -432,7 +443,7 @@ export function KaPricingModal({
               </div>
 
               <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-black">
+                <span className="text-3xl font-black text-white">
                   {proBilling === 'pro_monthly' ? '₹149' : '₹399'}
                 </span>
                 <span className="text-xs text-zinc-400">
@@ -442,19 +453,19 @@ export function KaPricingModal({
 
               <ul className="space-y-2 pt-1 text-xs text-zinc-200">
                 <li className="flex items-start gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <Sparkles className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
                   <span>30 KΛ-1 + 10 KΛ-Pro/day across Code, DSA, General &amp; Hackathons</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <Check className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
                   <span>Unlimited Practice IDE &amp; Arena Bug Coach</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
                   <span>Priority Teammate Boost + Builder Passport Export</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <Check className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <Check className="w-3.5 h-3.5 text-slate-300 shrink-0 mt-0.5" />
                   <span>Includes Judge Audit &amp; Squad Match</span>
                 </li>
               </ul>
@@ -463,7 +474,7 @@ export function KaPricingModal({
             {!isAuth ? (
               <Link
                 href="/login"
-                className="w-full py-2.5 rounded-xl bg-amber-400 text-zinc-950 font-bold text-xs text-center hover:bg-amber-300 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-b from-white via-slate-100 to-slate-300 text-slate-950 font-bold text-xs text-center hover:brightness-105 transition-all"
               >
                 Sign in to Go Pro
               </Link>
@@ -471,7 +482,7 @@ export function KaPricingModal({
               <button
                 type="button"
                 disabled
-                className="w-full py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 font-bold text-xs"
+                className="w-full py-2.5 rounded-xl bg-white/15 border border-white/30 text-white font-bold text-xs"
               >
                 Active KΛ Pro Builder
               </button>
@@ -481,7 +492,7 @@ export function KaPricingModal({
                   type="button"
                   disabled={loadingPlan === proBilling}
                   onClick={() => handleActivate(proBilling, 'activate_demo')}
-                  className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-60 shadow-glow"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-b from-white via-slate-100 to-slate-300 hover:brightness-105 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-60 shadow-[0_8px_28px_rgba(226,232,240,0.22)]"
                 >
                   {loadingPlan === proBilling ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

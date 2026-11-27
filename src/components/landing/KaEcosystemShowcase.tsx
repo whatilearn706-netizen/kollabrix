@@ -64,13 +64,13 @@ export function KaEcosystemShowcase() {
 
           <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.03em] leading-[1.08] bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
             Two dedicated engines.{' '}
-            <span className="text-sky-300">Built for your edge.</span>
+            <span className="bg-gradient-to-b from-zinc-300 via-zinc-400 to-zinc-600 bg-clip-text text-transparent">
+              Zero friction.
+            </span>
           </h2>
 
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
-            Beyond teams and arena duels, we crafted <strong className="text-zinc-200 font-medium">KΛ ΛI</strong> and{' '}
-            <strong className="text-zinc-200 font-medium">KΛ FOLIO</strong>—two standalone dark-luxury
-            products synced directly with your Kollabrix account.
+          <p className="pt-2 text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+            Standalone AI studio &amp; 12 coding volumes—built for speed and synced directly with your Kollabrix account.
           </p>
         </motion.div>
 

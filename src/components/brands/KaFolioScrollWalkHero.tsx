@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, type MotionValue, useScroll, useTransform } from 'motion/react';
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import type { CodingBook } from '@/data/kaCodexBooks';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
@@ -12,29 +12,165 @@ interface KaFolioScrollWalkHeroProps {
   onOpenIndex: () => void;
 }
 
-// Natural tilted resting poses on the dark architectural slab (matching pin.it/4WRF4Nmlx)
-const BOOK_POSES = [
-  { rot: -8, xOffset: -18 },
-  { rot: 11, xOffset: 24 },
-  { rot: -12, xOffset: -26 },
-  { rot: 7, xOffset: 16 },
-  { rot: -6, xOffset: -14 },
-  { rot: 13, xOffset: 28 },
-  { rot: -10, xOffset: -22 },
-  { rot: 8, xOffset: 18 },
-  { rot: -14, xOffset: -20 },
-  { rot: 9, xOffset: 24 },
-  { rot: -7, xOffset: -16 },
-  { rot: 10, xOffset: 14 },
+const BOOK_REST_POSES = [
+  { rot: -6, dx: -8, dy: 4, driftX: 160, driftY: -540, spinZ: -26 },
+  { rot: 8, dx: 12, dy: -6, driftX: -190, driftY: -520, spinZ: 28 },
+  { rot: -10, dx: -14, dy: 8, driftX: 210, driftY: -560, spinZ: -22 },
+  { rot: 5, dx: 10, dy: -4, driftX: -150, driftY: -540, spinZ: 24 },
+  { rot: -7, dx: -6, dy: 6, driftX: 180, driftY: -510, spinZ: -28 },
+  { rot: 11, dx: 14, dy: -8, driftX: -210, driftY: -550, spinZ: 22 },
+  { rot: -9, dx: -10, dy: 5, driftX: 170, driftY: -530, spinZ: -24 },
+  { rot: 6, dx: 8, dy: -5, driftX: -175, driftY: -560, spinZ: 26 },
+  { rot: -11, dx: -12, dy: 7, driftX: 195, driftY: -520, spinZ: -21 },
+  { rot: 9, dx: 11, dy: -6, driftX: -165, driftY: -540, spinZ: 25 },
+  { rot: -5, dx: -8, dy: 4, driftX: 185, driftY: -550, spinZ: -23 },
+  { rot: 7, dx: 6, dy: -3, driftX: -140, driftY: -500, spinZ: 18 },
 ];
 
+interface PavementBookLayerProps {
+  book: CodingBook;
+  index: number;
+  total: number;
+  scrollYProgress: MotionValue<number>;
+  isActive: boolean;
+}
+
 /**
- * Scroll-Driven Overhead "Street / Slab Walk" Hero for KΛ FOLIO (inspired by https://pin.it/4WRF4Nmlx):
- * - Sticky full-viewport camera looking down onto a dark textured concrete/obsidian path
- * - Warm overhead photographic spotlight pool + deep vignette corners
- * - All 12 curated coding books resting at natural tilted angles with realistic contact shadows
- * - Vertical scroll advances smoothly across 01/12 .. 12/12 while syncing the right-edge ruler & bottom-left HUD
- * - Clicking any book opens it in /resources?section=books&book=<id>; scrolling past 12/12 reveals Section 2 & Footer
+ * Individual coding book resting on the lit street stack.
+ * When its scroll window arrives, it peels up, tilts in 3D wind curl, and flies away,
+ * revealing the next coding volume beneath it (adapted from Oversight "Pavement" / pin.it/2TPD4XRJC).
+ */
+function PavementBookLayer({
+  book,
+  index,
+  total,
+  scrollYProgress,
+  isActive,
+}: PavementBookLayerProps) {
+  const pose = BOOK_REST_POSES[index % BOOK_REST_POSES.length];
+  const segments = Math.max(total - 1, 1);
+  const start = index / segments;
+  const peelMid = Math.min(1, start + 0.42 / segments);
+  const end = Math.min(1, (index + 0.96) / segments);
+  const isLast = index === total - 1;
+
+  // Last volume stays grounded at the bottom of the stack so the street never looks empty
+  const x = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [pose.dx, pose.dx, pose.dx, pose.dx] : [pose.dx, pose.dx, pose.dx + pose.driftX * 0.28, pose.dx + pose.driftX]
+  );
+  const y = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [pose.dy, pose.dy, pose.dy, pose.dy] : [pose.dy, pose.dy, pose.dy - 110, pose.dy + pose.driftY]
+  );
+  const rotateZ = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [pose.rot, pose.rot, pose.rot, pose.rot] : [pose.rot, pose.rot, pose.rot + pose.spinZ * 0.45, pose.rot + pose.spinZ]
+  );
+  const rotateX = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [12, 12, 8, 6] : [14, 14, 34, 48]
+  );
+  const rotateY = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [0, 0, 0, 0] : [0, 0, pose.driftX > 0 ? -18 : 18, pose.driftX > 0 ? -32 : 32]
+  );
+  const scale = useTransform(
+    scrollYProgress,
+    [0, Math.max(0, start - 1 / segments), start, peelMid, end],
+    isLast
+      ? [0.92, 0.96, 1, 1, 1]
+      : [Math.max(0.88, 1 - index * 0.015), 0.97, 1, 1.09, 1.18]
+  );
+  const opacity = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [1, 1, 1, 1] : [1, 1, 0.96, 0]
+  );
+  const shadowOpacity = useTransform(
+    scrollYProgress,
+    [0, start, peelMid, end],
+    isLast ? [0.85, 0.9, 0.9, 0.9] : [0.85, 0.9, 0.42, 0]
+  );
+
+  return (
+    <motion.div
+      style={{
+        x,
+        y,
+        rotateZ,
+        rotateX,
+        rotateY,
+        scale,
+        opacity,
+        zIndex: total - index,
+        transformOrigin: 'center 65%',
+      }}
+      className={`absolute w-[220px] sm:w-[270px] aspect-[2/3] ${
+        isActive ? 'pointer-events-auto' : 'pointer-events-none'
+      }`}
+    >
+      {/* Directional low-sun cast shadow on pavement beneath the book */}
+      <motion.div
+        aria-hidden="true"
+        style={{ opacity: shadowOpacity }}
+        className="pointer-events-none absolute -inset-3 translate-x-5 translate-y-7 rounded-xl bg-black/90 blur-xl"
+      />
+      <motion.div
+        aria-hidden="true"
+        style={{ opacity: shadowOpacity }}
+        className="pointer-events-none absolute inset-0 translate-x-2.5 translate-y-3.5 rounded-[7px] bg-black/75 blur-[5px]"
+      />
+
+      {/* Stepped stacked book paper block thickness */}
+      <div
+        aria-hidden="true"
+        style={{ backgroundColor: book.spineColor }}
+        className="absolute inset-0 translate-x-[5px] translate-y-[6px] rounded-[7px] border border-white/10"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 translate-x-[2px] translate-y-[3px] rounded-[7px] bg-[#D6D1C7]/25"
+      />
+
+      {/* Clickable Real Coding Volume Cover */}
+      <Link
+        href={`/resources?section=books&book=${encodeURIComponent(book.id)}`}
+        className="group relative block w-full h-full rounded-[7px] overflow-hidden border border-white/20 bg-[#181613] shadow-[0_24px_60px_rgba(0,0,0,0.92)] cursor-pointer"
+      >
+        <img
+          src={book.coverUrl}
+          alt={book.title}
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+        />
+
+        {/* Subtle Low-Sun Specular Raking Light across Paper Cover */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-50/15 via-transparent to-black/45"
+        />
+
+        {/* Clean Hover Read Prompt */}
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-between text-[10px] font-mono text-white">
+          <span>Open in Bookshelf</span>
+          <ArrowUpRight className="w-3 h-3" />
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+/**
+ * KΛ FOLIO Scroll-Driven "Pavement" 12-Book Stage (adapted from https://pin.it/2TPD4XRJC):
+ * - Low-altitude overhead view of a textured dark asphalt street lit by warm low-sun beams
+ * - All 12 coding classics stacked cleanly on the pavement; scrolling sequentially peels up & lifts each book in the wind
+ * - Synchronized bottom-left title/counter (01/12 .. 12/12) + right-edge jump ruler + Index 12 drawer
+ * - Scrolling past 12/12 seamlessly reveals Section 2 (Open Bound Spread + YouTube) and the Dark Footer
  */
 export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkHeroProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -45,10 +181,8 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
     offset: ['start start', 'end end'],
   });
 
-  // Translate the 12-book vertical path smoothly as user scrolls through the sticky track
   const totalSteps = Math.max(books.length - 1, 1);
-  const trackTranslateY = useTransform(scrollYProgress, [0, 1], ['0%', `-${totalSteps * 100}%`]);
-  const slabShiftY = useTransform(scrollYProgress, [0, 1], ['0px', '-720px']);
+  const streetParallaxY = useTransform(scrollYProgress, [0, 1], ['0px', '-260px']);
   const progressWidth = useTransform(scrollYProgress, [0, 1], ['8%', '100%']);
 
   useEffect(() => {
@@ -71,33 +205,42 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
   };
 
   return (
-    <section ref={trackRef} className="relative w-full h-[380vh] bg-[#12100E] select-none">
-      {/* Sticky Full-Viewport Overhead Stage */}
-      <div className="sticky top-0 w-full h-screen min-h-[640px] overflow-hidden bg-[#12100E]">
-        {/* Textured Dark Architectural Slab + Expansion Seams moving subtly with scroll */}
+    <section ref={trackRef} className="relative w-full h-[500vh] bg-[#100F0D] select-none">
+      {/* Sticky Overhead Pavement Camera */}
+      <div className="sticky top-0 w-full h-screen min-h-[650px] overflow-hidden bg-[#100F0D]">
+        {/* Realistic Asphalt Grain + Subtle Pavement Seams & Fractures */}
         <motion.div
           aria-hidden="true"
-          style={{ y: slabShiftY }}
-          className="pointer-events-none absolute -inset-y-96 inset-x-0 opacity-35"
+          style={{ y: streetParallaxY }}
+          className="pointer-events-none absolute -inset-y-72 inset-x-0"
         >
+          <svg className="w-full h-full opacity-[0.26]" xmlns="http://www.w3.org/2000/svg">
+            <filter id="paveGrain">
+              <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="3" stitchTiles="stitch" />
+              <feColorMatrix type="saturate" values="0" />
+            </filter>
+            <rect width="100%" height="100%" filter="url(#paveGrain)" />
+          </svg>
+          {/* Subtle Concrete Expansion Seams & Hairline Street Cracks */}
           <div
-            className="w-full h-full"
+            className="absolute inset-0 opacity-45"
             style={{
               backgroundImage: [
-                'repeating-linear-gradient(180deg, transparent 0px, transparent 238px, rgba(255,255,255,0.045) 239px, rgba(0,0,0,0.45) 240px)',
-                'repeating-linear-gradient(90deg, transparent 0px, transparent 318px, rgba(255,255,255,0.03) 319px, rgba(0,0,0,0.35) 320px)',
+                'repeating-linear-gradient(176deg, transparent 0px, transparent 280px, rgba(255,248,235,0.035) 281px, rgba(0,0,0,0.65) 283px)',
+                'repeating-linear-gradient(88deg, transparent 0px, transparent 360px, rgba(255,248,235,0.025) 361px, rgba(0,0,0,0.5) 363px)',
               ].join(', '),
             }}
           />
         </motion.div>
 
-        {/* Warm Overhead Photographic Spotlight Pool + Deep Corner Vignette (pin.it/4WRF4Nmlx) */}
+        {/* Warm Low-Sun Diagonal Light Pool + Deep Street Photograph Vignette */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
           style={{
             background: [
-              'radial-gradient(ellipse 52% 58% at 50% 47%, rgba(196,174,142,0.16) 0%, rgba(92,80,64,0.11) 38%, rgba(18,16,14,0.72) 72%, rgba(10,9,8,0.96) 100%)',
+              'radial-gradient(ellipse 46% 52% at 49% 46%, rgba(214,191,158,0.22) 0%, rgba(112,96,76,0.14) 36%, rgba(18,16,14,0.74) 70%, rgba(9,8,7,0.97) 100%)',
+              'linear-gradient(125deg, rgba(255,244,224,0.07) 0%, transparent 45%, rgba(0,0,0,0.65) 100%)',
             ].join(', '),
           }}
         />
@@ -110,9 +253,9 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
               <h2 className="text-sm sm:text-base font-semibold tracking-tight text-[#F4F3EF]">
                 KΛ FOLIO
               </h2>
-              <p className="text-[11px] sm:text-xs text-[#9A938A] mt-0.5">
-                12 coding volumes &middot;{' '}
-                <Link href="/" className="text-[#E5E0D7] hover:text-white underline underline-offset-2">
+              <p className="text-[11px] sm:text-xs text-[#A8A196] mt-0.5">
+                12 coding classics &middot;{' '}
+                <Link href="/" className="text-[#F4F3EF] hover:text-white underline underline-offset-2">
                   Built by Kollabrix
                 </Link>
               </p>
@@ -129,73 +272,24 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
           </button>
         </header>
 
-        {/* Scroll-Translated Path of the 12 Curated Coding Books */}
-        <div className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none">
-          <div className="relative w-full h-[360px] sm:h-[420px]">
-            <motion.div style={{ y: trackTranslateY }} className="w-full h-full">
-              {books.map((book, idx) => {
-                const pose = BOOK_POSES[idx % BOOK_POSES.length];
-                const isFocused = idx === activeIdx;
-                return (
-                  <div
-                    key={book.id}
-                    className="w-full h-full flex items-center justify-center px-4"
-                  >
-                    <Link
-                      href={`/resources?section=books&book=${encodeURIComponent(book.id)}`}
-                      style={{
-                        transform: `translateX(${pose.xOffset}px) rotate(${pose.rot}deg) scale(${
-                          isFocused ? 1 : 0.88
-                        })`,
-                      }}
-                      className={`pointer-events-auto group relative block w-[210px] sm:w-[250px] aspect-[2/3] rounded-[6px] transition-all duration-500 cursor-pointer ${
-                        isFocused ? 'opacity-100' : 'opacity-65 hover:opacity-95'
-                      }`}
-                    >
-                      {/* Realistic Directional Cast Contact Shadow on Concrete/Slab */}
-                      <div
-                        aria-hidden="true"
-                        className="absolute -inset-2 translate-x-4 translate-y-6 rounded-xl bg-black/85 blur-xl pointer-events-none"
-                      />
-                      <div
-                        aria-hidden="true"
-                        className="absolute inset-0 translate-x-2 translate-y-3 rounded-[6px] bg-black/70 blur-sm pointer-events-none"
-                      />
-
-                      {/* Subtle 3D Book Page-Block Edge Thickness */}
-                      <div
-                        aria-hidden="true"
-                        style={{ backgroundColor: book.spineColor }}
-                        className="absolute inset-0 translate-x-[5px] translate-y-[5px] rounded-[6px] border border-white/10"
-                      />
-
-                      {/* Real Coding Book Cover */}
-                      <div className="relative w-full h-full rounded-[6px] overflow-hidden border border-white/20 bg-[#1B1917] shadow-[0_20px_50px_rgba(0,0,0,0.9)] group-hover:scale-[1.03] transition-transform duration-300">
-                        <img
-                          src={book.coverUrl}
-                          alt={book.title}
-                          className="w-full h-full object-cover"
-                        />
-                        {/* Subtle Overhead Studio Specular Sheen */}
-                        <div
-                          aria-hidden="true"
-                          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/12 via-transparent to-black/35"
-                        />
-                        {/* Hover Read Pill */}
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 flex items-center justify-between text-[10px] font-mono text-white">
-                          <span>Read Volume</span>
-                          <ArrowUpRight className="w-3 h-3" />
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                );
-              })}
-            </motion.div>
-          </div>
+        {/* Center 3D Perspective Stack of 12 Coding Books (Peels up & lifts sequentially on scroll) */}
+        <div
+          style={{ perspective: '1350px' }}
+          className="relative z-20 w-full h-full flex items-center justify-center pointer-events-none pb-12"
+        >
+          {books.map((book, idx) => (
+            <PavementBookLayer
+              key={book.id}
+              book={book}
+              index={idx}
+              total={books.length}
+              scrollYProgress={scrollYProgress}
+              isActive={idx === activeIdx}
+            />
+          ))}
         </div>
 
-        {/* Right-Edge Vertical Ruler with Active Book Tick Label */}
+        {/* Right-Edge Vertical Scroll Ruler */}
         <aside
           aria-label="Volume scroll ruler"
           className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 flex flex-col items-end gap-2.5"
@@ -229,7 +323,7 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
           })}
         </aside>
 
-        {/* Bottom-Left Counter, Large Title & Metadata (matching Studio Pavé HUD) */}
+        {/* Bottom-Left HUD: Synchronized Counter, Large Editorial Title & Metadata */}
         <div className="absolute inset-x-0 bottom-0 z-30 px-5 sm:px-9 pb-6 sm:pb-7 flex flex-col gap-3 pointer-events-none">
           <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div className="space-y-1 max-w-2xl">
@@ -247,14 +341,14 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
                 href={`/resources?section=books&book=${encodeURIComponent(activeBook.id)}`}
                 className="pointer-events-auto group inline-flex items-baseline gap-2.5"
               >
-                <h1 className="text-3xl sm:text-5xl md:text-[54px] font-semibold tracking-[-0.035em] leading-[1.04] text-[#F4F3EF] group-hover:text-white transition-colors">
+                <h1 className="text-3xl sm:text-5xl md:text-[52px] font-semibold tracking-[-0.035em] leading-[1.04] text-[#F4F3EF] group-hover:text-white transition-colors">
                   {activeBook.title}
                 </h1>
                 <ArrowUpRight className="w-5 h-5 text-[#9A938A] group-hover:text-white shrink-0 transition-colors" />
               </Link>
 
               <p className="text-xs sm:text-sm text-[#A8A196]">
-                {activeBook.author} &middot; {activeBook.pages} pages &middot; {activeBook.year}
+                {activeBook.author} &middot; {activeBook.pages} pages &middot; Scroll to peel the stack &middot; click cover to read
               </p>
             </div>
 
@@ -262,13 +356,13 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
               href="#spotlight-stage"
               className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1C1A17]/85 hover:bg-[#282521] border border-white/15 text-xs font-mono text-[#E5E0D7] self-start sm:self-auto transition-all"
             >
-              <span>Scroll for Spotlight</span>
+              <span>Spotlight</span>
               <ChevronDown className="w-3.5 h-3.5 animate-bounce" />
             </a>
           </div>
 
           <div className="w-full h-px bg-white/[0.12] relative overflow-hidden">
-            <motion.div style={{ width: progressWidth }} className="h-full bg-[#F4F3EF]/80" />
+            <motion.div style={{ width: progressWidth }} className="h-full bg-[#F4F3EF]/85" />
           </div>
         </div>
       </div>
