@@ -22,7 +22,7 @@ const RAIL_ITEMS: Array<{
   { id: 'books', label: 'Books · 3D Shelf', icon: BookOpen },
   { id: 'solving', label: 'Problem Solving Playbooks', icon: Zap },
   { id: 'saved', label: 'Saved Folio', icon: Bookmark },
-  { id: 'vault', label: 'Perks & Starter Kits', icon: Gift },
+ { id: 'vault', label: 'Perks & Major Projects', icon: Gift },
 ];
 
 export function CodexRail({ activeSection, onSelectSection, savedCount }: CodexRailProps) {

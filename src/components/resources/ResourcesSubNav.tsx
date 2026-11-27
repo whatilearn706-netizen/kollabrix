@@ -48,15 +48,7 @@ export function ResourcesSubNav() {
       isActive: pathname === '/perks',
       visible: true,
     },
-    {
-      href: '/starter-kits',
-      label: 'Hackathon Starter Kits',
-      icon: Zap,
-      badge: '1-CLICK MVP',
-      badgeColor: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/30',
-      isActive: pathname === '/starter-kits',
-      visible: true,
-    },
+    
   ];
 
   const navItems = rawNavItems.filter((item) => item.visible);

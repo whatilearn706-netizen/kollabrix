@@ -40,6 +40,7 @@ import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 import { ALL_FOLIO_BOOK_VOLUMES } from '@/data/kaAllBooks';
 import { FOLIO_BOOK_GOALS } from '@/data/codexBookMeta';
 import { getKaFolioHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
+import { STUDENT_PERKS } from '@/data/studentPerks';
 
 const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
 const COMPLETED_STORAGE_KEY = 'kollabrix_codex_completed_lessons';
@@ -70,6 +71,50 @@ export default function ResourcesPage() {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [lastVisitedId, setLastVisitedId] = useState<string | null>(null);
+  const [vaultTab, setVaultTab] = useState<'overview' | 'perks' | 'projects'>('overview');
+const [perkQuery, setPerkQuery] = useState('');
+const [perkCategory, setPerkCategory] = useState<string>('all');
+const [claimedPerkIds, setClaimedPerkIds] = useState<string[]>([]);
+const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
+
+const MAJOR_PROJECT_BLUEPRINTS = [
+  {
+    id: 'raft-log-engine',
+    code: 'PRJ-01',
+    tag: 'DISTRIBUTED SYSTEMS',
+    title: 'Distributed Log Engine with Raft Consensus',
+    stack: ['Go / Rust', 'gRPC', 'Raft', 'Docker'],
+    whyExaminersLoveIt: 'Real leader election, log replication, and split-brain fault tolerance — zero CRUD cliché.',
+    vivaQuestion: 'How does Raft guarantee log matching if the leader crashes mid-replication?',
+  },
+  {
+    id: 'ai-radiograph-triage',
+    code: 'PRJ-02',
+    tag: 'HEALTHCARE AI',
+    title: 'AI-Assisted Radiograph Anomaly Triaging',
+    stack: ['PyTorch', 'Grad-CAM', 'FastAPI', 'Next.js'],
+    whyExaminersLoveIt: 'Includes Grad-CAM heatmaps for explainable AI, solving black-box medical skepticism.',
+    vivaQuestion: 'Why use Grad-CAM saliency maps instead of a plain classification confidence score?',
+  },
+  {
+    id: 'zero-trust-api-gateway',
+    code: 'PRJ-03',
+    tag: 'CYBERSECURITY',
+    title: 'Zero-Trust eBPF Microservice Firewall & Rate Limiter',
+    stack: ['eBPF', 'C / Go', 'Redis', 'Prometheus'],
+    whyExaminersLoveIt: 'Kernel-level packet filtering with real-time anomaly telemetry dashboards.',
+    vivaQuestion: 'What is the latency advantage of XDP/eBPF packet drops vs user-space Nginx filtering?',
+  },
+  {
+    id: 'edge-iot-predictive',
+    code: 'PRJ-04',
+    tag: 'EDGE & IOT',
+    title: 'Edge-AI Predictive Maintenance Gateway',
+    stack: ['TensorFlow Lite', 'MQTT', 'ESP32', 'TimescaleDB'],
+    whyExaminersLoveIt: 'Runs quantized ML models offline on edge hardware before syncing anomalies to cloud.',
+    vivaQuestion: 'How much inference latency did INT8 quantization save on the edge microcontroller?',
+  },
+];
 
   const [activeModalVolume, setActiveModalVolume] = useState<CodexVolume | null>(null);
   const [curriculaMap, setCurriculaMap] =
@@ -615,102 +660,296 @@ export default function ResourcesPage() {
           </div>
         )}
 
-        {activeSection === 'vault' && (
-          <div className="flex-1 px-5 sm:px-10 lg:px-14 py-8 space-y-8">
-            <div className="max-w-2xl">
-              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-sky-300">
-                05 · STUDENT PERKS & HACKATHON ARSENAL
-              </p>
-              <h1 className="text-3xl sm:text-5xl font-serif font-semibold text-white mt-1 leading-tight">
-                Perks & Starter Kits
-              </h1>
-              <p className="text-sm sm:text-base text-zinc-400 mt-2">
-                Unlock $14,000+ in student cloud credits, production hackathon templates, and jump straight into live coding arenas.
-              </p>
+                {activeSection === 'vault' && (
+          <div className="relative flex-1 px-5 sm:px-10 lg:px-14 py-8 space-y-8 overflow-hidden">
+            {/* Kollabrix Blueprint Grid Background */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 opacity-25"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right, rgba(56,189,248,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(56,189,248,0.06) 1px, transparent 1px)',
+                backgroundSize: '42px 42px',
+              }}
+            />
+
+            {/* Header + Back Button */}
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 max-w-5xl">
+              <div className="max-w-2xl">
+                <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-sky-400">
+                  [ 05 · COLLEGIATE ARSENAL ]
+                </p>
+                <h1 className="text-3xl sm:text-5xl font-serif font-semibold text-white mt-1.5 leading-tight">
+                  {vaultTab === 'overview' && 'Student Arsenal & Blueprints'}
+                  {vaultTab === 'perks' && 'Student Perks Vault ($14K+)'}
+                  {vaultTab === 'projects' && 'Final Year Project Blueprints'}
+                </h1>
+                <p className="text-sm text-zinc-400 mt-2">
+                  {vaultTab === 'overview' &&
+                    'Claim $14,000+ in verified software credits or pick a plagiarism-free Final Year Major Project blueprint.'}
+                  {vaultTab === 'perks' &&
+                    'Verified developer privileges reserved for college students — claim directly without leaving KΛ FOLIO.'}
+                  {vaultTab === 'projects' &&
+                    'High-tier, non-cliché architectures with Viva Q&A and IEEE paper angles built to impress external examiners.'}
+                </p>
+              </div>
+
+              {vaultTab !== 'overview' && (
+                <button
+                  type="button"
+                  onClick={() => setVaultTab('overview')}
+                  className="self-start inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#050811] border border-white/15 hover:border-sky-400/50 text-xs font-mono text-zinc-200 cursor-pointer transition-all"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Back to Arsenal</span>
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-5xl">
-              <Link
-                href="/perks"
-                className="group rounded-3xl border border-white/12 bg-gradient-to-br from-[#1b1509] via-[#0d0b08] to-[#08090e] p-7 hover:border-amber-400/50 transition-all flex flex-col justify-between gap-6 shadow-2xl"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center">
-                      <Gift className="w-6 h-6 text-amber-300" />
+            {/* VIEW 1: OVERVIEW (2 Creative Kollabrix Blueprint Cards) */}
+            {vaultTab === 'overview' && (
+              <div className="relative z-10 space-y-8 max-w-5xl">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {/* Card 1: Student Perks Vault -> Opens In-Place */}
+                  <button
+                    type="button"
+                    onClick={() => setVaultTab('perks')}
+                    className="group relative text-left rounded-2xl bg-[#030611]/95 border border-amber-400/25 hover:border-amber-400/75 p-7 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(245,158,11,0.2)] flex flex-col justify-between gap-6"
+                  >
+                    <div className="absolute top-0 right-0 px-3 py-1.5 bg-amber-500/10 border-b border-l border-amber-400/25 rounded-bl-xl text-[10px] font-mono font-bold text-amber-300 tracking-wider">
+                      01 · $14,000+ FREE
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[10px] font-mono font-bold text-amber-200 uppercase tracking-wider">
-                      $14,000+ Value
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-serif font-semibold text-white group-hover:text-amber-200 transition-colors">
-                    Student Perks Vault
-                  </h2>
-                  <p className="text-sm text-zinc-300/90 leading-relaxed">
-                    Claim verified campus software credits across cloud hosting, GitHub developer packs, vector databases, and AI API tiers.
-                  </p>
-                </div>
-                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
-                  <span>Open Perks Vault</span>
-                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </div>
-              </Link>
-
-              <Link
-                href="/starter-kits"
-                className="group rounded-3xl border border-white/12 bg-gradient-to-br from-[#0b1929] via-[#080d17] to-[#07090e] p-7 hover:border-sky-400/50 transition-all flex flex-col justify-between gap-6 shadow-2xl"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-400/30 flex items-center justify-center">
-                      <Rocket className="w-6 h-6 text-sky-300" />
+                    <div className="space-y-3.5 pt-2">
+                      <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-center">
+                        <Gift className="w-5 h-5 text-amber-300" />
+                      </div>
+                      <h2 className="text-2xl font-serif font-semibold text-white group-hover:text-amber-200 transition-colors">
+                        Student Perks Vault
+                      </h2>
+                      <p className="text-sm text-zinc-400 leading-relaxed">
+                        Claim GitHub Pro, Copilot, AWS Educate, Azure, JetBrains IDEs, and free domains using your college ID.
+                      </p>
                     </div>
-                    <span className="px-3 py-1 rounded-full bg-sky-400/15 border border-sky-400/30 text-[10px] font-mono font-bold text-sky-200 uppercase tracking-wider">
-                      Hackathon Ready
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-serif font-semibold text-white group-hover:text-sky-200 transition-colors">
-                    Hackathon Starter Kits
-                  </h2>
-                  <p className="text-sm text-zinc-300/90 leading-relaxed">
-                    Production-ready Next.js, FastAPI, AI Agent, and Web3 scaffolds pre-configured with auth, database schemas, and deploy scripts.
-                  </p>
-                </div>
-                <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-sky-300 uppercase tracking-wider">
-                  <span>Browse Starter Kits</span>
-                  <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </div>
-              </Link>
-            </div>
+                    <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                      <span>Open Vault In-Place</span>
+                      <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </div>
+                  </button>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Link
-                href="/icpc"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
-              >
-                <Code2 className="w-3.5 h-3.5 text-sky-300" />
-                <span>Open Practice IDE</span>
-              </Link>
-              <Link
-                href="/arena"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
-              >
-                <Swords className="w-3.5 h-3.5 text-amber-300" />
-                <span>Enter KΛ ARENA</span>
-              </Link>
-              <Link
-                href="/spark"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
-                <span>Launch KΛ ΛI Studio ↗</span>
-              </Link>
-            </div>
+                  {/* Card 2: Final Year Major Project Blueprints */}
+                  <button
+                    type="button"
+                    onClick={() => setVaultTab('projects')}
+                    className="group relative text-left rounded-2xl bg-[#030611]/95 border border-sky-400/25 hover:border-sky-400/75 p-7 transition-all duration-300 cursor-pointer overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(56,189,248,0.2)] flex flex-col justify-between gap-6"
+                  >
+                    <div className="absolute top-0 right-0 px-3 py-1.5 bg-sky-500/10 border-b border-l border-sky-400/25 rounded-bl-xl text-[10px] font-mono font-bold text-sky-300 tracking-wider">
+                      02 · 3RD &amp; 4TH YEAR
+                    </div>
+                    <div className="space-y-3.5 pt-2">
+                      <div className="w-11 h-11 rounded-xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-center">
+                        <Rocket className="w-5 h-5 text-sky-300" />
+                      </div>
+                      <h2 className="text-2xl font-serif font-semibold text-white group-hover:text-sky-200 transition-colors">
+                        Final Year Project Blueprints
+                      </h2>
+                      <p className="text-sm text-zinc-400 leading-relaxed">
+                        Unique, plagiarism-free major project architectures with Viva Q&amp;A prep &amp; IEEE angles that win A+ grades.
+                      </p>
+                    </div>
+                    <div className="pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono font-bold text-sky-300 uppercase tracking-wider">
+                      <span>Explore Blueprints</span>
+                      <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Quick Cross-Navigation Pills */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/icpc"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#050811] border border-white/10 hover:border-sky-400/40 text-xs font-mono text-zinc-200 transition-all"
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-sky-300" />
+                    <span>Open Practice IDE</span>
+                  </Link>
+                  <Link
+                    href="/arena"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#050811] border border-white/10 hover:border-amber-400/40 text-xs font-mono text-zinc-200 transition-all"
+                  >
+                    <Swords className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Enter KΛ ARENA</span>
+                  </Link>
+                  <Link
+                    href="/spark"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#050811] border border-white/10 hover:border-cyan-400/40 text-xs font-mono text-zinc-200 transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                    <span>Launch KΛ AI Studio ↗</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 2: IN-PLACE STUDENT PERKS VAULT */}
+            {vaultTab === 'perks' && (
+              <div className="relative z-10 space-y-6 max-w-6xl">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={perkQuery}
+                      onChange={(e) => setPerkQuery(e.target.value)}
+                      placeholder="Search perks (GitHub, AWS, JetBrains, Azure)..."
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#030611] border border-white/10 focus:border-sky-400/50 text-xs text-white placeholder:text-zinc-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {['all', 'devtools', 'cloud', 'ai', 'domains', 'design'].map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setPerkCategory(cat)}
+                        className={`px-3.5 py-1.5 rounded-lg text-[11px] font-mono uppercase tracking-wider border cursor-pointer transition-all ${
+                          perkCategory === cat
+                            ? 'bg-sky-500/20 border-sky-400/60 text-sky-200'
+                            : 'bg-[#030611] border-white/10 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {STUDENT_PERKS.filter(
+                    (p) =>
+                      (perkCategory === 'all' || p.category === perkCategory) &&
+                      (!perkQuery.trim() ||
+                        `${p.title} ${p.provider} ${p.shortDescription}`
+                          .toLowerCase()
+                          .includes(perkQuery.toLowerCase()))
+                  ).map((perk) => {
+                    const isClaimed = claimedPerkIds.includes(perk.id);
+                    const isGuideOpen = activeGuideId === perk.id;
+                    return (
+                      <div
+                        key={perk.id}
+                        className="rounded-2xl bg-[#030611]/95 border border-white/10 hover:border-emerald-400/40 p-5 flex flex-col justify-between gap-4 transition-all"
+                      >
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                              {perk.provider}
+                            </span>
+                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-[10px] font-mono font-bold text-emerald-300">
+                              {perk.value}
+                            </span>
+                          </div>
+                          <h3 className="text-base font-bold text-white">{perk.title}</h3>
+                          <p className="text-xs text-zinc-400 leading-relaxed">{perk.shortDescription}</p>
+
+                          {isGuideOpen && (
+                            <div className="mt-3 p-3 rounded-xl bg-[#02040A] border border-white/10 space-y-2">
+                              <p className="text-[10px] font-mono uppercase text-sky-300">Claim Steps:</p>
+                              {perk.stepByStepGuide.map((s) => (
+                                <p key={s.step} className="text-[11px] text-zinc-300">
+                                  <span className="text-emerald-400 font-mono mr-1">{s.step}.</span>
+                                  {s.title}: {s.description}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveGuideId(isGuideOpen ? null : perk.id)}
+                            className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-[11px] font-mono text-zinc-200 cursor-pointer"
+                          >
+                            {isGuideOpen ? 'Hide Guide' : 'Claim Guide'}
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setClaimedPerkIds((prev) =>
+                                  prev.includes(perk.id)
+                                    ? prev.filter((id) => id !== perk.id)
+                                    : [...prev, perk.id]
+                                )
+                              }
+                              className={`px-2.5 py-1.5 rounded-lg text-[10px] font-mono border cursor-pointer ${
+                                isClaimed
+                                  ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-200'
+                                  : 'border-white/10 text-zinc-400 hover:text-white'
+                              }`}
+                            >
+                              {isClaimed ? '✓ Claimed' : 'Mark Claimed'}
+                            </button>
+                            <a
+                              href={perk.claimUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-mono text-[11px] font-bold inline-flex items-center gap-1"
+                            >
+                              <span>Claim</span>
+                              <ArrowUpRight className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* VIEW 3: FINAL YEAR MAJOR PROJECT BLUEPRINTS */}
+            {vaultTab === 'projects' && (
+              <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl">
+                {MAJOR_PROJECT_BLUEPRINTS.map((prj) => (
+                  <div
+                    key={prj.id}
+                    className="rounded-2xl bg-[#030611]/95 border border-sky-500/20 hover:border-sky-400/60 p-6 space-y-4 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-sky-400">
+                        {prj.code} · {prj.tag}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-400/25 text-[10px] font-mono text-sky-200">
+                        VIVA READY
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-white">{prj.title}</h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {prj.stack.map((tech) => (
+                        <span
+                          key={tech}
+                          className="px-2.5 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[10px] font-mono text-zinc-300"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed">{prj.whyExaminersLoveIt}</p>
+                    <div className="p-3 rounded-xl bg-[#02040A] border border-amber-400/20">
+                      <p className="text-[10px] font-mono uppercase text-amber-300 mb-1">
+                        Examiner Viva Question:
+                      </p>
+                      <p className="text-xs text-zinc-200 italic">&ldquo;{prj.vivaQuestion}&rdquo;</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
-      </div>
+        </div>
 
       {/* Active Modals */}
       {activeModalVolume && activeModalVolume.kind === 'track' && (
