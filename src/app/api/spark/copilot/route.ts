@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured, DEFAULT_SUPABASE_URL } from '@/lib/supabase/isConfigured';
 import { DEFAULT_SUPABASE_SERVICE_ROLE_KEY } from '@/lib/supabase/serviceKey';
 import { callSparkLLM, SparkChatMessage } from '@/lib/spark/aiClient';
+import { buildKollabrixLiveContext } from '@/lib/spark/platformContext';
 import { checkIpRateLimit, getClientIp } from '@/lib/security/ipRateLimit';
 
 export const dynamic = 'force-dynamic';
@@ -51,13 +52,27 @@ Roles: ${(blueprint.desired_roles || []).join(', ')}
 Milestones: ${(blueprint.milestones || []).map((m: any) => `${m.title} (${m.duration}): ${m.deliverables}`).join(' | ')}`
       : 'General Hackathon / Engineering Project';
 
-    const systemPrompt = `You are Spark Copilot, an elite hackathon architect and full-stack mentor inside Kollabrix.
+    let currentUserId: string | null = null;
+    if (isSupabaseConfigured()) {
+      try {
+        const serverClient = createServerSupabaseClient();
+        const { data: { user } } = await serverClient.auth.getUser();
+        currentUserId = user?.id || null;
+      } catch {}
+    }
+
+    const liveEcosystemCtx = await buildKollabrixLiveContext(userMessage.trim(), currentUserId);
+
+    const systemPrompt = `You are KΛ Copilot, an elite hackathon architect and full-stack mentor connected to all 3 Kollabrix platforms (Kollabrix, KΛ AI, and KΛ FOLIO).
 You are helping a student team actively build the following project:
 
 ${contextSummary}
 
+${liveEcosystemCtx}
+
 Guidelines:
 - Give concrete, immediately usable technical answers (SQL schemas, API routes, pitch scripts, 24-hour MVP cuts, debugging steps).
+- Use live data from Kollabrix, KΛ AI, and KΛ FOLIO whenever relevant with clickable Markdown links.
 - Use crisp Markdown with code blocks and bullet points. Keep answers focused and practical.`;
 
     const llmRes = await callSparkLLM({

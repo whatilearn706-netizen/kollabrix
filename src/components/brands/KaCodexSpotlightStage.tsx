@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useSpring, useTransform } from 'motion/react';
 import { ArrowUpRight, BookOpen, Compass, Play, Sparkles, Youtube } from 'lucide-react';
 import { KA_CODEX_BOOKS, type CodingBook } from '@/data/kaCodexBooks';
 import { KaMonographCover } from '@/components/brands/KaMonographCover';
@@ -84,19 +84,26 @@ export function KaCodexSpotlightStage() {
     offset: ['start end', 'center center'],
   });
 
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 180,
+    damping: 30,
+    mass: 0.35,
+    restDelta: 0.0005,
+  });
+
   // 1) Book flight trajectory: starts high/center tilted in flight, glides down-left and settles flat
-  const flightY = useTransform(scrollYProgress, [0, 0.55, 1], [-140, -18, 0]);
-  const flightX = useTransform(scrollYProgress, [0, 0.55, 1], [140, 28, 0]);
-  const flightScale = useTransform(scrollYProgress, [0, 0.65, 1], [0.76, 0.96, 1]);
-  const bookRotateZ = useTransform(scrollYProgress, [0, 0.6, 1], [-14, -4, 0]);
+  const flightY = useTransform(smoothProgress, [0, 0.55, 1], [-140, -18, 0]);
+  const flightX = useTransform(smoothProgress, [0, 0.55, 1], [140, 28, 0]);
+  const flightScale = useTransform(smoothProgress, [0, 0.65, 1], [0.76, 0.96, 1]);
+  const bookRotateZ = useTransform(smoothProgress, [0, 0.6, 1], [-14, -4, 0]);
 
   // 2) Cover swings open (0deg closed -> -168deg open) as it lands on the left
-  const coverRotateY = useTransform(scrollYProgress, [0.35, 0.85], [0, -168]);
-  const coverOpacity = useTransform(scrollYProgress, [0.35, 0.78, 0.9], [1, 0.85, 0]);
+  const coverRotateY = useTransform(smoothProgress, [0.35, 0.85], [0, -168]);
+  const coverOpacity = useTransform(smoothProgress, [0.35, 0.78, 0.9], [1, 0.85, 0]);
 
   // 3) Right-side YouTube + Best Topics fades & slides in smoothly right after book settles
-  const rightX = useTransform(scrollYProgress, [0.45, 1], [48, 0]);
-  const rightOpacity = useTransform(scrollYProgress, [0.4, 0.92], [0, 1]);
+  const rightX = useTransform(smoothProgress, [0.45, 1], [48, 0]);
+  const rightOpacity = useTransform(smoothProgress, [0.4, 0.92], [0, 1]);
 
   return (
     <section

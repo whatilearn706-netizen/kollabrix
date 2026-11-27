@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, type MotionValue, useScroll, useTransform } from 'motion/react';
+import { motion, type MotionValue, useScroll, useSpring, useTransform } from 'motion/react';
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import type { CodingBook } from '@/data/kaCodexBooks';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
@@ -35,6 +35,7 @@ interface PavementBookLayerProps {
   total: number;
   scrollYProgress: MotionValue<number>;
   isActive: boolean;
+  isVisible: boolean;
 }
 
 /**
@@ -48,6 +49,7 @@ function PavementBookLayer({
   total,
   scrollYProgress,
   isActive,
+  isVisible,
 }: PavementBookLayerProps) {
   const pose = BOOK_REST_POSES[index % BOOK_REST_POSES.length];
   const segments = Math.max(total - 1, 1);
@@ -112,21 +114,22 @@ function PavementBookLayer({
         opacity,
         zIndex: total - index,
         transformOrigin: 'center 65%',
+        willChange: isVisible ? 'transform, opacity' : 'auto',
+        visibility: isVisible ? 'visible' : 'hidden',
       }}
-      className={`absolute w-[220px] sm:w-[270px] aspect-[2/3] ${
+      className={`transform-gpu absolute w-[220px] sm:w-[270px] aspect-[2/3] ${
         isActive ? 'pointer-events-auto' : 'pointer-events-none'
       }`}
     >
-      {/* Directional low-sun cast shadow on pavement beneath the book */}
+      {/* Lightweight directional low-sun cast shadow on pavement (no expensive Gaussian blur) */}
       <motion.div
         aria-hidden="true"
-        style={{ opacity: shadowOpacity }}
-        className="pointer-events-none absolute -inset-3 translate-x-5 translate-y-7 rounded-xl bg-black/90 blur-xl"
-      />
-      <motion.div
-        aria-hidden="true"
-        style={{ opacity: shadowOpacity }}
-        className="pointer-events-none absolute inset-0 translate-x-2.5 translate-y-3.5 rounded-[7px] bg-black/75 blur-[5px]"
+        style={{
+          opacity: shadowOpacity,
+          background:
+            'radial-gradient(ellipse 75% 75% at 50% 50%, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.48) 55%, transparent 80%)',
+        }}
+        className="pointer-events-none absolute -inset-5 translate-x-5 translate-y-7 rounded-2xl"
       />
 
       {/* Stepped stacked book paper block thickness */}
@@ -143,7 +146,7 @@ function PavementBookLayer({
       {/* Clickable Custom KΛ FOLIO Dark Monograph Volume Cover */}
       <Link
         href={`/resources?section=books&book=${encodeURIComponent(book.id)}`}
-        className="group relative block w-full h-full rounded-[8px] overflow-hidden border border-white/25 bg-[#11100E] shadow-[0_24px_60px_rgba(0,0,0,0.92)] cursor-pointer"
+        className="group relative block w-full h-full rounded-[8px] overflow-hidden border border-white/25 bg-[#11100E] shadow-[0_18px_40px_rgba(0,0,0,0.85)] cursor-pointer"
       >
         <div className="w-full h-full group-hover:scale-[1.025] transition-transform duration-300">
           <KaMonographCover book={book} size="lg" />
@@ -156,7 +159,7 @@ function PavementBookLayer({
         />
 
         {/* Clean Hover Read Prompt */}
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 z-20 px-3 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-white/25 flex items-center justify-between text-[11px] font-mono text-white">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-3 bottom-3 z-20 px-3 py-1.5 rounded-full bg-black/90 border border-white/25 flex items-center justify-between text-[11px] font-mono text-white">
           <span>Open in Bookshelf</span>
           <ArrowUpRight className="w-3.5 h-3.5" />
         </div>
@@ -181,17 +184,25 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
     offset: ['start start', 'end end'],
   });
 
+  // Smooth spring physics eliminates trackpad/wheel-tick jitter for 120Hz buttery-smooth peeling
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 190,
+    damping: 30,
+    mass: 0.35,
+    restDelta: 0.0005,
+  });
+
   const totalSteps = Math.max(books.length - 1, 1);
-  const streetParallaxY = useTransform(scrollYProgress, [0, 1], ['0px', '-260px']);
-  const progressWidth = useTransform(scrollYProgress, [0, 1], ['8%', '100%']);
+  const streetParallaxY = useTransform(smoothProgress, [0, 1], [0, -240]);
+  const progressScaleX = useTransform(smoothProgress, [0, 1], [0.08, 1]);
 
   useEffect(() => {
-    const unsub = scrollYProgress.on('change', (v) => {
+    const unsub = smoothProgress.on('change', (v) => {
       const idx = Math.min(books.length - 1, Math.max(0, Math.round(v * (books.length - 1))));
-      setActiveIdx(idx);
+      setActiveIdx((prev) => (prev === idx ? prev : idx));
     });
     return () => unsub();
-  }, [scrollYProgress, books.length]);
+  }, [smoothProgress, books.length]);
 
   const activeBook = books[activeIdx] || books[0];
 
@@ -208,19 +219,21 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
     <section ref={trackRef} className="relative w-full h-[500vh] bg-[#100F0D] select-none">
       {/* Sticky Overhead Pavement Camera */}
       <div className="sticky top-0 w-full h-screen min-h-[650px] overflow-hidden bg-[#100F0D]">
-        {/* Realistic Asphalt Grain + Subtle Pavement Seams & Fractures */}
+        {/* Lightweight GPU-composited Asphalt Grain + Subtle Pavement Seams (zero feTurbulence reflow) */}
         <motion.div
           aria-hidden="true"
           style={{ y: streetParallaxY }}
-          className="pointer-events-none absolute -inset-y-72 inset-x-0"
+          className="pointer-events-none absolute -inset-y-72 inset-x-0 transform-gpu will-change-transform"
         >
-          <svg className="w-full h-full opacity-[0.26]" xmlns="http://www.w3.org/2000/svg">
-            <filter id="paveGrain">
-              <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="3" stitchTiles="stitch" />
-              <feColorMatrix type="saturate" values="0" />
-            </filter>
-            <rect width="100%" height="100%" filter="url(#paveGrain)" />
-          </svg>
+          <div
+            className="absolute inset-0 opacity-[0.16]"
+            style={{
+              backgroundImage:
+                'radial-gradient(rgba(255,248,235,0.45) 0.7px, transparent 0.7px), radial-gradient(rgba(255,255,255,0.22) 0.5px, transparent 0.5px)',
+              backgroundSize: '18px 18px, 11px 11px',
+              backgroundPosition: '0 0, 5px 7px',
+            }}
+          />
           {/* Subtle Concrete Expansion Seams & Hairline Street Cracks */}
           <div
             className="absolute inset-0 opacity-45"
@@ -286,8 +299,9 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
               book={book}
               index={idx}
               total={books.length}
-              scrollYProgress={scrollYProgress}
+              scrollYProgress={smoothProgress}
               isActive={idx === activeIdx}
+              isVisible={idx >= activeIdx - 1 && idx <= activeIdx + 4}
             />
           ))}
         </div>
@@ -365,7 +379,10 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
           </div>
 
           <div className="w-full h-px bg-white/[0.12] relative overflow-hidden">
-            <motion.div style={{ width: progressWidth }} className="h-full bg-[#F4F3EF]/85" />
+            <motion.div
+              style={{ scaleX: progressScaleX }}
+              className="w-full h-full origin-left bg-[#F4F3EF]/85 transform-gpu will-change-transform"
+            />
           </div>
         </div>
       </div>
