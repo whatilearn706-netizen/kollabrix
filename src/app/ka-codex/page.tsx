@@ -13,7 +13,7 @@ export default function KaCodexBrandPage() {
   const totalBooks = KA_CODEX_BOOKS.length;
 
   return (
-    <div className="min-h-screen w-full bg-[#121110] text-[#F4F3EF] overflow-x-hidden font-sans selection:bg-[#F4F3EF] selection:text-[#121110]">
+    <div className="min-h-screen w-full bg-[#121110] text-[#F4F3EF] overflow-x-clip font-sans selection:bg-[#F4F3EF] selection:text-[#121110]">
       {/* ===================================================================== */}
       {/* SECTION 1: SCROLL-DRIVEN 12 CODING BOOKS WALK (pin.it/4WRF4Nmlx)      */}
       {/* ===================================================================== */}
