@@ -136,8 +136,8 @@ export function Arena3DHangarWorld({
       const height = container.clientHeight || window.innerHeight;
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x03060f);
-      scene.fog = new THREE.FogExp2(0x040917, 0.044);
+      scene.background = new THREE.Color(0x020306);
+      scene.fog = new THREE.FogExp2(0x020306, 0.052);
 
       const camera = new THREE.PerspectiveCamera(47, width / height, 0.1, 90);
       camera.position.set(0, 1.38, 4.95);
@@ -191,166 +191,100 @@ export function Arena3DHangarWorld({
       rightIceRim.position.set(3.4, 2.2, -2.0);
       scene.add(rightIceRim);
 
-      // --- GLOSSY MIDNIGHT ARENA COURT FLOOR (512px Reflector) ---
+      // --- GLOSSY KOLLABRIX OBSIDIAN FLOOR + ARCHITECTURAL BLUEPRINT GRID ---
       const mirrorFloor = new Reflector(tg(new THREE.PlaneGeometry(48, 48)), {
         clipBias: 0.003,
         textureWidth: Math.min(512, width),
         textureHeight: Math.min(512, height),
-        color: 0x162238,
+        color: 0x0b101b,
       });
       mirrorFloor.rotation.x = -Math.PI / 2;
       mirrorFloor.position.y = 0;
       scene.add(mirrorFloor);
 
-      // Crisp white painted stadium court markings (foreground sweeping arc, center circle, midlines)
-      const whiteLineMat = tm(
-        new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.78 })
-      );
-      const subtleLineMat = tm(
-        new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.42 })
-      );
+      // Signature Kollabrix dark architectural grid matching KaEcosystemShowcase (#020306)
+      const blueprintGrid = new THREE.GridHelper(48, 48, 0x1e293b, 0x0f172a);
+      blueprintGrid.position.y = 0.005;
+      scene.add(blueprintGrid);
 
-      // Sweeping foreground three-point / court arc across bottom center (pin.it/2r437XD0o signature)
-      const frontArc = new THREE.Mesh(
-        tg(new THREE.RingGeometry(4.65, 4.72, 72, 1, Math.PI * 0.14, Math.PI * 0.72)),
-        whiteLineMat
+      // Subtle Concentric Obsidian Floor Horizon Rings (No basketball lines!)
+      const subtleRingMat = tm(
+        new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.32 })
       );
-      frontArc.rotation.x = -Math.PI / 2;
-      frontArc.position.set(0, 0.006, 6.1);
-      scene.add(frontArc);
-
-      // Outer secondary sweeping lane line
-      const outerArc = new THREE.Mesh(
-        tg(new THREE.RingGeometry(4.92, 4.97, 72, 1, Math.PI * 0.14, Math.PI * 0.72)),
-        subtleLineMat
-      );
-      outerArc.rotation.x = -Math.PI / 2;
-      outerArc.position.set(0, 0.005, 6.1);
-      scene.add(outerArc);
-
-      // Mid-court arena circle around center stage
-      const midCourtRing = new THREE.Mesh(
-        tg(new THREE.RingGeometry(2.55, 2.6, 64)),
-        whiteLineMat
-      );
-      midCourtRing.rotation.x = -Math.PI / 2;
-      midCourtRing.position.set(0, 0.006, -1.8);
-      scene.add(midCourtRing);
-
-      // Subtle back-court key lines & perimeter court boundary rectangle
-      const backKeyArc = new THREE.Mesh(
-        tg(new THREE.RingGeometry(3.8, 3.84, 64, 1, Math.PI * 1.12, Math.PI * 0.76)),
-        subtleLineMat
-      );
-      backKeyArc.rotation.x = -Math.PI / 2;
-      backKeyArc.position.set(0, 0.005, -8.5);
-      scene.add(backKeyArc);
-
-      [-7.2, 7.2].forEach((sx) => {
-        const sideBound = new THREE.Mesh(tg(new THREE.PlaneGeometry(0.05, 22)), subtleLineMat);
-        sideBound.rotation.x = -Math.PI / 2;
-        sideBound.position.set(sx, 0.005, -4.5);
-        scene.add(sideBound);
+      [3.1, 5.4, 8.6].forEach((r) => {
+        const ring = new THREE.Mesh(tg(new THREE.RingGeometry(r, r + 0.02, 72)), subtleRingMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(0, 0.006, 0);
+        scene.add(ring);
       });
 
-      // --- ENCLOSED CURVED STADIUM AMPHITHEATER BOWL & LED RIBBON PANELS ---
-      const stadiumCenterZ = -3.8;
-      const tierDarkMat = tm(
+      // --- KOLLABRIX ARCHITECTURAL OBSIDIAN MONOLITH CATHEDRAL (No sky blobs!) ---
+      const pylonMat = tm(
         new THREE.MeshStandardMaterial({
-          color: 0x060b16,
-          roughness: 0.85,
-          metalness: 0.25,
-          side: THREE.DoubleSide,
+          color: 0x05080f,
+          roughness: 0.35,
+          metalness: 0.72,
         })
       );
-      const tierTrimMat = tm(
-        new THREE.MeshBasicMaterial({ color: 0x1e3a5f, transparent: true, opacity: 0.45 })
+      const pylonCyanTrimMat = tm(
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.42 })
+      );
+      const pylonAmberTrimMat = tm(
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.35 })
       );
 
-      // Lower court perimeter barrier + 3 stepped curved seating tiers wrapping back & sides
-      const tierConfigs = [
-        { rTop: 11.4, rBot: 11.0, h: 0.9, y: 0.45 },
-        { rTop: 13.8, rBot: 11.8, h: 2.2, y: 1.9 },
-        { rTop: 16.5, rBot: 14.1, h: 2.8, y: 4.3 },
-      ];
-      tierConfigs.forEach((tc) => {
-        const cyl = new THREE.Mesh(
-          tg(new THREE.CylinderGeometry(tc.rTop, tc.rBot, tc.h, 48, 1, true, Math.PI * 0.56, Math.PI * 0.88)),
-          tierDarkMat
-        );
-        cyl.position.set(0, tc.y, stadiumCenterZ);
-        scene.add(cyl);
+      // Symmetrical flanking obsidian glass monolith columns
+      const pylonGeo = tg(new THREE.BoxGeometry(1.15, 7.2, 0.75));
+      const trimStripGeo = tg(new THREE.BoxGeometry(0.03, 7.0, 0.04));
+      [-1, 1].forEach((side) => {
+        [1, 2, 3].forEach((tier) => {
+          const angle = side * (0.28 + tier * 0.24);
+          const dist = 10.8 + tier * 0.9;
+          const px = Math.sin(angle) * dist;
+          const pz = -3.0 - Math.cos(angle) * dist;
 
-        const rim = new THREE.Mesh(
-          tg(new THREE.TorusGeometry(tc.rBot + 0.06, 0.025, 6, 48, Math.PI * 0.88)),
-          tierTrimMat
-        );
-        rim.rotation.x = Math.PI / 2;
-        rim.rotation.z = Math.PI * 1.06;
-        rim.position.set(0, tc.y - tc.h * 0.48, stadiumCenterZ);
-        scene.add(rim);
+          const col = new THREE.Mesh(pylonGeo, pylonMat);
+          col.position.set(px, 3.6, pz);
+          col.lookAt(0, 3.6, 0);
+          scene.add(col);
+
+          const strip = new THREE.Mesh(trimStripGeo, tier % 2 === 0 ? pylonAmberTrimMat : pylonCyanTrimMat);
+          strip.position.set(px * 0.965, 3.6, pz * 0.965);
+          strip.lookAt(0, 3.6, 0);
+          scene.add(strip);
+        });
       });
 
-      // Curved Mezzanine LED Ribbon Panels / Illuminated Stadium Light Boxes
-      const ledPanelMat = tm(
-        new THREE.MeshBasicMaterial({ color: 0x93c5fd, transparent: true, opacity: 0.72, side: THREE.DoubleSide })
-      );
-      const ledFrameMat = tm(
-        new THREE.MeshStandardMaterial({ color: 0x0b1324, roughness: 0.5, metalness: 0.6 })
-      );
-      const ledGeo = tg(new THREE.PlaneGeometry(1.55, 0.85));
-      const frameGeo = tg(new THREE.BoxGeometry(1.7, 1.0, 0.08));
-
-      for (let i = 0; i < 12; i++) {
-        // Arrange panels symmetrically along left and right curved amphitheater flanks (leave dead center for monolith)
-        const side = i < 6 ? -1 : 1;
-        const idx = i % 6;
-        const angle = Math.PI * 1.5 + side * (0.28 + idx * 0.14);
-        const radius = 13.3;
-        const px = Math.sin(angle) * radius;
-        const pz = stadiumCenterZ + Math.cos(angle) * radius;
-
-        const panelFrame = new THREE.Mesh(frameGeo, ledFrameMat);
-        panelFrame.position.set(px, 3.1, pz);
-        panelFrame.lookAt(0, 2.2, 2.0);
-        scene.add(panelFrame);
-
-        const ledFace = new THREE.Mesh(ledGeo, ledPanelMat);
-        ledFace.position.set(px * 0.992, 3.1, pz * 0.992);
-        ledFace.lookAt(0, 2.2, 2.0);
-        scene.add(ledFace);
-      }
-
-      // --- CENTER-BACK DARK SCOREBOARD MONOLITH & ELECTRIC BLUE PORTAL BLOOM ---
+      // --- CENTER-BACK KΛ ARCHITECTURAL MONOLITH & SUBTLE OBSIDIAN GLOW ---
       const monolith = new THREE.Mesh(
-        tg(new THREE.BoxGeometry(3.8, 7.6, 1.2)),
+        tg(new THREE.BoxGeometry(3.4, 8.0, 1.0)),
         tm(
           new THREE.MeshStandardMaterial({
-            color: 0x04070f,
-            roughness: 0.4,
-            metalness: 0.6,
+            color: 0x04070e,
+            roughness: 0.32,
+            metalness: 0.78,
           })
         )
       );
-      monolith.position.set(0, 3.8, -14.2);
+      monolith.position.set(0, 4.0, -14.2);
       scene.add(monolith);
 
       const portalTrimMat = tm(
-        new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.65 })
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 })
       );
-      [-1.92, 1.92].forEach((mx) => {
-        const edge = new THREE.Mesh(tg(new THREE.BoxGeometry(0.05, 7.4, 0.06)), portalTrimMat);
-        edge.position.set(mx, 3.7, -13.56);
+      [-1.72, 1.72].forEach((mx) => {
+        const edge = new THREE.Mesh(tg(new THREE.BoxGeometry(0.035, 7.8, 0.05)), portalTrimMat);
+        edge.position.set(mx, 3.9, -13.68);
         scene.add(edge);
       });
 
       const bloomTex = createRadialGlowTexture(
-        'rgba(147, 197, 253, 0.95)',
-        'rgba(37, 99, 235, 0.42)'
+        'rgba(56, 189, 248, 0.42)',
+        'rgba(15, 23, 42, 0.22)'
       );
       textures.push(bloomTex);
       const portalBloom = new THREE.Mesh(
-        tg(new THREE.PlaneGeometry(11.5, 8.5)),
+        tg(new THREE.PlaneGeometry(12.0, 8.5)),
         tm(
           new THREE.MeshBasicMaterial({
             map: bloomTex,
@@ -360,76 +294,34 @@ export function Arena3DHangarWorld({
           })
         )
       );
-      portalBloom.position.set(0, 2.15, -13.1);
+      portalBloom.position.set(0, 2.2, -13.2);
       scene.add(portalBloom);
 
-      // Subtle low cobalt ground mist swirl in front of the center-back monolith
+      // Subtle low slate ground glow in front of center monolith
       const floorMist = new THREE.Mesh(
-        tg(new THREE.PlaneGeometry(13.0, 5.5)),
+        tg(new THREE.PlaneGeometry(12.0, 5.0)),
         tm(
           new THREE.MeshBasicMaterial({
             map: bloomTex,
             transparent: true,
-            opacity: 0.46,
+            opacity: 0.35,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
           })
         )
       );
       floorMist.rotation.x = -Math.PI / 2;
-      floorMist.position.set(0, 0.03, -10.8);
+      floorMist.position.set(0, 0.02, -10.5);
       scene.add(floorMist);
 
-      // --- CURVED ROOF FLOODLIGHT RINGS & MISTY DIAGONAL STADIUM BEAMS ---
-      const lampCoreMat = tm(new THREE.MeshBasicMaterial({ color: 0xf8fafc }));
-      const lampGlowTex = createRadialGlowTexture(
-        'rgba(248, 250, 252, 0.95)',
-        'rgba(96, 165, 250, 0.35)'
-      );
-      textures.push(lampGlowTex);
-      const lampSpriteMat = tm(
-        new THREE.SpriteMaterial({
-          map: lampGlowTex,
-          transparent: true,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        })
-      );
-      const bulbGeo = tg(new THREE.SphereGeometry(0.11, 10, 8));
-
-      // Two arched stadium roof light banks curving across upper sky
-      const roofRows = [
-        { radius: 13.8, y: 6.1, count: 22 },
-        { radius: 14.9, y: 7.3, count: 20 },
-      ];
-      roofRows.forEach((row) => {
-        for (let idx = 0; idx < row.count; idx++) {
-          const frac = idx / (row.count - 1);
-          const angle = Math.PI * 1.07 + frac * Math.PI * 0.86;
-          const lx = Math.sin(angle) * row.radius;
-          const lz = stadiumCenterZ + Math.cos(angle) * row.radius;
-
-          const bulb = new THREE.Mesh(bulbGeo, lampCoreMat);
-          bulb.position.set(lx, row.y, lz);
-          scene.add(bulb);
-
-          // Every second bulb carries an additive soft starburst halo sprite
-          if (idx % 2 === 0) {
-            const halo = new THREE.Sprite(lampSpriteMat);
-            halo.position.set(lx, row.y, lz);
-            halo.scale.set(1.5, 1.5, 1.0);
-            scene.add(halo);
-          }
-        }
-      });
-
+      // Sleek Diagonal Atmospheric Light Shafts (clean, minimal luxury)
       const beamTex = createBeamTexture();
       textures.push(beamTex);
       const beamMat = tm(
         new THREE.MeshBasicMaterial({
           map: beamTex,
           transparent: true,
-          opacity: 0.44,
+          opacity: 0.18,
           blending: THREE.AdditiveBlending,
           depthWrite: false,
           side: THREE.DoubleSide,
@@ -437,15 +329,10 @@ export function Arena3DHangarWorld({
       );
 
       [-1, 1].forEach((side) => {
-        const beamMain = new THREE.Mesh(tg(new THREE.PlaneGeometry(3.4, 11.0)), beamMat);
-        beamMain.position.set(side * 4.4, 4.2, -7.8);
-        beamMain.rotation.z = side * 0.54;
+        const beamMain = new THREE.Mesh(tg(new THREE.PlaneGeometry(3.0, 11.0)), beamMat);
+        beamMain.position.set(side * 4.6, 4.3, -8.2);
+        beamMain.rotation.z = side * 0.52;
         scene.add(beamMain);
-
-        const beamOuter = new THREE.Mesh(tg(new THREE.PlaneGeometry(2.8, 10.5)), beamMat);
-        beamOuter.position.set(side * 7.2, 4.4, -5.5);
-        beamOuter.rotation.z = side * 0.62;
-        scene.add(beamOuter);
       });
 
       // --- CENTER OBSIDIAN + RANK-REACTIVE ROTATING ESPORTS PEDESTAL ---

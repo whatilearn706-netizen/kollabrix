@@ -5,8 +5,6 @@ import {
   ArrowRight,
   Pencil,
   Play,
-  SlidersHorizontal,
-  Sparkles,
   UserPlus,
   Users,
 } from 'lucide-react';
@@ -47,10 +45,6 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
   const needsFirstSetup = !engine.hasCompletedIdentitySetup;
   const isCustomMode = engine.combatMode === 'custom';
   const activeMeta = AVATAR_CLASS_META[engine.selectedAvatarId] || AVATAR_CLASS_META.walker;
-
-  const configuredSummary = `${MODE_LABELS[engine.combatMode] || 'Battle'} · ${engine.algoLanguage.toUpperCase()} · ${engine.difficulty.toUpperCase()} · ${
-    engine.combatMode === 'bug_hunt' ? '60s' : `${Math.round(engine.timeLimit / 60)}m`
-  }`;
 
   return (
     <div className="relative z-10 min-h-screen w-full flex flex-col justify-between p-4 sm:p-6 lg:px-8 overflow-hidden pointer-events-none">
@@ -178,66 +172,55 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
         <ArenaRightWing engine={engine} />
       </main>
 
-      {/* BOTTOM ESPORTS COMMAND DOCK (BGMI / Free Fire Style Primary START + Squad Controls) */}
-      <div className="relative z-20 w-full max-w-[1520px] mx-auto flex flex-col items-center lg:items-end justify-center gap-2.5 pb-1 pointer-events-auto">
+      {/* BOTTOM ACTION DOCK: Clean Uncluttered CREATE MATCH -> Arena Cards + Join Room */}
+      <div className="relative z-20 w-full max-w-[1520px] mx-auto flex flex-col items-center justify-center gap-2.5 pb-1 pointer-events-auto">
         {engine.lobbyNotice && (
           <div className="px-4 py-2 rounded-xl bg-amber-950/85 border border-amber-500/40 text-xs font-mono text-amber-200 backdrop-blur-xl">
             {engine.lobbyNotice}
           </div>
         )}
 
-        <div className="w-full flex flex-col lg:flex-row items-center justify-between gap-3">
-          {/* Active Loadout Telemetry Pill */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#090D16]/90 border border-white/15 text-[11px] font-mono text-zinc-200 backdrop-blur-xl shadow-lg">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-zinc-400">READY:</span>
-            <span className="font-bold text-white">{configuredSummary}</span>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {!matchConfigured ? (
             <button
+              id="create-match-btn"
               type="button"
+              disabled={engine.usernameStatus === 'taken'}
               onClick={() => setShowMatchPortal(true)}
-              className="text-sky-300 hover:text-white inline-flex items-center gap-1 ml-1.5 underline underline-offset-4 cursor-pointer"
+              className="group relative px-10 sm:px-12 py-3.5 rounded-xl bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-[#EA580C] text-slate-950 border border-amber-200/80 font-mono text-sm sm:text-base font-black uppercase tracking-[0.18em] flex items-center justify-center gap-2.5 shadow-[0_0_36px_rgba(245,158,11,0.45),0_4px_0_#9A3412] hover:shadow-[0_0_52px_rgba(251,191,36,0.7)] active:translate-y-[2px] hover:scale-[1.03] transition-all cursor-pointer disabled:opacity-50 -skew-x-6"
             >
-              <SlidersHorizontal className="w-3 h-3" />
-              <span>Customize</span>
+              <span className="skew-x-6 inline-flex items-center gap-2">
+                <Play className="w-4 h-4 fill-slate-950" />
+                <span>CREATE MATCH</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </span>
             </button>
-          </div>
-
-          {/* Primary Esports Action Cluster (Skewed Glowing START Button + Create/Join) */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
+          ) : (
             <button
-              type="button"
-              onClick={() => setShowMatchPortal(true)}
-              className="px-4 py-3 rounded-xl bg-[#090D16]/90 hover:bg-white/[0.12] border border-white/15 text-xs font-mono font-bold text-zinc-200 hover:text-white flex items-center gap-1.5 backdrop-blur-xl cursor-pointer transition-all"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-sky-300" />
-              <span>Custom Room</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onOpenJoinModal}
-              className="px-4 py-3 rounded-xl bg-[#090D16]/90 hover:bg-white/[0.12] border border-white/15 text-xs font-mono font-bold text-zinc-200 hover:text-white flex items-center gap-1.5 backdrop-blur-xl cursor-pointer transition-all"
-            >
-              <Users className="w-3.5 h-3.5 text-amber-300" />
-              <span>Join Code</span>
-            </button>
-
-            <button
-              id={matchConfigured ? 'start-match-btn' : 'create-match-btn'}
+              id="start-match-btn"
               type="button"
               disabled={engine.usernameStatus === 'taken'}
               onClick={() =>
                 isCustomMode ? engine.createCustomRoom() : engine.launchInstantMatch(false)
               }
-              className="group relative px-9 sm:px-12 py-3.5 rounded-xl bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-[#EA580C] text-slate-950 border border-amber-200/80 font-mono text-sm sm:text-base font-black uppercase tracking-[0.18em] flex items-center justify-center gap-2.5 shadow-[0_0_36px_rgba(245,158,11,0.48),0_4px_0_#9A3412] hover:shadow-[0_0_52px_rgba(251,191,36,0.72)] active:translate-y-[2px] hover:scale-[1.03] transition-all cursor-pointer disabled:opacity-50 -skew-x-6"
+              className="group relative px-10 sm:px-12 py-3.5 rounded-xl bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-[#EA580C] text-slate-950 border border-amber-200/80 font-mono text-sm sm:text-base font-black uppercase tracking-[0.18em] flex items-center justify-center gap-2.5 shadow-[0_0_36px_rgba(245,158,11,0.45),0_4px_0_#9A3412] hover:shadow-[0_0_52px_rgba(251,191,36,0.7)] active:translate-y-[2px] hover:scale-[1.03] transition-all cursor-pointer disabled:opacity-50 -skew-x-6"
             >
               <span className="skew-x-6 inline-flex items-center gap-2">
                 <Play className="w-4 h-4 fill-slate-950" />
-                <span>{isCustomMode ? 'CREATE DUEL ROOM' : `FIND ${engine.teamSize.toUpperCase()} MATCH`}</span>
+                <span>START THE MATCH</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </button>
-          </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onOpenJoinModal}
+            className="px-5 py-3.5 rounded-xl bg-[#070A12]/90 hover:bg-white/[0.12] border border-white/15 text-xs font-mono font-bold text-zinc-200 hover:text-white flex items-center gap-2 backdrop-blur-xl cursor-pointer transition-all"
+          >
+            <Users className="w-3.5 h-3.5 text-amber-300" />
+            <span>Join Room</span>
+          </button>
         </div>
 
         {engine.isGuest && (
