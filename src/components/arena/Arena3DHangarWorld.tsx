@@ -393,17 +393,6 @@ export function Arena3DHangarWorld({
       innerSpinHalo.position.y = 0.045;
       scene.add(innerSpinHalo);
 
-      // 2v2 Squad Companion Hologram Pad beside the hero
-      if (teamSize === '2v2') {
-        const squadPad = new THREE.Mesh(
-          tg(new THREE.TorusGeometry(0.65, 0.018, 8, 42)),
-          tm(new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.75 }))
-        );
-        squadPad.rotation.x = Math.PI / 2;
-        squadPad.position.set(-1.75, 0.04, -0.45);
-        scene.add(squadPad);
-      }
-
       // Rising Cyber Sparks / Embers around Pedestal
       const emberCount = 70;
       const emberPositions = new Float32Array(emberCount * 3);

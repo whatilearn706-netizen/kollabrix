@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Pencil,
   Play,
-  UserPlus,
   Users,
 } from 'lucide-react';
 import { useArenaEngine } from './useArenaEngine';
@@ -152,23 +151,10 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
         </div>
       </div>
 
-      {/* OUTER HUD WINGS & 2v2 SQUAD HOLO-SLOT */}
+      {/* OUTER HUD WINGS */}
       <main className="relative z-20 w-full max-w-[1520px] mx-auto flex-1 flex items-center justify-between gap-4 my-auto py-2">
         <ArenaLeftWing engine={engine} onOpenIdentity={() => setShowIdentityModal(true)} />
-        <div className="flex-1 flex items-end justify-start pl-4 sm:pl-12 pb-8">
-          <button
-            type="button"
-            onClick={() => {
-              engine.setTeamSize('2v2');
-              engine.selectCombatMode('custom');
-              engine.createCustomRoom();
-            }}
-            className="pointer-events-auto hidden md:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#070B14]/80 hover:bg-sky-500/20 border border-dashed border-sky-400/45 hover:border-sky-300 text-[11px] font-mono font-bold text-sky-200 backdrop-blur-md transition-all cursor-pointer shadow-[0_0_24px_rgba(56,189,248,0.16)]"
-          >
-            <UserPlus className="w-3.5 h-3.5 text-sky-300" />
-            <span>+ INVITE SQUAD (2v2)</span>
-          </button>
-        </div>
+        <div className="flex-1" />
         <ArenaRightWing engine={engine} />
       </main>
 
