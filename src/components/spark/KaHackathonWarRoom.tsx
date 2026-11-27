@@ -261,7 +261,11 @@ export function KaHackathonWarRoom({
   const estimatedTokenCost =
     (activeTab === 'starter_repo' && (externalLinksCount >= 1 || notesInput.trim().length > 180)) ||
     (externalLinksCount >= 2 &&
-      (activeTab === 'ppt_deck' || activeTab === 'jury_roast' || activeTab === 'demo_qa' || activeTab === 'repo_pack'))
+      (activeTab === 'ppt_deck' ||
+        activeTab === 'jury_roast' ||
+        activeTab === 'demo_qa' ||
+        activeTab === 'repo_pack' ||
+        activeTab === 'judge_share'))
       ? 2
       : 1;
 
@@ -509,22 +513,20 @@ export function KaHackathonWarRoom({
               )}
             </div>
 
-            {activeTab !== 'judge_share' && (
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-mono ${
-                  estimatedTokenCost === 2
-                    ? 'bg-amber-500/15 border-amber-400/35 text-amber-300'
-                    : 'bg-white/[0.04] border-white/10 text-zinc-300'
-                }`}
-              >
-                <Zap className="w-3 h-3" />
-                <span>
-                  {estimatedTokenCost === 2
-                    ? '2 KΛ-Pro Tokens (Deep Link Inspection)'
-                    : '1 KΛ-Pro Token (Standard)'}
-                </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-mono ${
+                estimatedTokenCost === 2
+                  ? 'bg-amber-500/15 border-amber-400/35 text-amber-300'
+                  : 'bg-white/[0.04] border-white/10 text-zinc-300'
+              }`}
+            >
+              <Zap className="w-3 h-3" />
+              <span>
+                {estimatedTokenCost === 2
+                  ? '2 KΛ-Pro Tokens (Deep Link Inspection)'
+                  : '1 KΛ-Pro Token (Standard)'}
               </span>
-            )}
+            </span>
           </div>
 
           {activeTab === 'ppt_deck' && deck && (

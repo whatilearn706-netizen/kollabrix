@@ -786,13 +786,13 @@ export default function SparkUniversalWorkspacePage() {
             </div>
 
             {mode !== 'general' && (
-              <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-zinc-300 capitalize">
+              <span className="hidden md:inline-flex text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-white/10 text-zinc-300 capitalize">
                 {mode}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setMemoryOpen(true)}
