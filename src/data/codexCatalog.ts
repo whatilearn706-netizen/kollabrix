@@ -43,8 +43,10 @@ export interface CodexBookChapter {
   readTime: string;
   overview: string;
   keyRules: string[];
+  hackathonUse?: string;
+  interviewFlashcards?: Array<{ q: string; a: string }>;
   code?: {
-    language: 'java' | 'python' | 'cpp';
+    language: 'java' | 'python' | 'cpp' | 'typescript';
     title: string;
     snippet: string;
   };

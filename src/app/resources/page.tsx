@@ -38,6 +38,7 @@ import type { LanguageCurriculum } from '@/types/curriculum';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { BOOK_CHAPTER_METAS } from '@/data/codexBookMeta';
 import { getKaFolioHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
@@ -72,6 +73,7 @@ const FOLIO_CATEGORY_STYLES: Record<
 
 const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
   const style = FOLIO_CATEGORY_STYLES[b.category] || FOLIO_CATEGORY_STYLES.Craft;
+  const bookMetas = BOOK_CHAPTER_METAS[b.id] || [];
   return {
     id: b.id,
     kind: 'book',
@@ -88,13 +90,29 @@ const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
     spineColor: b.spineColor,
     accentColor: style.accent,
     badgeText: b.category.toUpperCase(),
-    chapters: b.chapters.map((ch, chIdx) => ({
-      id: `${b.id}-ch-${chIdx + 1}`,
-      title: ch.title,
-      readTime: '6 min read',
-      overview: ch.summary,
-      keyRules: ch.takeaways,
-    })),
+    chapters: b.chapters.map((ch, chIdx) => {
+      const meta = bookMetas[chIdx] || bookMetas[0];
+      return {
+        id: `${b.id}-ch-${chIdx + 1}`,
+        title: ch.title,
+        readTime: '6 min read',
+        overview: ch.summary,
+        keyRules: ch.takeaways,
+        hackathonUse: meta?.hackathon,
+        interviewFlashcards: meta?.flashcards,
+        code: ch.codeSnippet
+          ? {
+              language: (ch.codeTitle?.toLowerCase().includes('cpp')
+                ? 'cpp'
+                : ch.codeTitle?.toLowerCase().includes('java')
+                ? 'java'
+                : 'python') as 'cpp' | 'java' | 'python',
+              title: ch.codeTitle || `${ch.title} Implementation`,
+              snippet: ch.codeSnippet,
+            }
+          : meta?.code,
+      };
+    }),
   };
 });
 

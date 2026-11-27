@@ -6,15 +6,21 @@ import {
   AlertTriangle,
   Bookmark,
   BookOpen,
+  ChevronDown,
+  ChevronUp,
   Code2,
   ExternalLink,
+  HelpCircle,
   Play,
+  Sparkles,
   Swords,
   Terminal,
   X,
   Zap,
 } from 'lucide-react';
 import type { CodexBookVolume, CodexPatternVolume } from '@/data/codexCatalog';
+import { KaMonographCover } from '@/components/brands/KaMonographCover';
+import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
 
 interface CodexReaderModalProps {
   volume: CodexBookVolume | CodexPatternVolume;
@@ -33,8 +39,22 @@ export function CodexReaderModal({
   const [patternLang, setPatternLang] = useState<'python' | 'cpp' | 'java'>('python');
   const [running, setRunning] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
+  const [revealedFlashcard, setRevealedFlashcard] = useState<number | null>(null);
 
-  const runCode = async (language: 'python' | 'cpp' | 'java', sourceCode: string) => {
+  const matchedBook =
+    volume.kind === 'book'
+      ? KA_CODEX_BOOKS.find(
+          (b) =>
+            b.id === volume.id ||
+            b.title.toLowerCase() === volume.title.toLowerCase() ||
+            b.isbn === (volume as CodexBookVolume).spotlightRole?.split('ISBN ')?.[1]?.trim()
+        )
+      : null;
+
+  const runCode = async (
+    language: 'python' | 'cpp' | 'java' | 'typescript',
+    sourceCode: string
+  ) => {
     setRunning(true);
     setOutput(null);
     try {
@@ -103,31 +123,48 @@ export function CodexReaderModal({
           </div>
 
           <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12">
-            {/* Chapter Table of Contents */}
-            <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-white/[0.1] p-4 sm:p-5 space-y-2.5 bg-[#090D16]">
+            {/* Chapter Table of Contents & Matched Monograph Cover */}
+            <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-white/[0.1] p-4 sm:p-5 space-y-3 bg-[#090D16]">
+              {matchedBook && (
+                <div className="flex flex-col items-center p-3.5 mb-2 bg-[#0E1524] rounded-2xl border border-white/[0.12] shadow-xl text-center">
+                  <div className="transform hover:scale-105 transition-transform duration-300 drop-shadow-[0_12px_24px_rgba(0,0,0,0.8)]">
+                    <KaMonographCover book={matchedBook} size="sm" />
+                  </div>
+                  <p className="text-[10px] font-mono font-semibold tracking-[0.2em] uppercase text-sky-300 mt-2.5">
+                    KΛ FOLIO · {matchedBook.category}
+                  </p>
+                  <p className="text-xs font-bold text-white mt-0.5 line-clamp-1">
+                    {matchedBook.shortTitle || matchedBook.title}
+                  </p>
+                </div>
+              )}
+
               <p className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-sky-300 px-1 mb-2">
                 Volume Chapters ({volume.chapters.length})
               </p>
-              {volume.chapters.map((ch, idx) => (
-                <button
-                  key={ch.id}
-                  type="button"
-                  onClick={() => {
-                    setChapterIndex(idx);
-                    setOutput(null);
-                  }}
-                  className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                    chapterIndex === idx
-                      ? 'bg-sky-500/15 border-sky-400/50 text-white shadow-sm'
-                      : 'bg-[#101727] border-white/[0.09] text-[#DCE3EE] hover:bg-white/[0.08] hover:text-white'
-                  }`}
-                >
-                  <p className={`text-[11px] font-mono font-medium uppercase ${chapterIndex === idx ? 'text-sky-300' : 'text-[#9FB0C8]'}`}>
-                    Chapter {idx + 1} · {ch.readTime}
-                  </p>
-                  <p className="text-sm font-semibold mt-1 leading-snug">{ch.title}</p>
-                </button>
-              ))}
+              <div className="space-y-2">
+                {volume.chapters.map((ch, idx) => (
+                  <button
+                    key={ch.id}
+                    type="button"
+                    onClick={() => {
+                      setChapterIndex(idx);
+                      setOutput(null);
+                      setRevealedFlashcard(null);
+                    }}
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                      chapterIndex === idx
+                        ? 'bg-sky-500/15 border-sky-400/50 text-white shadow-sm'
+                        : 'bg-[#101727] border-white/[0.09] text-[#DCE3EE] hover:bg-white/[0.08] hover:text-white'
+                    }`}
+                  >
+                    <p className={`text-[11px] font-mono font-medium uppercase ${chapterIndex === idx ? 'text-sky-300' : 'text-[#9FB0C8]'}`}>
+                      Chapter {idx + 1} · {ch.readTime}
+                    </p>
+                    <p className="text-sm font-semibold mt-1 leading-snug">{ch.title}</p>
+                  </button>
+                ))}
+              </div>
             </aside>
 
             {/* Editorial Chapter Content */}
@@ -146,6 +183,7 @@ export function CodexReaderModal({
                     </p>
                   </div>
 
+                  {/* Field Rules & Takeaways */}
                   <div className="space-y-2.5">
                     <p className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-sky-300">
                       Field Rules &amp; Takeaways
@@ -163,9 +201,68 @@ export function CodexReaderModal({
                     </ul>
                   </div>
 
+                  {/* Hackathon & Production Secret */}
+                  {chapter.hackathonUse && (
+                    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-[#16120C] to-[#0D1322] p-4 sm:p-5 space-y-2">
+                      <div className="flex items-center gap-2 text-amber-300 font-mono text-xs font-semibold uppercase tracking-wider">
+                        <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Hackathon &amp; Production Weapon</span>
+                      </div>
+                      <p className="text-sm font-medium text-[#FEF3C7] leading-relaxed">
+                        {chapter.hackathonUse}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Placement & FAANG Interview Flashcards */}
+                  {chapter.interviewFlashcards && chapter.interviewFlashcards.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-mono font-semibold uppercase tracking-[0.18em] text-sky-300 flex items-center gap-1.5">
+                          <HelpCircle className="w-3.5 h-3.5 text-sky-400" />
+                          <span>Placement &amp; FAANG Interview Prep</span>
+                        </p>
+                        <span className="text-[11px] font-mono text-zinc-400">Tap to reveal answer</span>
+                      </div>
+                      <div className="space-y-2.5">
+                        {chapter.interviewFlashcards.map((qa, qIdx) => {
+                          const isOpen = revealedFlashcard === qIdx;
+                          return (
+                            <div
+                              key={qa.q}
+                              className="rounded-2xl border border-white/[0.12] bg-[#111827] overflow-hidden transition-colors"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setRevealedFlashcard(isOpen ? null : qIdx)}
+                                className="w-full text-left px-4 py-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-white/[0.04]"
+                              >
+                                <span className="text-sm font-semibold text-white">
+                                  {qIdx + 1}. {qa.q}
+                                </span>
+                                {isOpen ? (
+                                  <ChevronUp className="w-4 h-4 text-sky-400 shrink-0" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0" />
+                                )}
+                              </button>
+                              {isOpen && (
+                                <div className="px-4 pb-4 pt-1 text-sm font-medium text-[#CBD5E1] bg-[#0A0F1A] border-t border-white/[0.08] leading-relaxed">
+                                  <span className="text-emerald-400 font-mono text-xs font-bold mr-2">IDEAL ANSWER:</span>
+                                  {qa.a}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Interactive Code Implementation Sandbox */}
                   {chapter.code && (
                     <div className="rounded-2xl border border-white/10 bg-[#05070C] overflow-hidden">
-                      <div className="px-4 py-2.5 border-b border-white/[0.08] flex items-center justify-between">
+                      <div className="px-4 py-2.5 border-b border-white/[0.08] flex items-center justify-between bg-[#080D17]">
                         <span className="text-xs font-mono text-zinc-300 flex items-center gap-2">
                           <Code2 className="w-3.5 h-3.5 text-sky-400" />
                           {chapter.code.title}
@@ -174,23 +271,41 @@ export function CodexReaderModal({
                           type="button"
                           disabled={running}
                           onClick={() => runCode(chapter.code!.language, chapter.code!.snippet)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/35 text-emerald-300 text-[11px] font-mono font-semibold cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/35 text-emerald-300 text-[11px] font-mono font-semibold cursor-pointer transition-colors"
                         >
                           <Play className="w-3 h-3 fill-emerald-300" />
-                          <span>{running ? 'Running...' : 'Run Example'}</span>
+                          <span>{running ? 'Running...' : 'Run in Sandbox'}</span>
                         </button>
                       </div>
                       <pre className="p-4 text-xs font-mono text-zinc-200 overflow-x-auto leading-relaxed">
                         <code>{chapter.code.snippet}</code>
                       </pre>
                       {output && (
-                        <div className="px-4 py-3 border-t border-white/[0.08] bg-black/60 font-mono text-xs text-emerald-300 flex items-start gap-2 whitespace-pre-wrap">
+                        <div className="px-4 py-3 border-t border-white/[0.08] bg-black/75 font-mono text-xs text-emerald-300 flex items-start gap-2 whitespace-pre-wrap">
                           <Terminal className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                           <span>{output}</span>
                         </div>
                       )}
                     </div>
                   )}
+
+                  {/* Bridges to KΛ AI and Battle Arena */}
+                  <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+                    <Link
+                      href={`/ka-ai?prompt=${encodeURIComponent(`Explain the core architectural rules from "${volume.title}" Chapter "${chapter.title}" and show how to implement them in a production Next.js/Postgres hackathon project.`)}`}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600/20 hover:bg-violet-600/35 border border-violet-500/40 text-violet-200 text-xs font-mono font-medium transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                      <span>Ask KΛ AI About This Volume</span>
+                    </Link>
+                    <Link
+                      href="/arena"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/35 border border-sky-500/40 text-sky-200 text-xs font-mono font-medium transition-colors"
+                    >
+                      <Swords className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Duel in 1v1 Battle Arena</span>
+                    </Link>
+                  </div>
                 </>
               )}
             </article>
