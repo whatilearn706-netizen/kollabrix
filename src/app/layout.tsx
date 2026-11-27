@@ -43,12 +43,20 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
+    default: 'Kollabrix — Home of KA AI & KA FOLIO | Collegiate Hackathons & Battle Arena',
     template: '%s | Kollabrix',
   },
   description:
-    'Kollabrix is the official student innovation network to discover collegiate projects, assemble hackathon dream teams, compete in proctored competitive practice arenas, and build game-changing engineering portfolios.',
+    'Kollabrix is the official home of KA AI (Autonomous Engineering Copilot) and KA FOLIO (12 Coding Classics & Tracks) — assemble collegiate hackathon dream teams and compete in proctored battle arenas.',
   keywords: [
+    'KA',
+    'KΛ',
+    'KA AI',
+    'KΛ AI',
+    'KA FOLIO',
+    'KΛ FOLIO',
+    'KA Studio',
+    'KA by Kollabrix',
     'Kollabrix',
     'kollabrix',
     'Kollabrix platform',
@@ -150,8 +158,8 @@ const jsonLd = {
       '@id': `${siteUrl}/#website`,
       url: `${siteUrl}/`,
       name: 'Kollabrix',
-      alternateName: ['KOLLABRIX', 'KOLLΛBRIX'],
-      description: 'Kollabrix — Collegiate Hackathon Teams, Project Collaboration & Competitive Practice',
+      alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'KA', 'KA Suite', 'KΛ'],
+      description: 'Kollabrix — Home of KA AI & KA FOLIO, Collegiate Hackathon Teams, and Battle Arena',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',
@@ -164,6 +172,28 @@ const jsonLd = {
       publisher: {
         '@id': `${siteUrl}/#organization`,
       },
+    },
+    {
+      '@type': 'ItemList',
+      '@id': `${siteUrl}/#ka-suite`,
+      name: 'KA Software & Knowledge Suite',
+      description: 'Official KA engineering tools and library by Kollabrix',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'KA AI (KΛ AI) — Autonomous Engineering Copilot & Code Studio',
+          url: 'https://ai.kollabrix.in/',
+          description: 'AI code sandbox, DSA placement coach, and hackathon MVP architect by Kollabrix.',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'KA FOLIO (KΛ FOLIO) — 12 Coding Classics & Guided Tracks',
+          url: 'https://folio.kollabrix.in/',
+          description: 'Dark-luxury computer science library featuring 12 iconic engineering volumes and interactive coding sandboxes.',
+        },
+      ],
     },
     {
       '@type': 'WebApplication',
