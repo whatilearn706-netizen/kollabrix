@@ -14,7 +14,6 @@ import {
   CornerDownRight,
   Send,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 
 interface InteractiveCompilerProps {
   language: 'java' | 'cpp' | 'python' | 'javascript';
@@ -261,11 +260,11 @@ export function InteractiveCompiler({
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
 
-          <Button
-            size="sm"
+          <button
+            type="button"
             onClick={handleRunClick}
             disabled={isRunning}
-            className={`font-semibold px-4 py-1.5 rounded-full flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap font-semibold text-xs px-4 py-1.5 rounded-full transition-all active:scale-95 cursor-pointer disabled:opacity-50 ${
               waitingForInput
                 ? 'bg-sky-200 hover:bg-white text-[#07090E] ring-2 ring-sky-400/40 animate-pulse'
                 : 'bg-[#FAF8F5] hover:bg-sky-100 text-[#07090E] shadow-[0_8px_24px_rgba(255,255,255,0.12)]'
@@ -273,21 +272,21 @@ export function InteractiveCompiler({
           >
             {isRunning ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Running ({elapsedSeconds.toFixed(1)}s)...
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                <span>Running ({elapsedSeconds.toFixed(1)}s)...</span>
               </>
             ) : waitingForInput ? (
               <>
-                <CornerDownRight className="w-3.5 h-3.5" />
-                Enter Stdin Below
+                <CornerDownRight className="w-3.5 h-3.5 shrink-0" />
+                <span>Enter Stdin Below</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-current" />
-                Run Code
+                <Play className="w-3.5 h-3.5 fill-current shrink-0" />
+                <span>Run Code</span>
               </>
             )}
-          </Button>
+          </button>
         </div>
       </div>
 

@@ -176,7 +176,7 @@ export function StepLearningWorkspace({
             <span>Folio</span>
           </button>
 
-          <span className="text-xs font-mono uppercase tracking-[0.18em] text-zinc-400 truncate hidden sm:inline">
+          <span className="text-xs font-mono uppercase tracking-[0.12em] text-zinc-300 truncate hidden lg:inline">
             {track ? track.title : curriculum.title}
           </span>
 
@@ -251,7 +251,7 @@ export function StepLearningWorkspace({
         }`}
       >
         {/* Clean Horizontal Step Selector Pill Rail */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {curriculum.steps.map((st, idx) => {
             const isCur = idx === activeStepIndex;
             const isDone = completedSteps.includes(st.stepNumber);
@@ -339,7 +339,7 @@ export function StepLearningWorkspace({
             })}
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+          <div className="hidden lg:flex items-center gap-2 text-[11px] font-mono text-zinc-500">
             <Link href="/icpc" className="hover:text-zinc-200 transition-colors inline-flex items-center gap-1">
               <Code2 className="w-3 h-3" />
               <span>Practice IDE</span>
