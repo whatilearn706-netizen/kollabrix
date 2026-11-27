@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
+import { getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 interface KaBrandEmblemProps {
   className?: string;
@@ -106,11 +107,11 @@ export function KaSuiteSwitcher({ active, tone = 'dark-blue' }: KaSuiteSwitcherP
         }`}
       >
         <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-        <span>KΛ CODEX</span>
+        <span>KΛ FOLIO</span>
       </Link>
 
       <Link
-        href="/"
+        href={getKollabrixHomeUrl()}
         className="px-2.5 py-1 rounded-full text-[11px] font-mono text-zinc-400 hover:text-white border border-transparent hover:bg-white/[0.06] transition-all inline-flex items-center gap-1"
       >
         <span>Kollabrix</span>

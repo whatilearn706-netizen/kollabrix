@@ -6,6 +6,7 @@ import { motion, type MotionValue, useScroll, useTransform } from 'motion/react'
 import { ArrowUpRight, ChevronDown } from 'lucide-react';
 import type { CodingBook } from '@/data/kaCodexBooks';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 interface KaFolioScrollWalkHeroProps {
   books: CodingBook[];
@@ -255,7 +256,10 @@ export function KaFolioScrollWalkHero({ books, onOpenIndex }: KaFolioScrollWalkH
               </h2>
               <p className="text-[11px] sm:text-xs text-[#A8A196] mt-0.5">
                 12 coding classics &middot;{' '}
-                <Link href="/" className="text-[#F4F3EF] hover:text-white underline underline-offset-2">
+                <Link
+                  href={getKollabrixHomeUrl()}
+                  className="text-[#F4F3EF] hover:text-white underline underline-offset-2"
+                >
                   Built by Kollabrix
                 </Link>
               </p>

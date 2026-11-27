@@ -38,6 +38,7 @@ import type { LanguageCurriculum } from '@/types/curriculum';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { getKaFolioHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
 const COMPLETED_STORAGE_KEY = 'kollabrix_codex_completed_lessons';
@@ -136,18 +137,21 @@ export default function ResourcesPage() {
   );
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
-  // Seed browser history on fresh /resources tab so tapping browser Back opens KΛ CODEX homepage (/ka-codex)
+  // Seed browser history on fresh /resources tab so tapping browser Back opens KΛ FOLIO homepage
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const folioHome = getKaFolioHomePath();
     const currentUrl = window.location.pathname + window.location.search + window.location.hash;
-    const cameFromCodexHome = document.referrer.includes('/ka-codex');
+    const cameFromCodexHome =
+      document.referrer.includes('/ka-codex') ||
+      (folioHome === '/' && document.referrer.includes('folio.kollabrix.in'));
     if (!cameFromCodexHome && !window.history.state?.kaBackSeeded && window.history.length <= 2) {
-      window.history.replaceState({ ...(window.history.state || {}), kaBackRoot: '/ka-codex' }, '', '/ka-codex');
+      window.history.replaceState({ ...(window.history.state || {}), kaBackRoot: folioHome }, '', folioHome);
       window.history.pushState({ kaBackSeeded: true }, '', currentUrl);
     }
     const onPopState = (e: PopStateEvent) => {
-      if (window.location.pathname === '/ka-codex' || (e.state && e.state.kaBackRoot === '/ka-codex')) {
-        window.location.assign('/ka-codex');
+      if (window.location.pathname === folioHome || (e.state && e.state.kaBackRoot === folioHome)) {
+        window.location.assign(folioHome);
       }
     };
     window.addEventListener('popstate', onPopState);
@@ -369,7 +373,7 @@ export default function ResourcesPage() {
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Link
-              href="/ka-codex"
+              href={getKaFolioHomePath()}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#FAF8F5] text-[#07090E] font-semibold text-sm hover:bg-sky-100 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -451,7 +455,7 @@ export default function ResourcesPage() {
         <header className="h-[72px] px-5 sm:px-10 lg:px-14 flex items-center justify-between gap-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
             <Link
-              href="/"
+              href={getKollabrixHomeUrl()}
               title="Go to Kollabrix Home"
               className="text-xs sm:text-sm font-black tracking-[0.22em] uppercase text-white hover:text-sky-200 transition-colors"
             >

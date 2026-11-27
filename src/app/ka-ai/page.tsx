@@ -7,6 +7,7 @@ import { RotateCcw, Sparkles } from 'lucide-react';
 import { KaAiCinematicIntro } from '@/components/brands/KaAiCinematicIntro';
 import { KaAiParticleOrb } from '@/components/brands/KaAiParticleOrb';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { getKaAiHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 export default function KaAiBrandPage() {
   const [introDone, setIntroDone] = useState(false);
@@ -76,7 +77,7 @@ export default function KaAiBrandPage() {
             aria-label="KΛ ΛI navigation"
             className="relative z-20 w-full max-w-[460px] rounded-2xl bg-[#091229]/70 border border-white/[0.1] backdrop-blur-2xl px-4 py-2 flex items-center justify-between gap-2.5 shadow-[0_14px_40px_rgba(0,0,0,0.65)]"
           >
-            <Link href="/ka-ai" className="inline-flex items-center gap-2 group">
+            <Link href={getKaAiHomePath()} className="inline-flex items-center gap-2 group">
               <KaBrandEmblem />
               <span className="font-semibold text-sm tracking-tight text-white">KΛ ΛI</span>
             </Link>
@@ -100,7 +101,7 @@ export default function KaAiBrandPage() {
           {/* Hero Display Headline with Silver-White Focal Luminance Sweep */}
           <div className="relative z-10 mt-12 sm:mt-16 max-w-3xl mx-auto">
             <Link
-              href="/"
+              href={getKollabrixHomeUrl()}
               title="Visit Kollabrix"
               className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 hover:border-sky-300/45 text-[11px] font-mono text-slate-200 mb-5 transition-all"
             >
@@ -278,7 +279,7 @@ export default function KaAiBrandPage() {
                 <Link href="/spark" className="hover:text-white transition-colors">
                   How to Use
                 </Link>
-                <Link href="/" className="hover:text-white transition-colors">
+                <Link href={getKollabrixHomeUrl()} className="hover:text-white transition-colors">
                   Kollabrix
                 </Link>
                 <a href="#contact" className="hover:text-white transition-colors">

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sparkles, X, ArrowRight, Megaphone } from 'lucide-react';
 import { BroadcastBannerConfig, DEFAULT_MASTER_CONTROL_CONFIG } from '@/types/masterControl';
+import { getClientKaSubdomain } from '@/lib/kaBrandDomains';
 
 const OBSIDIAN_BANNER_STYLE = {
   bg: 'bg-black',
@@ -98,6 +99,7 @@ export function GlobalBroadcastBanner() {
   }, []);
 
   if (
+    getClientKaSubdomain() !== null ||
     pathname?.startsWith('/resources') ||
     pathname?.startsWith('/arena') ||
     pathname?.startsWith('/icpc') ||

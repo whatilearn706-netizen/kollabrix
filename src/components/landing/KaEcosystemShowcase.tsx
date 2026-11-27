@@ -171,6 +171,7 @@ export function KaEcosystemShowcase() {
                 href="/ka-ai"
                 target="_blank"
                 rel="noopener noreferrer"
+                title="KΛ ΛI (KA AI) — Engineering AI Copilot by Kollabrix"
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/[0.05] hover:bg-white/[0.11] border border-white/15 text-slate-200 hover:text-white font-mono text-xs transition-all"
               >
                 <span>Explore KΛ ΛI Site</span>
@@ -275,6 +276,7 @@ export function KaEcosystemShowcase() {
                 href="/ka-codex"
                 target="_blank"
                 rel="noopener noreferrer"
+                title="KΛ FOLIO (KA Folio) — 12 Coding Classics by Kollabrix"
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/[0.05] hover:bg-white/[0.11] border border-white/15 text-[#E5E0D7] hover:text-white font-mono text-xs transition-all"
               >
                 <span>Explore KΛ FOLIO Site</span>

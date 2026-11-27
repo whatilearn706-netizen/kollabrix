@@ -1,14 +1,37 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY } from '@/lib/supabase/isConfigured';
+import { getKaSubdomainFromHost, isKollabrixProdDomain } from '@/lib/kaBrandDomains';
 
 /**
  * Global Next.js Middleware:
- * 1. Automatically refreshes expired Supabase session cookies via @supabase/ssr on every page visit.
- * 2. Protects authenticated routes (e.g., /arena/*).
- * 3. Keeps session cookies persistent for 30 days so users stay logged in across days.
+ * 1. Serves standalone KΛ subdomains (ai.kollabrix.in -> /ka-ai, folio.kollabrix.in -> /ka-codex) + dedicated SEO routes.
+ * 2. Automatically refreshes Supabase session cookies via @supabase/ssr with shared `.kollabrix.in` cookie scope.
+ * 3. Protects authenticated routes (e.g., /arena/*) and maintains 30-day persistent sessions.
  */
 export async function middleware(request: NextRequest) {
+  const host =
+    request.headers.get('x-forwarded-host') ||
+    request.headers.get('host') ||
+    '';
+  const brand = getKaSubdomainFromHost(host);
+  const shareDomain = isKollabrixProdDomain(host);
+  const { pathname } = request.nextUrl;
+
+  if (brand && pathname === '/sitemap.xml') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/api/ka-sitemap';
+    url.searchParams.set('brand', brand);
+    return NextResponse.rewrite(url);
+  }
+
+  if (brand && pathname === '/robots.txt') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/api/ka-robots';
+    url.searchParams.set('brand', brand);
+    return NextResponse.rewrite(url);
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -17,6 +40,8 @@ export async function middleware(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
+
+  const cookieExtra = shareDomain ? { domain: '.kollabrix.in' } : {};
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -33,7 +58,7 @@ export async function middleware(request: NextRequest) {
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, {
             ...options,
-            // Guarantee 30-day persistent cookie lifespan (2,592,000 seconds)
+            ...cookieExtra,
             maxAge: options?.maxAge ?? 2592000,
             sameSite: options?.sameSite ?? 'lax',
             path: options?.path ?? '/',
@@ -43,8 +68,6 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Calling getUser() automatically evaluates the JWT and silently refreshes
-  // the access token using the refresh token if expired.
   let user = null;
   try {
     const { data } = await supabase.auth.getUser();
@@ -53,9 +76,6 @@ export async function middleware(request: NextRequest) {
     // Non-blocking fallback if auth service is temporarily unavailable
   }
 
-  const { pathname } = request.nextUrl;
-
-  // Protect nested arena sub-routes while allowing public entry
   if (pathname.startsWith('/arena/')) {
     const cookies = request.cookies.getAll();
     const hasSession =
@@ -75,18 +95,34 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Ensure persistent cookie tracking aligns with active authenticated user
   if (user && !request.cookies.get('linkora_user_session')) {
     response.cookies.set('linkora_user_session', 'true', {
       path: '/',
-      maxAge: 2592000, // 30 days
+      maxAge: 2592000,
       sameSite: 'lax',
+      ...cookieExtra,
     });
     response.cookies.set('linkora_user_id', user.id, {
       path: '/',
       maxAge: 2592000,
       sameSite: 'lax',
+      ...cookieExtra,
     });
+  }
+
+  // Rewrite standalone KΛ subdomains cleanly while preserving refreshed session cookies
+  if (brand && pathname === '/') {
+    const rewriteUrl = request.nextUrl.clone();
+    rewriteUrl.pathname = brand === 'ai' ? '/ka-ai' : '/ka-codex';
+    const rewriteRes = NextResponse.rewrite(rewriteUrl, {
+      request: {
+        headers: request.headers,
+      },
+    });
+    response.cookies.getAll().forEach((c) => {
+      rewriteRes.cookies.set(c);
+    });
+    return rewriteRes;
   }
 
   return response;
@@ -94,15 +130,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static chunks)
-     * - _next/image (image optimization)
-     * - favicon.ico (favicon)
-     * - brand/ (brand assets)
-     * - api/compiler/ (low-latency execution endpoint)
-     * - static file extensions (svg, png, jpg, jpeg, gif, webp, ico, pdf, pptx, mp4)
-     */
     '/((?!_next/static|_next/image|favicon.ico|brand/|api/compiler/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm|pdf|pptx)$).*)',
+    '/sitemap.xml',
+    '/robots.txt',
   ],
 };

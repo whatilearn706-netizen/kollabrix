@@ -45,6 +45,7 @@ import { isFacultyUser } from '@/lib/auth/faculty';
 import { LiquidChromeButton } from '@/components/ui/LiquidChromeButton';
 import { KollabrixQuickDock } from '@/components/navigation/KollabrixQuickDock';
 import { CapabilitiesMegaMenu } from '@/components/navigation/CapabilitiesMegaMenu';
+import { getClientKaSubdomain } from '@/lib/kaBrandDomains';
 
 export function Navbar() {
   const rawPathname = usePathname();
@@ -101,8 +102,9 @@ export function Navbar() {
     setUserDropdownOpen(false);
   }, [pathname]);
 
-  // Dedicated Resource Hub, Battle Arena, AI Spark Studio, and Active Exam Mode run in their own focused workspace without global navbar
+  // Dedicated Resource Hub, Battle Arena, AI Spark Studio, standalone KΛ subdomains, and Active Exam Mode run without global navbar
   if (
+    getClientKaSubdomain() !== null ||
     pathname.startsWith('/resources') ||
     pathname.startsWith('/arena') ||
     pathname.startsWith('/spark') ||
@@ -155,6 +157,7 @@ export function Navbar() {
   return (
     <>
       <header
+      data-kollabrix-nav
       style={{
         backgroundColor:
           (isNavbarDark
@@ -561,13 +564,27 @@ export function Navbar() {
             </Link>
 
             <Link
-              href="/war"
+              href="/spark"
+              target="_blank"
+              rel="noopener noreferrer"
               prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
-              <Swords className="w-4 h-4 text-rose-400" />
-              <span>Campus War</span>
+              <Sparkles className="w-4 h-4 text-sky-400" />
+              <span>KΛ ΛI</span>
+            </Link>
+
+            <Link
+              href="/resources"
+              target="_blank"
+              rel="noopener noreferrer"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <BookOpen className="w-4 h-4 text-amber-300" />
+              <span>KΛ FOLIO</span>
             </Link>
 
             <Link
@@ -591,6 +608,16 @@ export function Navbar() {
             </Link>
 
             <Link
+              href="/war"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <Swords className="w-4 h-4 text-rose-400" />
+              <span>Campus War</span>
+            </Link>
+
+            <Link
               href="/leaderboard"
               prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
@@ -608,30 +635,6 @@ export function Navbar() {
             >
               <Clock className="w-4 h-4 text-rose-500" />
               <span>Deadlines Radar</span>
-            </Link>
-
-            <Link
-              href="/spark"
-              target="_blank"
-              rel="noopener noreferrer"
-              prefetch={false}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>KΛ ΛI</span>
-            </Link>
-
-            <Link
-              href="/resources"
-              target="_blank"
-              rel="noopener noreferrer"
-              prefetch={false}
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-            >
-              <BookOpen className="w-4 h-4 text-amber-300" />
-              <span>KΛ FOLIO</span>
             </Link>
 
             <Link

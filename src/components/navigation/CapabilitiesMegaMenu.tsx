@@ -23,7 +23,7 @@ import {
 export interface CapabilityItem {
   id: string;
   label: string;
-  group: 'compete' | 'build';
+  group: 'core' | 'campus';
   href: string;
   badge: string;
   live?: boolean;
@@ -36,11 +36,11 @@ export interface CapabilityItem {
 }
 
 export const CAPABILITY_ITEMS: CapabilityItem[] = [
-  // Group 1: COMPETE & RANK
+  // Group 1: CORE CAPABILITIES (Requested Sequence)
   {
     id: 'arena',
     label: '1v1 Battle Arena',
-    group: 'compete',
+    group: 'core',
     href: '/arena',
     badge: 'LIVE DUELS · 14 ACTIVE',
     live: true,
@@ -51,9 +51,61 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
     icon: Swords,
   },
   {
+    id: 'spark',
+    label: 'KΛ ΛI',
+    group: 'core',
+    href: '/spark',
+    badge: 'KΛ-1 · KΛ-PRO ENGINE',
+    dotColor: 'bg-sky-400 shadow-[0_0_8px_#38bdf8]',
+    badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/35',
+    description: 'Audit your repo, export winning slides & pass screening rounds.',
+    ctaLabel: 'Open KΛ ΛI',
+    openInNewTab: true,
+    icon: Sparkles,
+  },
+  {
+    id: 'resources',
+    label: 'KΛ FOLIO',
+    group: 'core',
+    href: '/resources',
+    badge: 'FOLIO LIBRARY',
+    dotColor: 'bg-amber-300 shadow-[0_0_8px_#fcd34d]',
+    badgeClass: 'bg-amber-500/15 text-amber-200 border-amber-400/35',
+    description: 'Language video tracks, 12 coding classics & step-by-step study studio.',
+    ctaLabel: 'Open KΛ FOLIO',
+    openInNewTab: true,
+    icon: BookOpen,
+  },
+  {
+    id: 'icpc',
+    label: 'Practice IDE',
+    group: 'core',
+    href: '/icpc',
+    badge: 'OA & ICPC PROCTORED LAB',
+    dotColor: 'bg-blue-400 shadow-[0_0_8px_#60a5fa]',
+    badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/35',
+    description: 'Company OA rounds, proctored mocks & instant KΛ Bug Coach fixes.',
+    ctaLabel: 'Launch IDE',
+    icon: Terminal,
+  },
+  {
+    id: 'problems',
+    label: 'Faculty Problems',
+    group: 'core',
+    href: '/problems',
+    badge: 'CAMPUS BRIEFS',
+    dotColor: 'bg-teal-400 shadow-[0_0_8px_#2dd4bf]',
+    badgeClass: 'bg-teal-500/15 text-teal-300 border-teal-500/35',
+    description: 'Tackle verified faculty & industry challenge statements for credit.',
+    ctaLabel: 'Browse Problems',
+    icon: Lightbulb,
+  },
+
+  // Group 2: CAMPUS & RANKINGS
+  {
     id: 'war',
     label: 'Campus War',
-    group: 'compete',
+    group: 'campus',
     href: '/war',
     badge: 'INTER-COLLEGE',
     live: true,
@@ -66,7 +118,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'leaderboard',
     label: 'Campus Leaderboard',
-    group: 'compete',
+    group: 'campus',
     href: '/leaderboard',
     badge: 'RANKINGS',
     dotColor: 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]',
@@ -78,7 +130,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'deadlines',
     label: 'Deadlines Radar',
-    group: 'compete',
+    group: 'campus',
     href: '/deadlines',
     badge: 'COUNTDOWNS',
     live: true,
@@ -87,58 +139,6 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
     description: 'Never miss closing hackathon registrations or submission locks.',
     ctaLabel: 'Track Deadlines',
     icon: Clock,
-  },
-
-  // Group 2: BUILD & PRACTICE
-  {
-    id: 'icpc',
-    label: 'Practice IDE',
-    group: 'build',
-    href: '/icpc',
-    badge: 'OA & ICPC PROCTORED LAB',
-    dotColor: 'bg-blue-400 shadow-[0_0_8px_#60a5fa]',
-    badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/35',
-    description: 'Company OA rounds, proctored mocks & instant KΛ Bug Coach fixes.',
-    ctaLabel: 'Launch IDE',
-    icon: Terminal,
-  },
-  {
-    id: 'spark',
-    label: 'KΛ ΛI',
-    group: 'build',
-    href: '/spark',
-    badge: 'KΛ-1 · KΛ-PRO ENGINE',
-    dotColor: 'bg-violet-400 shadow-[0_0_8px_#a78bfa]',
-    badgeClass: 'bg-violet-500/15 text-violet-300 border-violet-500/35',
-    description: 'Audit your repo, export winning slides & pass screening rounds.',
-    ctaLabel: 'Open KΛ ΛI',
-    openInNewTab: true,
-    icon: Sparkles,
-  },
-  {
-    id: 'problems',
-    label: 'Faculty Problems',
-    group: 'build',
-    href: '/problems',
-    badge: 'CAMPUS BRIEFS',
-    dotColor: 'bg-teal-400 shadow-[0_0_8px_#2dd4bf]',
-    badgeClass: 'bg-teal-500/15 text-teal-300 border-teal-500/35',
-    description: 'Tackle verified faculty & industry challenge statements for credit.',
-    ctaLabel: 'Browse Problems',
-    icon: Lightbulb,
-  },
-  {
-    id: 'resources',
-    label: 'KΛ FOLIO',
-    group: 'build',
-    href: '/resources',
-    badge: 'FOLIO LIBRARY',
-    dotColor: 'bg-amber-300 shadow-[0_0_8px_#fcd34d]',
-    badgeClass: 'bg-amber-500/15 text-amber-200 border-amber-400/35',
-    description: 'Language video tracks, 3D technical volumes & problem-solving playbooks.',
-    ctaLabel: 'Open KΛ FOLIO',
-    openInNewTab: true,
-    icon: BookOpen,
   },
 ];
 
@@ -453,8 +453,8 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
     setIsOpen((prev) => !prev);
   };
 
-  const competeItems = CAPABILITY_ITEMS.filter((i) => i.group === 'compete');
-  const buildItems = CAPABILITY_ITEMS.filter((i) => i.group === 'build');
+  const coreItems = CAPABILITY_ITEMS.filter((i) => i.group === 'core');
+  const campusItems = CAPABILITY_ITEMS.filter((i) => i.group === 'campus');
 
   return (
     <div
@@ -516,18 +516,20 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
             <div className="grid grid-cols-12 gap-0">
               {/* LEFT PANE (~54% -> col-span-6): Grouped Navigation */}
               <div className="col-span-6 p-4 space-y-3.5 border-r border-white/[0.07]">
-                {/* Group 1: COMPETE & RANK */}
+                {/* Group 1: CORE CAPABILITIES */}
                 <div className="space-y-1">
                   <div className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-zinc-500">
-                    Compete &amp; Rank
+                    Core Capabilities
                   </div>
-                  {competeItems.map((item) => {
+                  {coreItems.map((item) => {
                     const isHovered = hoveredItem.id === item.id;
                     const Icon = item.icon;
                     return (
                       <Link
                         key={item.id}
                         href={item.href}
+                        target={item.openInNewTab ? '_blank' : undefined}
+                        rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                         onMouseEnter={() => setHoveredItem(item)}
                         onFocus={() => setHoveredItem(item)}
                         onClick={() => setIsOpen(false)}
@@ -558,12 +560,12 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
                   })}
                 </div>
 
-                {/* Group 2: BUILD & PRACTICE */}
+                {/* Group 2: CAMPUS & RANKINGS */}
                 <div className="space-y-1 pt-1 border-t border-white/[0.06]">
                   <div className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-zinc-500">
-                    Build &amp; Practice
+                    Campus &amp; Rankings
                   </div>
-                  {buildItems.map((item) => {
+                  {campusItems.map((item) => {
                     const isHovered = hoveredItem.id === item.id;
                     const Icon = item.icon;
                     return (
@@ -592,6 +594,11 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
                           <Icon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
                           <span className="truncate">{item.label}</span>
                         </span>
+                        {item.live && (
+                          <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 shrink-0">
+                            Live
+                          </span>
+                        )}
                       </Link>
                     );
                   })}

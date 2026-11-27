@@ -35,6 +35,7 @@ import { SparkMarkdown } from '@/components/spark/SparkMarkdown';
 import { SparkSidebar, SparkMode, StoredSparkThread } from '@/components/spark/SparkSidebar';
 import { KaPricingModal } from '@/components/spark/KaPricingModal';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { getKaAiHomePath } from '@/lib/kaBrandDomains';
 import type { KaEntitlementSummary } from '@/lib/spark/plans';
 
 type ModelTier = 'fast' | 'deep';
@@ -159,18 +160,21 @@ export default function SparkUniversalWorkspacePage() {
       .catch(() => {});
   }, [user?.id]);
 
-  // Seed browser history on fresh /spark tab so tapping browser Back opens KΛ ΛI homepage (/ka-ai)
+  // Seed browser history on fresh /spark tab so tapping browser Back opens KΛ ΛI homepage
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const kaHome = getKaAiHomePath();
     const currentUrl = window.location.pathname + window.location.search + window.location.hash;
-    const cameFromKaAi = document.referrer.includes('/ka-ai');
+    const cameFromKaAi =
+      document.referrer.includes('/ka-ai') ||
+      (kaHome === '/' && document.referrer.includes('ai.kollabrix.in'));
     if (!cameFromKaAi && !window.history.state?.kaBackSeeded && window.history.length <= 2) {
-      window.history.replaceState({ ...(window.history.state || {}), kaBackRoot: '/ka-ai' }, '', '/ka-ai');
+      window.history.replaceState({ ...(window.history.state || {}), kaBackRoot: kaHome }, '', kaHome);
       window.history.pushState({ kaBackSeeded: true }, '', currentUrl);
     }
     const onPopState = (e: PopStateEvent) => {
-      if (window.location.pathname === '/ka-ai' || (e.state && e.state.kaBackRoot === '/ka-ai')) {
-        window.location.assign('/ka-ai');
+      if (window.location.pathname === kaHome || (e.state && e.state.kaBackRoot === kaHome)) {
+        window.location.assign(kaHome);
       }
     };
     window.addEventListener('popstate', onPopState);
@@ -693,7 +697,7 @@ export default function SparkUniversalWorkspacePage() {
             )}
 
             <Link
-              href="/ka-ai"
+              href={getKaAiHomePath()}
               title="Back to KΛ ΛI Homepage"
               className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-b from-[#171C28] via-[#0E121B] to-[#080A10] border border-white/15 hover:border-sky-300/45 shadow-[0_0_18px_rgba(148,163,184,0.14)] transition-all"
             >

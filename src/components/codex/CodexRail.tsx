@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Home, BookOpen, Zap, Bookmark, Gift } from 'lucide-react';
 import { CodexSection } from '@/data/codexCatalog';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
+import { getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 interface CodexRailProps {
   activeSection: CodexSection;
@@ -33,7 +34,7 @@ export function CodexRail({ activeSection, onSelectSection, savedCount }: CodexR
         className="hidden md:flex flex-col items-center justify-between w-[74px] shrink-0 py-6 border-r border-white/[0.07] bg-[#06080D]/90 backdrop-blur-xl select-none z-20"
       >
         <Link
-          href="/"
+          href={getKollabrixHomeUrl()}
           title="Back to Kollabrix Home"
           className="w-10 h-10 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 flex items-center justify-center transition-all group"
         >

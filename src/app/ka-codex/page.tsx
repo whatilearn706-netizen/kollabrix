@@ -6,6 +6,7 @@ import { ArrowUpRight, X } from 'lucide-react';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
 import { KaFolioScrollWalkHero } from '@/components/brands/KaFolioScrollWalkHero';
 import { KaCodexSpotlightStage } from '@/components/brands/KaCodexSpotlightStage';
+import { getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 export default function KaCodexBrandPage() {
   const [showIndexOverlay, setShowIndexOverlay] = useState(false);
@@ -138,7 +139,7 @@ export default function KaCodexBrandPage() {
                 </li>
                 <li>
                   <Link
-                    href="/"
+                    href={getKollabrixHomeUrl()}
                     className="inline-flex items-center gap-1.5 text-[#B8B1A6] hover:text-white transition-colors"
                   >
                     <span>Return to Kollabrix</span>

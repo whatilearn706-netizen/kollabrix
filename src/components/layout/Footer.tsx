@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { Code2, Swords, MessageSquare, Users } from 'lucide-react';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
+import { getClientKaSubdomain } from '@/lib/kaBrandDomains';
 
 export function Footer() {
   const pathname = usePathname();
@@ -60,6 +61,7 @@ export function Footer() {
   }, [isFooterDark, pathname]);
 
   if (
+    getClientKaSubdomain() !== null ||
     pathname?.startsWith('/resources') ||
     pathname?.startsWith('/arena') ||
     pathname?.startsWith('/spark') ||
@@ -84,6 +86,7 @@ export function Footer() {
 
   return (
     <footer
+      data-kollabrix-footer
       ref={footerRef}
       style={{
         backgroundColor: isFooterDark ? '#000000' : '#f8fafc',
