@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
+  ArrowRight,
   Bookmark,
   BookOpen,
   CheckCircle2,
@@ -23,12 +24,13 @@ import {
 } from 'lucide-react';
 import type { CodexBookVolume, CodexPatternVolume } from '@/data/codexCatalog';
 import { KaMonographCover } from '@/components/brands/KaMonographCover';
-import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { ALL_FOLIO_RAW_BOOKS } from '@/data/kaAllBooks';
 
 interface CodexReaderModalProps {
   volume: CodexBookVolume | CodexPatternVolume;
   isSaved: boolean;
   onToggleSave: () => void;
+  onSelectBookId?: (bookId: string) => void;
   onClose: () => void;
 }
 
@@ -36,6 +38,7 @@ export function CodexReaderModal({
   volume,
   isSaved,
   onToggleSave,
+  onSelectBookId,
   onClose,
 }: CodexReaderModalProps) {
   const [chapterIndex, setChapterIndex] = useState(0);
@@ -44,9 +47,15 @@ export function CodexReaderModal({
   const [output, setOutput] = useState<string | null>(null);
   const [revealedFlashcard, setRevealedFlashcard] = useState<number | null>(null);
 
+  useEffect(() => {
+    setChapterIndex(0);
+    setOutput(null);
+    setRevealedFlashcard(null);
+  }, [volume.id]);
+
   const matchedBook =
     volume.kind === 'book'
-      ? KA_CODEX_BOOKS.find(
+      ? ALL_FOLIO_RAW_BOOKS.find(
           (b) =>
             b.id === volume.id ||
             b.title.toLowerCase() === volume.title.toLowerCase() ||
@@ -126,48 +135,87 @@ export function CodexReaderModal({
           </div>
 
           <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12">
-            {/* Chapter Table of Contents & Matched Monograph Cover */}
-            <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-white/[0.1] p-4 sm:p-5 space-y-3 bg-[#090D16]">
+            {/* 80/20 Essential Chapters & Companion Roadmap Sidebar */}
+            <aside className="md:col-span-4 border-b md:border-b-0 md:border-r border-white/[0.1] p-4 sm:p-5 space-y-3.5 bg-[#090D16]">
               {matchedBook && (
-                <div className="flex flex-col items-center p-3.5 mb-2 bg-[#0E1524] rounded-2xl border border-white/[0.12] shadow-xl text-center">
+                <div className="flex flex-col items-center p-3.5 bg-[#0E1524] rounded-2xl border border-white/[0.12] shadow-xl text-center">
                   <div className="transform hover:scale-105 transition-transform duration-300 drop-shadow-[0_12px_24px_rgba(0,0,0,0.8)]">
                     <KaMonographCover book={matchedBook} size="sm" />
                   </div>
-                  <p className="text-[10px] font-mono font-semibold tracking-[0.2em] uppercase text-sky-300 mt-2.5">
-                    KΛ FOLIO · {matchedBook.category}
-                  </p>
-                  <p className="text-xs font-bold text-white mt-0.5 line-clamp-1">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3">
+                    {volume.mentorGuide?.level && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border ${
+                          volume.mentorGuide.level === 'Beginner'
+                            ? 'bg-emerald-500/15 border-emerald-400/35 text-emerald-300'
+                            : volume.mentorGuide.level === 'Core'
+                            ? 'bg-sky-500/15 border-sky-400/35 text-sky-300'
+                            : 'bg-amber-500/15 border-amber-400/35 text-amber-300'
+                        }`}
+                      >
+                        {volume.mentorGuide.level} Tier
+                      </span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono text-zinc-300 bg-white/[0.06] border border-white/10">
+                      {volume.mentorGuide?.languageGroup || matchedBook.category}
+                    </span>
+                  </div>
+                  <p className="text-xs font-bold text-white mt-1.5 line-clamp-1">
                     {matchedBook.shortTitle || matchedBook.title}
                   </p>
                 </div>
               )}
 
-              <p className="text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-sky-300 px-1 mb-2">
-                Volume Chapters ({volume.chapters.length})
-              </p>
-              <div className="space-y-2">
-                {volume.chapters.map((ch, idx) => (
-                  <button
-                    key={ch.id}
-                    type="button"
-                    onClick={() => {
-                      setChapterIndex(idx);
-                      setOutput(null);
-                      setRevealedFlashcard(null);
-                    }}
-                    className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                      chapterIndex === idx
-                        ? 'bg-sky-500/15 border-sky-400/50 text-white shadow-sm'
-                        : 'bg-[#101727] border-white/[0.09] text-[#DCE3EE] hover:bg-white/[0.08] hover:text-white'
-                    }`}
-                  >
-                    <p className={`text-[11px] font-mono font-medium uppercase ${chapterIndex === idx ? 'text-sky-300' : 'text-[#9FB0C8]'}`}>
-                      Chapter {idx + 1} · {ch.readTime}
-                    </p>
-                    <p className="text-sm font-semibold mt-1 leading-snug">{ch.title}</p>
-                  </button>
-                ))}
+              <div>
+                <p className="text-[11px] font-mono font-bold uppercase tracking-[0.16em] text-sky-300 px-1 mb-2 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span>Only Chapters You Need (80/20)</span>
+                </p>
+                <div className="space-y-2">
+                  {volume.chapters.map((ch, idx) => (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      onClick={() => {
+                        setChapterIndex(idx);
+                        setOutput(null);
+                        setRevealedFlashcard(null);
+                      }}
+                      className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                        chapterIndex === idx
+                          ? 'bg-sky-500/15 border-sky-400/50 text-white shadow-sm'
+                          : 'bg-[#101727] border-white/[0.09] text-[#DCE3EE] hover:bg-white/[0.08] hover:text-white'
+                      }`}
+                    >
+                      <p className={`text-[10px] font-mono font-semibold uppercase ${chapterIndex === idx ? 'text-sky-300' : 'text-[#9FB0C8]'}`}>
+                        {ch.realChapterLabel || `80/20 Priority #${idx + 1}`}
+                      </p>
+                      <p className="text-sm font-semibold mt-1 leading-snug">{ch.title}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
+
+              {volume.mentorGuide?.recommendedPairBookId && volume.mentorGuide?.recommendedPairTitle && (
+                <div className="rounded-2xl border border-white/10 bg-[#0D1422] p-3.5 space-y-1.5">
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.16em] text-emerald-300">
+                    Next Book For 80/20 Mastery
+                  </p>
+                  <p className="text-xs font-medium text-[#E2E8F0] leading-snug">
+                    {volume.mentorGuide.recommendedPairTitle}
+                  </p>
+                  {onSelectBookId && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectBookId(volume.mentorGuide!.recommendedPairBookId!)}
+                      className="mt-1 inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold text-sky-300 hover:text-sky-200 cursor-pointer"
+                    >
+                      <span>Open Recommended Book</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
             </aside>
 
             {/* Editorial Chapter Content + Top Mentor Decision Guide */}
@@ -233,7 +281,7 @@ export function CodexReaderModal({
                 <>
                   <div>
                     <span className="text-xs font-mono font-semibold uppercase tracking-wider text-sky-300">
-                      Chapter {chapterIndex + 1} of {volume.chapters.length} · {chapter.readTime}
+                      80/20 Priority Focus · {chapter.realChapterLabel || chapter.readTime}
                     </span>
                     <h3 className="text-2xl sm:text-[28px] font-bold tracking-tight text-white mt-1.5 leading-snug">
                       {chapter.title}

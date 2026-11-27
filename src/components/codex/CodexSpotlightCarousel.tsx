@@ -18,6 +18,7 @@ import type {
   CodexPatternVolume,
 } from '@/data/codexCatalog';
 import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { ALL_FOLIO_RAW_BOOKS } from '@/data/kaAllBooks';
 import { KaMonographCover } from '@/components/brands/KaMonographCover';
 
 export type CodexVolume = CodexLanguageTrack | CodexBookVolume | CodexPatternVolume;
@@ -208,7 +209,8 @@ export function CodexSpotlightCarousel({
 
             const matchedMonograph =
               item.kind === 'book'
-                ? KA_CODEX_BOOKS.find((b) => b.id === item.id)
+                ? ALL_FOLIO_RAW_BOOKS.find((b) => b.id === item.id) ||
+                  KA_CODEX_BOOKS.find((b) => b.id === item.id)
                 : undefined;
 
             const scaleClass = matchedMonograph

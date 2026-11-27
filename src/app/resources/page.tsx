@@ -37,92 +37,15 @@ import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import type { LanguageCurriculum } from '@/types/curriculum';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
-import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
-import {
-  BOOK_CHAPTER_METAS,
-  BOOK_MENTOR_GUIDES,
-  FOLIO_BOOK_GOALS,
-} from '@/data/codexBookMeta';
+import { ALL_FOLIO_BOOK_VOLUMES } from '@/data/kaAllBooks';
+import { FOLIO_BOOK_GOALS } from '@/data/codexBookMeta';
 import { getKaFolioHomePath, getKollabrixHomeUrl } from '@/lib/kaBrandDomains';
 
 const SAVED_STORAGE_KEY = 'kollabrix_codex_saved_ids';
 const COMPLETED_STORAGE_KEY = 'kollabrix_codex_completed_lessons';
 const CONTINUE_STORAGE_KEY = 'kollabrix_codex_last_track';
 
-const FOLIO_CATEGORY_STYLES: Record<
-  string,
-  { gradient: string; accent: string }
-> = {
-  Systems: {
-    gradient: 'from-[#101829] via-[#090D16] to-[#05070C]',
-    accent: 'text-sky-300',
-  },
-  Algorithms: {
-    gradient: 'from-[#141A24] via-[#0A0D14] to-[#05070B]',
-    accent: 'text-slate-200',
-  },
-  Architecture: {
-    gradient: 'from-[#111528] via-[#090C16] to-[#05060C]',
-    accent: 'text-indigo-300',
-  },
-  Craft: {
-    gradient: 'from-[#111A1E] via-[#090E12] to-[#05070A]',
-    accent: 'text-emerald-300',
-  },
-  Interviews: {
-    gradient: 'from-[#0E1822] via-[#080D14] to-[#04060A]',
-    accent: 'text-cyan-300',
-  },
-};
-
-const FOLIO_12_BOOKS: CodexBookVolume[] = KA_CODEX_BOOKS.map((b) => {
-  const style = FOLIO_CATEGORY_STYLES[b.category] || FOLIO_CATEGORY_STYLES.Craft;
-  const bookMetas = BOOK_CHAPTER_METAS[b.id] || [];
-  const mentorGuide = BOOK_MENTOR_GUIDES[b.id];
-  return {
-    id: b.id,
-    kind: 'book',
-    title: b.title,
-    languageTag: b.category,
-    edition: `VOL. ${String(b.index).padStart(2, '0')} · ${b.year}`,
-    subtitle: b.tagline,
-    spotlightAuthor: b.author,
-    spotlightRole: `${b.category} · ISBN ${b.isbn}`,
-    spotlightBio: mentorGuide?.quickVerdict ? `${mentorGuide.quickVerdict} — ${b.tagline}` : b.tagline,
-    ctaLabel: 'Open Mentor Guide',
-    pagesCount: b.pages,
-    coverGradient: style.gradient,
-    spineColor: b.spineColor,
-    accentColor: style.accent,
-    badgeText: b.category.toUpperCase(),
-    mentorGuide,
-    chapters: b.chapters.map((ch, chIdx) => {
-      const meta = bookMetas[chIdx] || bookMetas[0];
-      return {
-        id: `${b.id}-ch-${chIdx + 1}`,
-        title: ch.title,
-        readTime: '6 min read',
-        overview: ch.summary,
-        keyRules: ch.takeaways,
-        hackathonUse: meta?.hackathon,
-        interviewFlashcards: meta?.flashcards,
-        code:
-          meta?.code ||
-          (ch.codeSnippet
-            ? {
-                language: (ch.codeTitle?.toLowerCase().includes('cpp')
-                  ? 'cpp'
-                  : ch.codeTitle?.toLowerCase().includes('java')
-                  ? 'java'
-                  : 'python') as 'cpp' | 'java' | 'python',
-                title: ch.codeTitle || `${ch.title} Implementation`,
-                snippet: ch.codeSnippet,
-              }
-            : undefined),
-      };
-    }),
-  };
-});
+const FOLIO_12_BOOKS: CodexBookVolume[] = ALL_FOLIO_BOOK_VOLUMES;
 
 const ALL_VOLUMES: CodexVolume[] = [
   ...CODEX_LANGUAGE_TRACKS,
@@ -143,6 +66,7 @@ export default function ResourcesPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [bookTopic, setBookTopic] = useState<string>('All');
+  const [bookTier, setBookTier] = useState<'All' | 'Beginner' | 'Core' | 'Pro'>('All');
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [lastVisitedId, setLastVisitedId] = useState<string | null>(null);
@@ -345,17 +269,24 @@ export default function ResourcesPage() {
           ? FOLIO_12_BOOKS
           : FOLIO_12_BOOKS.filter(
               (b) =>
-                b.mentorGuide?.goalTags?.includes(bookTopic) || b.languageTag === bookTopic
+                b.mentorGuide?.languageGroup === bookTopic ||
+                b.mentorGuide?.goalTags?.includes(bookTopic) ||
+                b.languageTag === bookTopic
             );
-      const res = topicBooks.filter(match);
-      return res.length > 0 ? res : topicBooks;
+      const tierBooks =
+        bookTier === 'All'
+          ? topicBooks
+          : topicBooks.filter((b) => b.mentorGuide?.level === bookTier);
+      const base = tierBooks.length > 0 ? tierBooks : topicBooks;
+      const res = base.filter(match);
+      return res.length > 0 ? res : base;
     }
     if (activeSection === 'solving') {
       const res = CODEX_PATTERNS.filter(match);
       return res.length > 0 ? res : CODEX_PATTERNS;
     }
     return [];
-  }, [activeSection, searchQuery, bookTopic]);
+  }, [activeSection, searchQuery, bookTopic, bookTier]);
 
   const savedVolumes = useMemo(
     () => ALL_VOLUMES.filter((v) => savedIds.includes(v.id)),
@@ -553,24 +484,48 @@ export default function ResourcesPage() {
             savedIds={savedIds}
             onToggleSave={toggleSave}
             topicFilterBar={
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                {FOLIO_BOOK_GOALS.map((topic) => (
-                  <button
-                    key={topic}
-                    type="button"
-                    onClick={() => {
-                      setBookTopic(topic);
-                      setCarouselIndices((prev) => ({ ...prev, books: 0 }));
-                    }}
-                    className={`px-3 py-1 rounded-full text-[11px] font-mono cursor-pointer transition-all ${
-                      bookTopic === topic
-                        ? 'bg-gradient-to-b from-white to-slate-200 text-slate-950 font-bold shadow-[0_0_18px_rgba(226,232,240,0.3)]'
-                        : 'bg-white/[0.04] hover:bg-white/[0.1] text-zinc-300 border border-white/10'
-                    }`}
-                  >
-                    {topic === 'All' ? `All (${FOLIO_12_BOOKS.length})` : topic}
-                  </button>
-                ))}
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {FOLIO_BOOK_GOALS.map((topic) => (
+                    <button
+                      key={topic}
+                      type="button"
+                      onClick={() => {
+                        setBookTopic(topic);
+                        setCarouselIndices((prev) => ({ ...prev, books: 0 }));
+                      }}
+                      className={`px-3 py-1 rounded-full text-[11px] font-mono cursor-pointer transition-all ${
+                        bookTopic === topic
+                          ? 'bg-gradient-to-b from-white to-slate-200 text-slate-950 font-bold shadow-[0_0_18px_rgba(226,232,240,0.3)]'
+                          : 'bg-white/[0.04] hover:bg-white/[0.1] text-zinc-300 border border-white/10'
+                      }`}
+                    >
+                      {topic === 'All' ? `All (${FOLIO_12_BOOKS.length})` : topic}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 mr-1">
+                    Tier:
+                  </span>
+                  {(['All', 'Beginner', 'Core', 'Pro'] as const).map((tierOpt) => (
+                    <button
+                      key={tierOpt}
+                      type="button"
+                      onClick={() => {
+                        setBookTier(tierOpt);
+                        setCarouselIndices((prev) => ({ ...prev, books: 0 }));
+                      }}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono cursor-pointer transition-all ${
+                        bookTier === tierOpt
+                          ? 'bg-sky-400 text-slate-950 font-bold'
+                          : 'bg-white/[0.04] hover:bg-white/[0.1] text-zinc-300 border border-white/10'
+                      }`}
+                    >
+                      {tierOpt === 'All' ? 'All Tiers' : tierOpt}
+                    </button>
+                  ))}
+                </div>
               </div>
             }
           />
@@ -778,6 +733,10 @@ export default function ResourcesPage() {
             volume={activeModalVolume as CodexBookVolume | CodexPatternVolume}
             isSaved={savedIds.includes(activeModalVolume.id)}
             onToggleSave={() => toggleSave(activeModalVolume.id)}
+            onSelectBookId={(nextBookId) => {
+              const target = FOLIO_12_BOOKS.find((b) => b.id === nextBookId);
+              if (target) setActiveModalVolume(target);
+            }}
             onClose={() => setActiveModalVolume(null)}
           />
         )}

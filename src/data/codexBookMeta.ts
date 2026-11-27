@@ -12,133 +12,212 @@ export interface BookChapterMeta {
 
 export const FOLIO_BOOK_GOALS = [
   'All',
+  'Java',
+  'CSS & Frontend',
+  'JS & TypeScript',
+  'Python & AI/ML',
+  'C & C++',
+  '4th Year Core CS',
   'Placement & OAs',
   'Hackathon Backend',
   'Clean Code & PRs',
-  'Java & Architecture',
-  'CS Deep Dive',
 ] as const;
+
+export const CLASSIC_REAL_CHAPTER_LABELS: Record<string, string[]> = {
+  ddia: ['Real Book Ch. 1 (of 12)', 'Real Book Ch. 3 (of 12)', 'Real Book Ch. 5 & 9 (of 12)'],
+  'clean-code': ['Real Book Ch. 2 (of 17)', 'Real Book Ch. 3 (of 17)', 'Real Book Ch. 7 (of 17)'],
+  'pragmatic-programmer': ['Real Book Ch. 2 (of 9)', 'Real Book Ch. 2 & 4 (of 9)'],
+  clrs: ['Real Book Ch. 2–4 (of 35)', 'Real Book Ch. 14–15 (of 35)'],
+  'grokking-algorithms': ['Real Book Ch. 6 (of 11)', 'Real Book Ch. 5 (of 11)'],
+  refactoring: ['Real Book Ch. 2 (of 12)', 'Real Book Ch. 3 (of 12)'],
+  'effective-java': ['Real Book Ch. 2 & 4 (of 12)', 'Real Book Ch. 4 & 5 (of 12)'],
+  'design-patterns': ['Real Book Ch. 1 & 5 (of 6)', 'Real Book Ch. 4 (of 6)'],
+  'clean-architecture': ['Real Book Part V: Ch. 22 (of 34)', 'Real Book Part IV: Ch. 12–14 (of 34)'],
+  ctci: ['Real Book Ch. VII (of XVII)', 'Real Book Ch. IV & V (of XVII)'],
+  'code-complete': ['Real Book Ch. 5 & 8 (of 35)', 'Real Book Ch. 18 (of 35)'],
+  sicp: ['Real Book Ch. 1 & 2 (of 5)', 'Real Book Ch. 3 & 4 (of 5)'],
+};
 
 export const BOOK_MENTOR_GUIDES: Record<string, BookMentorGuide> = {
   ddia: {
-    goalTags: ['Hackathon Backend', 'CS Deep Dive'],
+    goalTags: ['Hackathon Backend', '4th Year Core CS', 'CS Deep Dive'],
+    level: 'Pro',
+    languageGroup: '4th Year Core CS',
+    totalRealChapters: 12,
     quickVerdict: 'The #1 Backend & System Design Bible',
     useWhen:
       'You are building a real-time hackathon backend, preparing for System Design interviews, or deciding between Postgres, Redis, and Kafka.',
     skipWhen:
       'You have a pure DSA coding round / Online Assessment in the next 2 weeks—open Cracking the Coding Interview (CTCI) first instead.',
     onlyChaptersYouNeed:
-      'Read only Ch. 1 (p99 Tail Latency), Ch. 2 (B-Trees vs LSM-Trees), and Ch. 3 (Replication & Raft Consensus) — skip the 400 pages of legacy batch-processing theory for now.',
+      'Out of 12 huge chapters (~616 pages), read ONLY Ch. 1 (p99 Tail Latency), Ch. 3 (Storage: B-Trees vs LSM-Trees), Ch. 5 (Replication), Ch. 7 (Transactions), and Ch. 9 (Consensus). Skip Ch. 10–11 legacy Hadoop MapReduce completely!',
+    recommendedPairTitle: 'System Design Interview (Alex Xu) for 45-min Interviews',
+    recommendedPairBookId: 'system-design-alex-xu',
   },
   'clean-code': {
     goalTags: ['Clean Code & PRs'],
+    level: 'Core',
+    languageGroup: 'Architecture & Craft',
+    totalRealChapters: 17,
     quickVerdict: 'Make Your GitHub Look Senior-Level',
     useWhen:
       'Your codebase feels messy, PR reviewers complain about giant functions, or hackathon judges only spend 60 seconds reading your GitHub repo.',
     skipWhen:
       'You are rushing a 2-hour coding contest—competitive programming speed matters more than long descriptive names in OAs.',
     onlyChaptersYouNeed:
-      'Master Ch. 1 (Meaningful Names), Ch. 2 (Small Single-Purpose Functions), and Ch. 3 (Clean Error Boundaries) — those 3 alone transform 90% of messy student repos.',
+      'Out of 17 chapters, master ONLY Ch. 2 (Meaningful Names), Ch. 3 (Small Functions), Ch. 7 (Error Handling), and Ch. 10 (Classes). Skip legacy Java XML config case studies in Ch. 14–16!',
+    recommendedPairTitle: 'Refactoring by Martin Fowler (How to Clean Old Code Safely)',
+    recommendedPairBookId: 'refactoring',
   },
   'pragmatic-programmer': {
     goalTags: ['Hackathon Backend', 'Clean Code & PRs'],
+    level: 'Core',
+    languageGroup: 'Architecture & Craft',
+    totalRealChapters: 9,
     quickVerdict: 'Ship End-to-End Without Getting Stuck',
     useWhen:
       'Your hackathon team builds frontend and backend separately and everything breaks at the 11th hour during integration.',
     skipWhen:
       'You already ship full-stack slices daily and need deep DSA or JVM specifics.',
     onlyChaptersYouNeed:
-      'Focus on Tracer Bullets (wire UI → API → DB in Hour 2), DRY Knowledge (not copy-paste phobia), and Design by Contract guards.',
+      'Out of 9 chapters, focus ONLY on Ch. 2 Topic 8–12 (Orthogonality, DRY Knowledge & Tracer Bullets) and Ch. 4 Topic 23 (Design by Contract Guards).',
+    recommendedPairTitle: 'Clean Code (Pair for Naming & Function Polish)',
+    recommendedPairBookId: 'clean-code',
   },
   clrs: {
     goalTags: ['Placement & OAs', 'CS Deep Dive'],
+    level: 'Pro',
+    languageGroup: 'C & C++',
+    totalRealChapters: 35,
     quickVerdict: 'Rigorous Algorithm Proofs & Complexity Bounds',
     useWhen:
       'You want rock-solid asymptotic intuition for Google/ICPC/Quant OAs, Master Theorem recurrences, or proving why a greedy/DP solution actually holds.',
     skipWhen:
-      'You are just starting DSA from zero—read Grokking Algorithms first so the visuals click before diving into CLRS math.',
+      'You are just starting DSA from zero—read Grokking Algorithms first so the visuals click before diving into 1,312 pages of CLRS math.',
     onlyChaptersYouNeed:
-      'Focus on Loop Invariants & Binary Search bounds, Dynamic Programming state transitions, and Greedy Exchange Proofs.',
+      'Out of 35 chapters (1,312 pages!), read ONLY Ch. 2–4 (Loop Invariants & Master Theorem), Ch. 14 (Dynamic Programming), Ch. 15 (Greedy), and Ch. 20–22 (BFS, DFS, Dijkstra).',
+    recommendedPairTitle: "Grokking Algorithms (Beginner Visuals) or CP Handbook (C++ Speed)",
+    recommendedPairBookId: 'grokking-algorithms',
   },
   'grokking-algorithms': {
     goalTags: ['Placement & OAs'],
+    level: 'Beginner',
+    languageGroup: 'Python & AI/ML',
+    totalRealChapters: 11,
     quickVerdict: 'Fastest Visual Way to Understand Graphs & BFS',
     useWhen:
       'You get confused by recursion, BFS/DFS, Dijkstra, or Hash Tables and want visual intuition that sticks before practicing LeetCode/Arena.',
     skipWhen:
       'You already solve 1600+ rated problems effortlessly and want advanced Segment Trees or Bitmask DP.',
     onlyChaptersYouNeed:
-      'Breadth-First Search shortest hops (Ch. 1) and Hash Tables / O(1) Caching (Ch. 2) cover 60% of college internship OAs.',
+      'Out of 11 chapters, read Ch. 1–2 (Binary Search & Arrays/Lists), Ch. 5 (Hash Tables), Ch. 6 (Breadth-First Search), and Ch. 9 (Dijkstra). Saves 80% of beginner DSA confusion!',
+    recommendedPairTitle: 'Cracking the Coding Interview (Next Step for Placements)',
+    recommendedPairBookId: 'ctci',
   },
   refactoring: {
     goalTags: ['Clean Code & PRs'],
+    level: 'Core',
+    languageGroup: 'JS & TypeScript',
+    totalRealChapters: 12,
     quickVerdict: 'Turn Spaghetti MVP Code Into Maintainable Software',
     useWhen:
       'Your project works, but adding one new feature breaks three existing pages ("Shotgun Surgery") and you are scared to touch old files.',
     skipWhen:
       'You haven’t built your initial working MVP yet—make it work first, then refactor safely.',
     onlyChaptersYouNeed:
-      'The Two Hats rule (never refactor and add features in the same edit) + Catalog of Code Smells (Extract Function & Replace Conditional with Map/Polymorphism).',
+      'Out of 12 chapters, read ONLY Ch. 2 (The Two Hats Principle), Ch. 3 (Catalog of Code Smells), Ch. 6 (Extract Function), and Ch. 10 (Replace Conditional with Polymorphism).',
+    recommendedPairTitle: 'Clean Architecture (Structural App Boundaries)',
+    recommendedPairBookId: 'clean-architecture',
   },
   'effective-java': {
-    goalTags: ['Placement & OAs', 'Java & Architecture'],
+    goalTags: ['Placement & OAs', 'Java & Architecture', 'Java'],
+    level: 'Pro',
+    languageGroup: 'Java',
+    totalRealChapters: 12,
     quickVerdict: 'Mandatory for Java / Spring Boot Placements',
     useWhen:
       'Your primary stack is Java / Spring Boot, or you want to ace Java backend interviews (Amazon, Goldman Sachs, Flipkart, Uber).',
     skipWhen:
       'You write exclusively Python or TypeScript/Node.js for projects and OAs.',
     onlyChaptersYouNeed:
-      'Static Factories & Builders, Immutability for thread-safety, and Composition over Inheritance + Generics (PECS).',
+      'Out of 90 items across 12 chapters, master ONLY Ch. 2 (Items 1, 2, 6: Factories & Builders), Ch. 4 (Items 15–18: Immutability & Composition), Ch. 5 (Generics PECS), and Ch. 11 (Concurrency).',
+    recommendedPairTitle: 'Java Concurrency in Practice (4th Year / Backend Pro)',
+    recommendedPairBookId: 'java-concurrency',
   },
   'design-patterns': {
-    goalTags: ['Hackathon Backend', 'Java & Architecture'],
+    goalTags: ['Hackathon Backend', 'Java & Architecture', 'Java'],
+    level: 'Core',
+    languageGroup: 'Java',
+    totalRealChapters: 6,
     quickVerdict: 'Ace Low-Level Design (LLD) Interviews',
     useWhen:
       'You are facing Low-Level Design rounds ("Design a Parking Lot / Splitwise / Notification Engine") or want plug-and-play AI/Payment adapters in your hackathon app.',
     skipWhen:
       'You are forcing patterns into a 50-line script—simplicity beats over-engineering.',
     onlyChaptersYouNeed:
-      'You only need 5 patterns in real life: Strategy, Factory, Observer, Adapter, and Decorator. Ignore obscure academic patterns.',
+      'Out of 23 classic Gang of Four patterns, 5 patterns solve 90% of LLD interviews: Strategy, Factory Method, Observer, Adapter, and Decorator. Skip Flyweight, Interpreter, and Visitor!',
+    recommendedPairTitle: 'Clean Architecture (Scale Beyond Individual Classes)',
+    recommendedPairBookId: 'clean-architecture',
   },
   'clean-architecture': {
-    goalTags: ['Hackathon Backend', 'Java & Architecture'],
+    goalTags: ['Hackathon Backend', 'Java & Architecture', '4th Year Core CS'],
+    level: 'Pro',
+    languageGroup: 'Architecture & Craft',
+    totalRealChapters: 34,
     quickVerdict: 'Never Get Locked Into One DB or AI Provider',
     useWhen:
       'You want to swap Gemini/OpenAI or local SQLite/Postgres without rewriting your entire frontend and business logic.',
     skipWhen:
       'You are building a single-file CLI script or quick 2-hour prototype.',
     onlyChaptersYouNeed:
-      'The Dependency Rule (business logic stays pure at the center) and SOLID Component Boundaries.',
+      'Out of 34 short chapters, read ONLY Part III (Ch. 7–11 SOLID Principles), Part IV (Ch. 14 Component Coupling), and Part V (Ch. 22 The Clean Architecture Dependency Rule).',
+    recommendedPairTitle: 'System Design Interview (Alex Xu)',
+    recommendedPairBookId: 'system-design-alex-xu',
   },
   ctci: {
     goalTags: ['Placement & OAs'],
+    level: 'Core',
+    languageGroup: 'Placement & OAs',
+    totalRealChapters: 17,
     quickVerdict: 'Your #1 Weapon for Campus Placements & Internships',
     useWhen:
       'You have coding interviews or OAs coming up in 1–8 weeks and need a repeatable framework to optimize brute-force solutions live in front of an interviewer.',
     skipWhen:
       'You are purely focused on shipping a production startup/hackathon UI.',
     onlyChaptersYouNeed:
-      'BUD Optimization (Bottlenecks, Unnecessary Work, Duplicated Work) + Trees, Graphs & Bitmask patterns.',
+      'Out of 17 chapters (687 pages), master ONLY Ch. VII (Technical Walkthrough & BUD Optimization), Ch. 1–4 (Arrays/Strings, Linked Lists, Stacks, Trees/Graphs), and Ch. 8 (Recursion & DP).',
+    recommendedPairTitle: "Competitive Programmer's Handbook (Hard OAs)",
+    recommendedPairBookId: 'cp-handbook',
   },
   'code-complete': {
     goalTags: ['Clean Code & PRs'],
+    level: 'Pro',
+    languageGroup: 'Architecture & Craft',
+    totalRealChapters: 35,
     quickVerdict: 'Bulletproof Production & Defensive Coding',
     useWhen:
       'Users keep crashing your live hackathon demo with unexpected inputs, empty strings, or edge cases.',
     skipWhen:
       'You are preparing for 45-minute algorithmic interviews—use CTCI instead.',
     onlyChaptersYouNeed:
-      'Defensive Barricades (validate inputs cleanly at the door) and Table-Driven Design (replace ugly if/else chains with clean lookup tables).',
+      'Out of 35 chapters (960 pages!), read ONLY Ch. 5 (Design in Construction), Ch. 8 (Defensive Programming & Barricades), and Ch. 18 (Table-Driven Methods).',
+    recommendedPairTitle: 'Clean Code (Everyday Naming & Functions)',
+    recommendedPairBookId: 'clean-code',
   },
   sicp: {
     goalTags: ['CS Deep Dive'],
+    level: 'Pro',
+    languageGroup: 'Python & AI/ML',
+    totalRealChapters: 5,
     quickVerdict: 'Unlock Elite Functional Thinking & Compilers',
     useWhen:
       'You want to deeply understand closures, recursion vs iteration, functional pipelines, and how interpreters/compilers actually work.',
     skipWhen:
       'You just want quick placement prep or to ship a React/Next.js CRUD app this weekend.',
     onlyChaptersYouNeed:
-      'Procedures as Abstractions (Ch. 1: higher-order map/filter/reduce & closures) and Eval/Apply mental model (Ch. 2).',
+      'Out of 5 dense MIT chapters, read Ch. 1 (Building Abstractions with Procedures & Closures) and Ch. 3.5 / Ch. 4.1 (Streams & the Metacircular Evaluator).',
+    recommendedPairTitle: 'Fluent Python (Apply Functional Streams in Modern Python)',
+    recommendedPairBookId: 'fluent-python',
   },
 };
 

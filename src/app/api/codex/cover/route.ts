@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { ALL_FOLIO_RAW_BOOKS } from '@/data/kaAllBooks';
 import { buildMonographCoverSvg } from '@/lib/codex/monographArt';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const id = (request.nextUrl.searchParams.get('id') || '').trim();
 
   const book =
-    KA_CODEX_BOOKS.find((b) => (isbn && b.isbn === isbn) || (id && b.id === id)) || null;
+    ALL_FOLIO_RAW_BOOKS.find((b) => (isbn && b.isbn === isbn) || (id && b.id === id)) || null;
 
   if (!book) {
     return NextResponse.json({ error: 'Unknown volume' }, { status: 404 });

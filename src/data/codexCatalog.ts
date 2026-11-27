@@ -39,6 +39,7 @@ export interface CodexLanguageTrack {
 
 export interface CodexBookChapter {
   id: string;
+  realChapterLabel?: string;
   title: string;
   readTime: string;
   overview: string;
@@ -54,9 +55,14 @@ export interface CodexBookChapter {
 
 export interface BookMentorGuide {
   goalTags: string[];
+  level: 'Beginner' | 'Core' | 'Pro';
+  languageGroup: string;
+  totalRealChapters: number;
   useWhen: string;
   skipWhen: string;
   onlyChaptersYouNeed: string;
+  recommendedPairTitle?: string;
+  recommendedPairBookId?: string;
   quickVerdict: string;
 }
 
@@ -65,6 +71,8 @@ export interface CodexBookVolume {
   kind: 'book';
   title: string;
   languageTag: string;
+  level?: 'Beginner' | 'Core' | 'Pro';
+  languageGroup?: string;
   edition: string;
   subtitle: string;
   spotlightAuthor: string;

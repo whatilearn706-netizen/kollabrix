@@ -9,7 +9,7 @@ import { STARTER_KITS } from '@/data/starterKits';
 import { STUDENT_PERKS } from '@/data/studentPerks';
 import { IcpcContest } from '@/types/icpc';
 import { CODEX_LANGUAGE_TRACKS, CODEX_BOOKS, CODEX_PATTERNS } from '@/data/codexCatalog';
-import { KA_CODEX_BOOKS } from '@/data/kaCodexBooks';
+import { ALL_FOLIO_BOOK_VOLUMES } from '@/data/kaAllBooks';
 import { DEFAULT_CURRICULA } from '@/data/defaultCurriculum';
 import { getBuilderMemoryWithArena, formatBuilderMemoryPrompt } from '@/lib/spark/builderMemory';
 
@@ -39,8 +39,16 @@ const KOLLABRIX_PLATFORM_MAP = `UNIFIED 3-WEBSITE ECOSYSTEM MAP (Kollabrix + KΛ
    - **DSA & Placements Coach**: Pattern-based OA & interview prep linked directly to Practice IDE & Battle Arena.
    - **Hackathon Studio (Hackathon Pass)**: Bespoke 7-Slide \`.pptx\` Deck Generator (with Repeat / New Design), **AI Jury Roast & Live Q&A Simulator**, **1-Click Working Starter Repo Blueprint**, Cut-List, 2-Min Demo Timer, and Squad Match.
 
-3. **KΛ FOLIO (Dark-Luxury Coding Library & Guided Tracks — \`https://folio.kollabrix.in\` / [KΛ FOLIO](/ka-codex) & [Resources Studio](/resources))**:
-   - **12 Curated Coding Classics** (Custom KΛ FOLIO Monograph Editions): DDIA, Clean Code, Pragmatic Programmer, CLRS, Grokking Algorithms, Refactoring, Effective Java, Design Patterns, Clean Architecture, Cracking the Coding Interview, Code Complete, and SICP — each with chapters, Hackathon & Production Weapons, FAANG Placement Flashcards, and runnable Judge0 code sandboxes.
+3. **KΛ FOLIO (Dark-Luxury Coding Library & Goal-Based Book Decision Engine — \`https://folio.kollabrix.in\` / [KΛ FOLIO](/ka-codex) & [Resources Studio](/resources))**:
+   - **33 Curated Coding Books & 4th-Year Core CS Volumes (Beginner → Core → Pro)**:
+     - **Java**: *Head First Java* (Beginner), *Core Java Vol. I* (Core), *Effective Java* (Pro), *Java Concurrency in Practice* (Pro).
+     - **CSS & Frontend**: *HTML & CSS (Jon Duckett)* (Beginner), *CSS: The Definitive Guide* (Core), *CSS Secrets* (Pro).
+     - **JavaScript & TypeScript**: *Eloquent JavaScript* (Beginner), *You Don't Know JS Yet* (Core), *Effective TypeScript* (Pro).
+     - **Python & 4th-Year AI/ML**: *Python Crash Course* (Beginner), *Fluent Python* (Core), *Hands-On Machine Learning* (Pro/4th Year), *Designing Machine Learning Systems* (Pro/4th Year).
+     - **C & C++**: *The C Programming Language (K&R)* (Beginner), *Programming: Principles & Practice Using C++* (Beginner), *Effective Modern C++* (Core), *Competitive Programmer's Handbook* (Pro).
+     - **4th-Year Core CS (OS, DBMS, CN, System Design)**: *Operating Systems: Three Easy Pieces (OSTEP)*, *Database Internals*, *Computer Networking: A Top-Down Approach (Kurose & Ross)*, *System Design Interview (Alex Xu)*, *Designing Data-Intensive Applications (DDIA)*.
+     - **Algorithms, Craft & Interviews**: *Grokking Algorithms*, *CLRS*, *Cracking the Coding Interview (CTCI)*, *Clean Code*, *The Pragmatic Programmer*, *Refactoring*, *Design Patterns (GoF)*, *Clean Architecture*, *Code Complete*, *SICP*.
+     - Every single book comes with a **KΛ Mentor Prescription** ("Use This Book If...", "Skip It For Now If...", "The Only Chapters You Actually Need (80/20 Rule)"), Hackathon Weapons, FAANG Interview Flashcards, and runnable Judge0 code sandboxes!
    - **Full Language Video & Practice Tracks**: Java, C++, Python, TypeScript/Next.js, Web Dev, DSA & System Design — beginner to pro topics, curated YouTube masterclasses, 10 practice questions per topic with toggleable hints, and live sandbox verification.
    - **Problem-Solving & OA Playbooks**: Sliding Window, Two Pointers, Dynamic Programming, Graphs, Binary Search, etc.`;
 
@@ -109,7 +117,13 @@ export async function buildKollabrixLiveContext(
 
   const wantsPerksOrKits =
     isAboutWebsite ||
-    /\b(perk|perks|credit|credits|swag|free|github student|starter|template|templates|boilerplate|kit|kits|resource|resources|learn|curriculum|curricula|course|tutorial|book|books|folio|codex|ddia|clrs|sicp|ctci|clean code|refactoring|java|c\+\+|cpp|python|typescript|next\.?js|system design|sliding window|dynamic programming|dp|bfs|graph|trees|handbook|manual|notes|video|videos|topic|topics)\b/.test(
+    /\b(perk|perks|credit|credits|swag|free|github student|starter|template|templates|boilerplate|kit|kits|resource|resources|learn|curriculum|curricula|course|tutorial|book|books|read|chapter|chapters|80\/20|4th year|fourth year|os|operating system|ostep|dbms|database|networks|networking|kurose|ml|machine learning|css|html|duckett|verou|javascript|eloquent|ydkjs|folio|codex|ddia|clrs|sicp|ctci|clean code|refactoring|java|core java|head first|concurrency|c\+\+|cpp|python|fluent|typescript|next\.?js|system design|alex xu|sliding window|dynamic programming|dp|bfs|graph|trees|handbook|manual|notes|video|videos|topic|topics|beginner|pro)\b/.test(
+      lower
+    );
+
+  const wantsAiOrGemini =
+    isAboutWebsite ||
+    /\b(ka ai|ka-1|ka-pro|gemini|hydrogen|llm|model|models|ai|spark|pptx|ppt|deck|jury|roast|starter repo|sandbox|auto-heal|memory|pass|hackathon pass|pro builder|subscription|price|pricing|token|tokens|quota)\b/.test(
       lower
     );
 
@@ -121,6 +135,22 @@ export async function buildKollabrixLiveContext(
     KOLLABRIX_PLATFORM_MAP,
     `LIVE SYNC TIMESTAMP: ${new Date().toISOString()}`,
   ];
+  if (wantsAiOrGemini) {
+    sections.push(`KΛ ΛI & GEMINI ARCHITECTURE KNOWLEDGE BASE ([Open KΛ ΛI](/ka-ai) · \`https://ai.kollabrix.in\`):
+- **Dual Model Architecture (Powered by Google Gemini)**:
+  - **KΛ-1 (Fast Tier)**: Ultra-low-latency Gemini Flash model optimized for instant coding help, DSA explanations, KΛ FOLIO lookups, and live Kollabrix telemetry.
+  - **KΛ-Pro (Deep Reasoning Tier)**: High-capacity Gemini Pro / Hydrogen model used for complex system architecture, deep multi-file code debugging, Sketch-to-Working-App vision parsing, Jury Roast simulations, and bespoke 7-slide \`.pptx\` pitch deck generation.
+- **KΛ AI Exclusive Ecosystem Weapons (What ChatGPT/Claude Cannot Do)**:
+  1. **Judge0 Auto-Verify & Auto-Heal Loop**: Silently compiles and tests code in Kollabrix's Judge0 sandbox; if tests fail or TLE, KΛ AI reads the real stderr/compile error and patches the code automatically.
+  2. **Personal Builder Memory**: Persists user's preferred stack (e.g., Next.js + Java + Postgres), weak DSA patterns, and real Battle Arena ELO/loss history so every response adapts automatically.
+  3. **Sketch / Screenshot-to-Working-App**: Upload a whiteboard photo, Figma mockup, or assignment PDF → outputs Mermaid architecture diagram + PostgreSQL SQL schema + React/API code.
+  4. **Hackathon Studio & Hackathon Pass (₹49 / 7 days)**:
+     - **Bespoke 7-Slide \`.pptx\` Generator**: Reads hackathon link, GitHub repo, and problem statement to generate custom themed decks with a **Repeat / New Design** button for fresh layouts & backgrounds.
+     - **AI Jury Roast & Live Q&A Simulator**: Acts as 3 strict judges (Technical Architect, Product Lead, Business Judge), firing cross-questions and grading answers.
+     - **1-Click Working Starter Repo Blueprint**: Generates folder structure, \`.env.example\`, database SQL, and boilerplate API/UI.
+     - **Cut-List, 2-Min Demo Timer, & Squad Match**: Live teammate matching on Kollabrix.
+  5. **Unified 3-Website Live Sync**: Shares one live Supabase database across Kollabrix (\`kollabrix.in\`), KΛ AI (\`ai.kollabrix.in\`), and KΛ FOLIO (\`folio.kollabrix.in\`).`);
+  }
   const tasks: Promise<void>[] = [];
 
   tasks.push(
@@ -456,11 +486,30 @@ export async function buildKollabrixLiveContext(
             (t) => `- [${t.title}](/resources) (${t.subtitle})`
           );
           const allBookLines = [
-            ...KA_CODEX_BOOKS.map(
-              (b) => `- [${b.title}](/resources?section=books&book=${encodeURIComponent(b.id)}) (${b.category} · ${b.author})`
+            ...ALL_FOLIO_BOOK_VOLUMES.map(
+              (b) =>
+                `- [${b.title}](/resources?section=books&book=${encodeURIComponent(b.id)}) [${b.level || 'Core'} · ${b.languageGroup || b.languageTag}] — ${b.spotlightAuthor} | 80/20 Rule: ${b.mentorGuide?.onlyChaptersYouNeed || b.subtitle}`
             ),
             ...CODEX_BOOKS.slice(0, 4).map((b) => `- [${b.title}](/resources) — ${b.subtitle}`),
           ];
+
+          // Deep context for any specific books matching user's prompt
+          const promptTokens = lower.split(/[\s,?.!:/-]+/).filter((w) => w.length >= 2);
+          const matchedBooks = ALL_FOLIO_BOOK_VOLUMES.filter((b) => {
+            const hay = `${b.id} ${b.title} ${b.spotlightAuthor} ${b.languageGroup || ''} ${b.level || ''} ${b.mentorGuide?.goalTags?.join(' ') || ''}`.toLowerCase();
+            return promptTokens.some((tok) => hay.includes(tok));
+          }).slice(0, 5);
+
+          const matchedBookDetails =
+            matchedBooks.length > 0
+              ? `\n\nDETAILED 80/20 BOOK MENTOR GUIDES FOR USER'S QUERY:\n${matchedBooks
+                  .map(
+                    (b) =>
+                      `### ${b.title} ([Open in KΛ FOLIO](/resources?section=books&book=${encodeURIComponent(b.id)}))\n- Level: ${b.level} | Track: ${b.languageGroup}\n- Use When: ${b.mentorGuide?.useWhen}\n- Skip When: ${b.mentorGuide?.skipWhen}\n- Only Chapters You Need (80/20): ${b.mentorGuide?.onlyChaptersYouNeed}\n- Key Modules: ${b.chapters.map((c) => `${c.realChapterLabel || ''} ${c.title}: ${c.overview}`).join(' | ')}`
+                  )
+                  .join('\n\n')}`
+              : '';
+
           const patternLines = CODEX_PATTERNS.map(
             (p) => `- [${p.title}](/resources) — ${p.subtitle}`
           );
@@ -470,9 +519,9 @@ export async function buildKollabrixLiveContext(
               '\n'
             )}\n\nGuided Tracks:\n${trackLines.join(
               '\n'
-            )}\n\nAll 12 Coding Classics & Technical Manuals:\n${allBookLines.join(
+            )}\n\nComplete 33-Book Library & 80/20 Guides (Java, CSS, JS/TS, Python/AI-ML, C/C++, 4th-Year OS/DBMS/CN/System Design):\n${allBookLines.join(
               '\n'
-            )}\n\nProblem-Solving Patterns:\n${patternLines.join(
+            )}${matchedBookDetails}\n\nProblem-Solving Patterns:\n${patternLines.join(
               '\n'
             )}\n\nAVAILABLE STARTER KITS ([Starter Kits](/starter-kits)):\n${kitLines.join(
               '\n'
