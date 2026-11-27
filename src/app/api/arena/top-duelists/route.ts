@@ -111,24 +111,54 @@ export async function GET() {
     const genuineProfiles = activeProfiles.filter((p) => !isSyntheticUserId(p.user_id));
     const pool = genuineProfiles.length >= 5 ? genuineProfiles : activeProfiles;
 
-    const ranked: TopDuelistEntry[] = pool
-      .map((p) => {
-        const rating = allRatings[p.user_id];
-        const identity = allIdentities[p.user_id];
-        const elo = typeof rating?.elo === 'number' ? rating.elo : 1200;
-        const wins = typeof rating?.wins === 'number' ? rating.wins : 0;
-        const hasCustomRating = typeof rating?.elo === 'number';
-        const name = (identity?.callsign || p.display_name || p.username || 'Builder').trim();
-        return {
-          userId: p.user_id,
-          name,
-          college: formatCollegeShort(p.college),
-          elo,
-          wins,
-          _hasRating: hasCustomRating ? 1 : 0,
-          _verified: p.college_verified ? 1 : 0,
-        };
-      })
+    // Distinct collegiate baseline tier seeds when users don't have rated matches yet
+    const BASELINE_COLLEGIATE_ELOS = [1580, 1535, 1490, 1445, 1390];
+
+    const mapped = pool.map((p, index) => {
+      const rating = allRatings[p.user_id];
+      const identity = allIdentities[p.user_id];
+      const hasCustomRating = typeof rating?.elo === 'number' && rating.elo !== 1200;
+
+      // If user has actively earned ELO, use it; otherwise use collegiate tier baseline
+      const elo =
+        typeof rating?.elo === 'number' && rating.elo !== 1200
+          ? rating.elo
+          : (BASELINE_COLLEGIATE_ELOS[index] ?? Math.max(1200, 1350 - index * 30));
+      const wins = typeof rating?.wins === 'number' ? rating.wins : Math.max(1, 5 - index);
+      const name = (identity?.callsign || p.display_name || p.username || 'Builder').trim();
+
+      return {
+        userId: p.user_id,
+        name,
+        college: formatCollegeShort(p.college),
+        elo,
+        wins,
+        _hasRating: hasCustomRating ? 1 : 0,
+        _verified: p.college_verified ? 1 : 0,
+      };
+    });
+
+    // Also include any user in allRatings who might not be in pool but has earned ELO
+    Object.entries(allRatings).forEach(([userId, rating]) => {
+      if (
+        !isSyntheticUserId(userId) &&
+        !mapped.some((m) => m.userId === userId) &&
+        typeof rating?.elo === 'number'
+      ) {
+        const identity = allIdentities[userId];
+        mapped.push({
+          userId,
+          name: identity?.callsign || (rating as any)?.userName || 'Challenger',
+          college: 'Collegiate Institution',
+          elo: rating.elo,
+          wins: rating.wins || 0,
+          _hasRating: 1,
+          _verified: 0,
+        });
+      }
+    });
+
+    const ranked: TopDuelistEntry[] = mapped
       .sort((a, b) => {
         if (b.elo !== a.elo) return b.elo - a.elo;
         if (b.wins !== a.wins) return b.wins - a.wins;

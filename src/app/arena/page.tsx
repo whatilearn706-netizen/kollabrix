@@ -364,11 +364,6 @@ function ArenaPageContent() {
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Kollabrix</span>
           </Link>
-
-          <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0D1017] border border-zinc-400/25 text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>3D ENGINE SLEEPING &bull; ZERO GPU LOAD</span>
-          </span>
         </header>
 
         {/* Centered Dark-Smoke Awakening Panel */}
@@ -387,8 +382,8 @@ function ArenaPageContent() {
 
           <p className="text-sm sm:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
             {user
-              ? 'Your 3D Mech & Matchmaking engine stays asleep until you enter—keeping your laptop cool until combat begins.'
-              : 'Sign in or create your Kollabrix account to wake the 3D Mech lobby, save your rank, and enter live 1v1 duels.'}
+              ? 'Real-time 1v1 competitive coding duels. Steal ELO, climb the collegiate leaderboard, and prove your engineering speed.'
+              : 'Sign in or create your Kollabrix account to save your rank, climb the collegiate leaderboard, and enter live 1v1 duels.'}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -399,7 +394,7 @@ function ArenaPageContent() {
               className="px-9 py-4 rounded-2xl bg-gradient-to-b from-[#232732] via-[#13161D] to-[#090B0F] text-white border border-zinc-300/50 hover:border-white/85 font-mono text-xs sm:text-sm font-black uppercase tracking-[0.18em] flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(226,232,240,0.22),inset_0_1px_0_rgba(255,255,255,0.28)] hover:shadow-[0_0_40px_rgba(226,232,240,0.38)] hover:scale-[1.02] transition-all cursor-pointer"
             >
               <Swords className="w-4 h-4 text-zinc-200" />
-              <span>{user ? 'Wake & Enter Arena' : 'Create Account & Enter Arena'}</span>
+              <span>{user ? 'Enter Battle Arena' : 'Create Account & Enter Arena'}</span>
               <ArrowRight className="w-4 h-4 text-zinc-200" />
             </button>
 
@@ -415,9 +410,9 @@ function ArenaPageContent() {
           </div>
         </main>
 
-        <footer className="relative z-20 w-full max-w-6xl mx-auto flex items-center justify-between text-[11px] font-mono text-zinc-500">
-          <span>KOLLΛBRIX &bull; ECO STANDBY ACTIVE</span>
-          <span>EXITS TO SLEEP ON LEAVE</span>
+        <footer className="relative z-20 w-full max-w-6xl mx-auto flex items-center justify-between text-[11px] font-mono text-zinc-600">
+          <span>KOLLΛBRIX &bull; PROVING GROUNDS</span>
+          <span>REAL-TIME 1V1 CODE COMBAT</span>
         </footer>
       </div>
     );

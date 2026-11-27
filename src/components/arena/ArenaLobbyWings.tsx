@@ -92,20 +92,31 @@ export function ArenaRightWing(_props: Partial<WingProps>) {
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/arena/top-duelists?_t=${Date.now()}`, { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active) return;
-        if (data?.success && Array.isArray(data.duelists)) {
-          setDuelists(data.duelists.slice(0, 5));
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (active) setLoaded(true);
-      });
+
+    const fetchTopDuelists = () => {
+      fetch(`/api/arena/top-duelists?_t=${Date.now()}`, { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!active) return;
+          if (data?.success && Array.isArray(data.duelists)) {
+            setDuelists(data.duelists.slice(0, 5));
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (active) setLoaded(true);
+        });
+    };
+
+    fetchTopDuelists();
+    // Poll every 4 seconds for real-time ELO updates
+    const timer = setInterval(fetchTopDuelists, 4000);
+    window.addEventListener('kollabrix:arena-elo-updated', fetchTopDuelists);
+
     return () => {
       active = false;
+      clearInterval(timer);
+      window.removeEventListener('kollabrix:arena-elo-updated', fetchTopDuelists);
     };
   }, []);
 

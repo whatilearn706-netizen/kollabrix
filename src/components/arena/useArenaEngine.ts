@@ -1385,6 +1385,9 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
             winStreak: typeof d.stats.winStreak === 'number' ? d.stats.winStreak : prev.winStreak,
             tier: getTierFromElo(nextElo),
           }));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('kollabrix:arena-elo-updated', { detail: { nextElo } }));
+          }
         }
       })
       .catch(() => {});
