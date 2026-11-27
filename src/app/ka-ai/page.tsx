@@ -149,6 +149,106 @@ export default function KaAiBrandPage() {
           </div>
         </section>
 
+        {/* ========================================================= */}
+{/* KΛ AI CAPABILITIES: 3 INTERACTIVE QUICK-ACTION CARDS */}
+{/* ========================================================= */}
+<section className="relative z-10 w-full max-w-5xl mx-auto px-4 py-16">
+  {/* Section Header */}
+  <div className="text-center mb-10">
+    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/20 text-[11px] font-mono tracking-widest text-sky-300 uppercase mb-3">
+      Live Copilot Modes
+    </div>
+    <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+      What Can You Ask <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">KΛ AI</span>?
+    </h2>
+    <p className="text-sm text-zinc-400 mt-2 max-w-lg mx-auto">
+      Tap any weapon below to load the prompt directly into your voice session.
+    </p>
+  </div>
+
+  {/* 3 Quick Action Cards Grid */}
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+    {/* Card 1: Hackathon Architect */}
+    <div 
+      onClick={() => {
+        // If you have a voice/prompt handler, trigger it here:
+        const prompt = "Give me a winning tech stack and architecture for a 24h AI hackathon.";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      className="group relative p-6 rounded-2xl bg-gradient-to-b from-[#0A101D]/90 to-[#050811]/90 border border-sky-500/20 hover:border-sky-400/60 transition-all duration-300 cursor-pointer hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(56,189,248,0.2)] flex flex-col justify-between"
+    >
+      <div>
+        <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-center text-sky-400 font-bold mb-4 group-hover:scale-110 transition-transform">
+          ⚡
+        </div>
+        <div className="text-xs font-mono font-semibold text-sky-400 tracking-wider uppercase mb-1">
+          Architect
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2">Hackathon Architect</h3>
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          &ldquo;Give me a winning tech stack and modular architecture for a 24h AI hackathon.&rdquo;
+        </p>
+      </div>
+      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono font-semibold text-sky-300 group-hover:text-white">
+        <span>Tap to Launch</span>
+        <span className="group-hover:translate-x-1 transition-transform">→</span>
+      </div>
+    </div>
+
+    {/* Card 2: Bug Hunter & Fixer */}
+    <div 
+      onClick={() => {
+        const prompt = "Find the memory leak and bottleneck in my Spring Boot and Next.js code.";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      className="group relative p-6 rounded-2xl bg-gradient-to-b from-[#0A101D]/90 to-[#050811]/90 border border-emerald-500/20 hover:border-emerald-400/60 transition-all duration-300 cursor-pointer hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(52,211,153,0.2)] flex flex-col justify-between"
+    >
+      <div>
+        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-bold mb-4 group-hover:scale-110 transition-transform">
+          🔍
+        </div>
+        <div className="text-xs font-mono font-semibold text-emerald-400 tracking-wider uppercase mb-1">
+          Debugger
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2">Bug Hunter &amp; Fixer</h3>
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          &ldquo;Find the memory leak and race condition in my Spring Boot / Next.js code.&rdquo;
+        </p>
+      </div>
+      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono font-semibold text-emerald-300 group-hover:text-white">
+        <span>Tap to Launch</span>
+        <span className="group-hover:translate-x-1 transition-transform">→</span>
+      </div>
+    </div>
+
+    {/* Card 3: Code Reviewer */}
+    <div 
+      onClick={() => {
+        const prompt = "Review this pull request code and provide senior staff engineer feedback.";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }}
+      className="group relative p-6 rounded-2xl bg-gradient-to-b from-[#0A101D]/90 to-[#050811]/90 border border-purple-500/20 hover:border-purple-400/60 transition-all duration-300 cursor-pointer hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(192,132,252,0.2)] flex flex-col justify-between"
+    >
+      <div>
+        <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center text-purple-400 font-bold mb-4 group-hover:scale-110 transition-transform">
+          🛡️
+        </div>
+        <div className="text-xs font-mono font-semibold text-purple-400 tracking-wider uppercase mb-1">
+          Staff Reviewer
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2">Senior Code Review</h3>
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          &ldquo;Review my PR code, enforce clean architecture, and give senior staff feedback.&rdquo;
+        </p>
+      </div>
+      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono font-semibold text-purple-300 group-hover:text-white">
+        <span>Tap to Launch</span>
+        <span className="group-hover:translate-x-1 transition-transform">→</span>
+      </div>
+    </div>
+  </div>
+</section>
+
         {/* SECTION 2: GET IN TOUCH (Exact Match to pin.it/51DEzK4WU Lower Canvas) */}
         <section
           id="contact"
