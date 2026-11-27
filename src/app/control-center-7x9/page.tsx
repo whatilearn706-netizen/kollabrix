@@ -69,7 +69,7 @@ export default function AdminControlCenterPage() {
   const [isSetupHelpOpen, setIsSetupHelpOpen] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
-  // Fast Battle Arena Master Status Switch (Live vs Maintenance)
+  // Fast KΛ ARENA Master Status Switch (Live vs Maintenance)
   const [isArenaLive, setIsArenaLive] = useState(true);
   const [isTogglingArena, setIsTogglingArena] = useState(false);
 
@@ -366,13 +366,13 @@ CREATE POLICY "Admins can update platform settings" ON public.platform_settings 
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Quick 1-Click Battle Arena Master Toggle */}
+          {/* Quick 1-Click KΛ ARENA Master Toggle */}
           <Button
             size="sm"
             variant="outline"
             disabled={isTogglingArena}
             onClick={handleToggleArenaLive}
-            title="Toggle Battle Arena Live vs Maintenance Mode"
+            title="Toggle KΛ ARENA Live vs Maintenance Mode"
             className={
               isArenaLive
                 ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold"

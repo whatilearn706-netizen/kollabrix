@@ -1,7 +1,7 @@
 import type { DuelQuestion } from '@/types/arenaDuel';
 
 /**
- * 30 Calibrated Easy HTML Battle Arena Questions
+ * 30 Calibrated Easy HTML KΛ ARENA Questions
  * - 10 Blitz Challenges (3 Minutes / 180s)
  * - 10 Competitive Challenges (5 Minutes / 300s)
  * - 10 Marathon Challenges (10 Minutes / 600s)
@@ -182,7 +182,7 @@ export const HTML_EASY_ARENA_QUESTIONS: DuelQuestion[] = [
     "difficulty": "easy",
     "timeLimitSeconds": 180,
     "targetPreviewTitle": "Native FAQ Accordion Item",
-    "targetComponentHtml": "<div class=\"faq-widget\">\n  <h4>Platform FAQ</h4>\n  <details open>\n    <summary>What is Kollabrix Battle Arena?</summary>\n    <p>A real-time multiplayer code combat platform for college hackathon builders.</p>\n  </details>\n</div>",
+    "targetComponentHtml": "<div class=\"faq-widget\">\n  <h4>Platform FAQ</h4>\n  <details open>\n    <summary>What is Kollabrix KΛ ARENA?</summary>\n    <p>A real-time multiplayer code combat platform for college hackathon builders.</p>\n  </details>\n</div>",
     "starterHtml": "<div class=\"faq-widget\">\n  <!-- Add <h4>Platform FAQ</h4>, and <details open> with a <summary> question and <p> answer -->\n  \n</div>",
     "starterCss": "/* HTML Challenge: Layout is structured via HTML semantic elements */",
     "testCases": [

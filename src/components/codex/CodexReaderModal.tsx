@@ -397,7 +397,7 @@ export function CodexReaderModal({
                     </div>
                   )}
 
-                  {/* Bridges to KΛ AI and Battle Arena */}
+                  {/* Bridges to KΛ AI and KΛ ARENA */}
                   <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
                     <Link
                       href={`/ka-ai?prompt=${encodeURIComponent(`Explain the core architectural rules from "${volume.title}" Chapter "${chapter.title}" and show how to implement them in a production Next.js/Postgres hackathon project.`)}`}
@@ -411,7 +411,7 @@ export function CodexReaderModal({
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600/20 hover:bg-sky-600/35 border border-sky-500/40 text-sky-200 text-xs font-mono font-medium transition-colors"
                     >
                       <Swords className="w-3.5 h-3.5 text-sky-400" />
-                      <span>Duel in 1v1 Battle Arena</span>
+                      <span>Duel in KΛ ARENA</span>
                     </Link>
                   </div>
                 </>
@@ -584,7 +584,7 @@ export function CodexReaderModal({
                 className="py-3 px-4 rounded-2xl bg-white/[0.06] border border-white/15 hover:border-white/30 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-all"
               >
                 <Swords className="w-4 h-4 text-amber-300" />
-                <span>Test in 1v1 Battle Arena</span>
+                <span>Test in KΛ ARENA</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
             </div>

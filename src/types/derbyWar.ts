@@ -30,7 +30,7 @@ export interface DerbyBoardMatchup {
   teamQuestion: DerbyTeamQuestion;
   collegeAPlayer?: DerbySeatPlayer;
   collegeBPlayer?: DerbySeatPlayer;
-  actionUrl: string; // 1v1 Battle Arena room URL for this team
+  actionUrl: string; // KΛ ARENA room URL for this team
   winnerCollegeId?: 'A' | 'B' | 'draw' | 'pending';
 }
 
@@ -97,7 +97,7 @@ export function arenaQuestionToDerbyQuestion(q: DuelQuestion): DerbyTeamQuestion
   };
 }
 
-// Battle Arena 1v1 questions mapped directly for Collegiate War Matches
+// KΛ ARENA 1v1 questions mapped directly for Collegiate War Matches
 export const ARENA_1V1_DERBY_QUESTIONS: DerbyTeamQuestion[] = DEFAULT_ARENA_QUESTIONS.map(arenaQuestionToDerbyQuestion);
 
 // Deterministic or randomized unique questions selector without duplicates

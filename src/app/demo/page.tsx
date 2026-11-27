@@ -113,13 +113,13 @@ export default function DemoPage() {
             {[
               {
                 src: '/showcase/kollabrix-hero-showcase.png',
-                alt: 'Kollabrix Collegiate Coding Battle Arena and Hackathon Platform Hero',
+                alt: 'Kollabrix Collegiate Coding KΛ ARENA and Hackathon Platform Hero',
                 title: 'Real-Time Coding Duel Hero',
               },
               {
                 src: '/showcase/kollabrix-battle-arena-ide.png',
-                alt: 'Kollabrix Battle Arena Live IDE with Blueprint, Sandbox & Rival Fog-of-War Monitor',
-                title: 'Battle Arena Live IDE & Fog of War',
+                alt: 'Kollabrix KΛ ARENA Live IDE with Blueprint, Sandbox & Rival Fog-of-War Monitor',
+                title: 'KΛ ARENA Live IDE & Fog of War',
               },
               {
                 src: '/showcase/kollabrix-arena-lobby.png',

@@ -1,7 +1,7 @@
 import type { DuelQuestion } from '@/types/arenaDuel';
 
 /**
- * Calibrated Battle Arena Algorithmic Questions (30 items)
+ * Calibrated KΛ ARENA Algorithmic Questions (30 items)
  * Designed for competitive collegiate duels with ~30 seconds margin to spare.
  */
 export const JAVA_EASY_ARENA_QUESTIONS: DuelQuestion[] = [

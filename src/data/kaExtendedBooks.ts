@@ -1248,7 +1248,7 @@ int main() {
       totalRealChapters: 30,
       quickVerdict: 'Top-Tier C++ Weapon for ICPC, Codeforces & Hard OAs',
       useWhen:
-        'You already know basic C++ and want to climb Battle Arena ELO, win ICPC regionals, or crack tough FAANG/Uber Online Assessments.',
+        'You already know basic C++ and want to climb KΛ ARENA ELO, win ICPC regionals, or crack tough FAANG/Uber Online Assessments.',
       skipWhen:
         'You haven’t learned `vector`, `map`, and recursion yet—read C++ Principles first.',
       onlyChaptersYouNeed:
@@ -1259,7 +1259,7 @@ int main() {
     chapterMetas: [
       {
         hackathon:
-          'Battle Arena & ICPC speed depends on template discipline: pre-write fast I/O, Fenwick Tree, and Dijkstra templates in muscle memory.',
+          'KΛ ARENA & ICPC speed depends on template discipline: pre-write fast I/O, Fenwick Tree, and Dijkstra templates in muscle memory.',
         flashcards: [
           {
             q: 'When should you use a Fenwick Tree (BIT) instead of a Segment Tree?',

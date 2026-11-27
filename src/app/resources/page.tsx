@@ -343,7 +343,7 @@ export default function ResourcesPage() {
               href="/arena"
               className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/[0.05] border border-white/15 hover:border-white/30 text-xs font-mono text-zinc-200"
             >
-              <span>Visit Battle Arena</span>
+              <span>Visit KΛ ARENA</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -696,7 +696,7 @@ export default function ResourcesPage() {
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/[0.05] border border-white/12 hover:border-white/30 text-xs font-mono text-zinc-200"
               >
                 <Swords className="w-3.5 h-3.5 text-amber-300" />
-                <span>Enter 1v1 Battle Arena</span>
+                <span>Enter KΛ ARENA</span>
               </Link>
               <Link
                 href="/spark"

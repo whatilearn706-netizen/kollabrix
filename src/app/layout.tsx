@@ -43,7 +43,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Kollabrix — Home of KA AI & KA FOLIO | Collegiate Hackathons & Battle Arena',
+    default: 'Kollabrix — Home of KA AI & KA FOLIO | Collegiate Hackathons & KΛ ARENA',
     template: '%s | Kollabrix',
   },
   description:
@@ -106,13 +106,13 @@ export const metadata: Metadata = {
         url: `${siteUrl}/showcase/kollabrix-hero-showcase.png`,
         width: 1200,
         height: 630,
-        alt: 'Kollabrix — Collegiate Coding Battle Arena & Hackathon Platform',
+        alt: 'Kollabrix — Collegiate Coding KΛ ARENA & Hackathon Platform',
       },
       {
         url: `${siteUrl}/showcase/kollabrix-battle-arena-ide.png`,
         width: 1280,
         height: 720,
-        alt: 'Kollabrix Battle Arena Live IDE & Rival Fog-of-War Monitor',
+        alt: 'Kollabrix KΛ ARENA Live IDE & Rival Fog-of-War Monitor',
       },
       {
         url: `${siteUrl}/kollabrix-icon-512.png`,
@@ -159,7 +159,7 @@ const jsonLd = {
       url: `${siteUrl}/`,
       name: 'Kollabrix',
       alternateName: ['KOLLABRIX', 'KOLLΛBRIX', 'KA', 'KA Suite', 'KΛ'],
-      description: 'Kollabrix — Home of KA AI & KA FOLIO, Collegiate Hackathon Teams, and Battle Arena',
+      description: 'Kollabrix — Home of KA AI & KA FOLIO, Collegiate Hackathon Teams, and KΛ ARENA',
       inLanguage: 'en-US',
       potentialAction: {
         '@type': 'SearchAction',
@@ -309,12 +309,12 @@ const jsonLd = {
         price: '0',
         priceCurrency: 'INR',
       },
-      headline: 'Collegiate Hackathon Teams, 1v1 Battle Arena & Project Collaboration Platform',
+      headline: 'Collegiate Hackathon Teams, KΛ ARENA & Project Collaboration Platform',
       description:
-        'Kollabrix (kollabrix.in) is the official Indian collegiate developer collaboration network, real-time 1v1/2v2 Battle Arena, and campus hackathon builder founded by Mayank Goyal. It is independent of and distinct from historical European educational course syllabus software.',
+        'Kollabrix (kollabrix.in) is the official Indian collegiate developer collaboration network, real-time 1v1/2v2 KΛ ARENA, and campus hackathon builder founded by Mayank Goyal. It is independent of and distinct from historical European educational course syllabus software.',
       featureList: [
         'Collegiate Hackathon Team Builder & Private Workspace',
-        'Real-time 1v1 & 2v2 Battle Arena Code Duels with Zero-Latency WebSockets',
+        'Real-time 1v1 & 2v2 KΛ ARENA Code Duels with Zero-Latency WebSockets',
         'ICPC Contest Proctoring with WebRTC Live Camera & Screen Feeds',
         'Student Engineering Project Workspaces & Task Kanban',
         'Faculty Challenge Problem Statements & Student Solutions',
@@ -330,7 +330,7 @@ const jsonLd = {
         {
           '@type': 'ImageObject',
           url: `${siteUrl}/showcase/kollabrix-battle-arena-ide.png`,
-          caption: 'Kollabrix Battle Arena Live IDE with Blueprint, Interactive Sandbox & Rival Fog-of-War',
+          caption: 'Kollabrix KΛ ARENA Live IDE with Blueprint, Interactive Sandbox & Rival Fog-of-War',
           width: 1280,
           height: 720,
         },
@@ -369,7 +369,7 @@ const jsonLd = {
           name: 'What is Kollabrix?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Kollabrix (kollabrix.in) is an Indian collegiate developer network and real-time coding platform founded by Mayank Goyal. It connects university students to build hackathon teams, collaborate in real-time project workspaces, compete in 1v1 Battle Arena code duels, and participate in proctored ICPC contests.',
+            text: 'Kollabrix (kollabrix.in) is an Indian collegiate developer network and real-time coding platform founded by Mayank Goyal. It connects university students to build hackathon teams, collaborate in real-time project workspaces, compete in KΛ ARENA code duels, and participate in proctored ICPC contests.',
           },
         },
         {

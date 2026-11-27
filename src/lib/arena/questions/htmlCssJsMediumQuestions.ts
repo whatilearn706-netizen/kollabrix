@@ -1,7 +1,7 @@
 import type { DuelQuestion } from '@/types/arenaDuel';
 
 /**
- * Calibrated Battle Arena Questions (30 items)
+ * Calibrated KΛ ARENA Questions (30 items)
  * Designed for collegiate speed-coding with ~30 seconds margin to spare.
  */
 export const HTML_CSS_JS_MEDIUM_ARENA_QUESTIONS: DuelQuestion[] = [

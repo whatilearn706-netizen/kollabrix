@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
 
-// GET: Fetch Admin-curated Battle Arena questions (empty by default until Admin adds questions)
+// GET: Fetch Admin-curated KΛ ARENA questions (empty by default until Admin adds questions)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -167,7 +167,7 @@ export async function DELETE(request: NextRequest) {
       await updateMasterControlSubkey('arena_duel_questions', []);
       return NextResponse.json({
         success: true,
-        message: 'All Battle Arena questions removed from server',
+        message: 'All KΛ ARENA questions removed from server',
         remaining: 0,
       });
     }

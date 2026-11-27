@@ -43,7 +43,7 @@ const showcaseItems: ShowcaseItem[] = [
     id: 'arena-lobby',
     tag: 'THE PROVING GROUNDS',
     tagColor: 'border-emerald-500/30 text-emerald-400 bg-emerald-950/40',
-    title: '1v1 Battle Arena Matchmaking',
+    title: 'KΛ ARENA Matchmaking',
     subtitle: 'High-Stakes Esports Coding Duels & Ranked Queues',
     description:
       'Enter the live esports arena with cyber avatar callsigns, college tags (DTU, IIT, BITS), and real-time matchmaking. Queue for 3-minute Quick Blitz, 60s Bug Hunt, or high-stakes Campus Wars with live ELO rankings.',

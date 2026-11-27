@@ -151,7 +151,7 @@ export function BattleWorkspace({ engine }: BattleWorkspaceProps) {
   };
 
   const blockPasteAction = () => {
-    setPasteNotice('🛡️ Fair-Play Shield: Copy-paste is disabled in Battle Arena. Type your fix manually.');
+    setPasteNotice('🛡️ Fair-Play Shield: Copy-paste is disabled in KΛ ARENA. Type your fix manually.');
   };
 
   const linesCount = Math.max(14, activeBuffer.split('\n').length);

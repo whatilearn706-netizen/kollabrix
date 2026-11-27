@@ -53,7 +53,7 @@ export interface ArenaEngineProps {
 }
 
 /**
- * Core state & side-effect orchestrator for the 4-stage Kollabrix Battle Arena.
+ * Core state & side-effect orchestrator for the 4-stage Kollabrix KΛ ARENA.
  */
 export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, currentUser }: ArenaEngineProps) {
   const { user, profile, openAuthModal } = useAuth();
@@ -640,7 +640,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     const duration = combatMode === 'bug_hunt' ? 60 : (timeLimit || getSmartDurationSeconds(combatMode, difficulty, algoLanguage));
     const chosenQ = await pickQuestionForConfig(combatMode, algoLanguage, difficulty, duration);
     if (!chosenQ) {
-      setLobbyNotice('No questions published yet for this selection. Add challenges in Admin Control Center → Battle Arena.');
+      setLobbyNotice('No questions published yet for this selection. Add challenges in Admin Control Center → KΛ ARENA.');
       return;
     }
 
@@ -731,7 +731,7 @@ export function useArenaEngine({ onClose, initialRoomCode, initialQuestion, curr
     setLobbyNotice('');
     const chosenQ = await pickQuestionForConfig(combatMode, algoLanguage, difficulty, timeLimit);
     if (!chosenQ) {
-      setLobbyNotice('No questions published yet for this Custom selection. Add challenges in Admin Control Center → Battle Arena.');
+      setLobbyNotice('No questions published yet for this Custom selection. Add challenges in Admin Control Center → KΛ ARENA.');
       return;
     }
 

@@ -15,11 +15,11 @@ export interface ArenaSystemStatus {
 const DEFAULT_STATUS: ArenaSystemStatus = {
   isLive: true,
   maintenanceMessage:
-    'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!',
+    'KΛ ARENA is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!',
   updatedAt: new Date().toISOString(),
 };
 
-// GET: Publicly query whether the Battle Arena is LIVE or in MAINTENANCE
+// GET: Publicly query whether the KΛ ARENA is LIVE or in MAINTENANCE
 export async function GET() {
   try {
     const rawIsLive = await getMasterControlSubkey<any>('arena_is_live', true);
@@ -63,7 +63,7 @@ export async function GET() {
   }
 }
 
-// POST: Admin toggle to change Battle Arena status
+// POST: Admin toggle to change KΛ ARENA status
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAdminSession(request);
@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
       maintenanceMessage,
       updatedAt: now,
       message: isLive
-        ? 'Battle Arena is now LIVE and accessible to all students.'
-        : 'Battle Arena has been placed in MAINTENANCE / OFFLINE mode.',
+        ? 'KΛ ARENA is now LIVE and accessible to all students.'
+        : 'KΛ ARENA has been placed in MAINTENANCE / OFFLINE mode.',
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });

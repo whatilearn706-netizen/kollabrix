@@ -25,7 +25,7 @@ export interface FullArenaExperienceProps {
 }
 
 /**
- * Orchestrates the 4-stage Kollabrix Battle Arena:
+ * Orchestrates the 4-stage Kollabrix KΛ ARENA:
  * Combat Command Deck Lobby -> Face-Off & Countdown -> 3-Pane IDE -> Post-Match Fight Card.
  */
 export function FullArenaExperience({
@@ -128,7 +128,7 @@ export function FullArenaExperience({
             </div>
             <h3 className="font-mono text-base font-black text-white uppercase">Focus Sentinel Warning</h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Leaving the active Battle Arena tab triggers a fair-play strike (Strike {engine.myCheatStrikes}/3). Keep focus inside the IDE.
+              Leaving the active KΛ ARENA tab triggers a fair-play strike (Strike {engine.myCheatStrikes}/3). Keep focus inside the IDE.
             </p>
             <button
               type="button"

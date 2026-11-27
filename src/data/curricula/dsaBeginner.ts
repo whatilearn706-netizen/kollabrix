@@ -12,7 +12,7 @@ export const DSA_BEGINNER_SPEC: TrackSpec = {
   badgeBg: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20',
   borderColor: 'border-violet-400/30 hover:border-violet-400/70',
   description:
-    'Master the core algorithmic building blocks tested in OA screening rounds and 1v1 Battle Arena duels: complexity analysis, hashing, sliding windows, binary search, recursion, and stacks/queues with 70 problems.',
+    'Master the core algorithmic building blocks tested in OA screening rounds and KΛ ARENA duels: complexity analysis, hashing, sliding windows, binary search, recursion, and stacks/queues with 70 problems.',
   compilerLanguage: 'cpp',
   compilerDisplayName: 'C++ / DSA Engine',
   estimatedTotalHours: '24 Hours',

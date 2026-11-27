@@ -621,7 +621,7 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
                   onChange={(e) => setNewPillar(e.target.value as WarPillar)}
                   className="w-full h-9 px-2 rounded-lg bg-[#090C12] border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400"
                 >
-                  <option value="arena">⚔️ Battle Arena 1v1</option>
+                  <option value="arena">⚔️ KΛ ARENA 1v1</option>
                   <option value="hackathon">🏆 Hackathon Derby</option>
                   <option value="problem">💡 Faculty Bounty</option>
                   <option value="icpc">⚡ ICPC Gauntlet</option>
@@ -692,7 +692,7 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
               <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/25 space-y-3 font-mono text-xs">
                 <div className="text-[11px] font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Swords className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Collegiate Battle Arena Settings</span>
+                  <span>Collegiate KΛ ARENA Settings</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -734,15 +734,15 @@ export function AdminCampusWarTab({ authToken }: AdminCampusWarTabProps) {
                   </div>
                 </div>
 
-                {/* Battle Arena 1v1 Question Allocation (Randomized & Synchronized) */}
+                {/* KΛ ARENA 1v1 Question Allocation (Randomized & Synchronized) */}
                 <div className="pt-3 border-t border-purple-500/20 space-y-2.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                       <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider block">
-                        Battle Arena 1v1 Questions ({newTotalTeams} Teams • 1 Unique Question Per Team)
+                        KΛ ARENA 1v1 Questions ({newTotalTeams} Teams • 1 Unique Question Per Team)
                       </span>
                       <span className="text-[10px] text-slate-400 font-sans">
-                        Sourced directly from official 1v1 Battle Arena engine. Each team gets a distinct challenge (no duplicates).
+                        Sourced directly from official KΛ ARENA engine. Each team gets a distinct challenge (no duplicates).
                       </span>
                     </div>
 

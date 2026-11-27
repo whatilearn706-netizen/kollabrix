@@ -26,7 +26,7 @@ interface AdminArenaTabProps {
 }
 
 /**
- * Redesigned Obsidian Titanium Battle Arena controller for Admin Control Center.
+ * Redesigned Obsidian Titanium KΛ ARENA controller for Admin Control Center.
  * Syncs live challenges directly with the 4-stage /arena experience.
  */
 export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
@@ -41,7 +41,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
 
   const [isArenaLive, setIsArenaLive] = useState(true);
   const [maintenanceMsg, setMaintenanceMsg] = useState(
-    'Battle Arena is temporarily offline for challenge updates. Please check back shortly!'
+    'KΛ ARENA is temporarily offline for challenge updates. Please check back shortly!'
   );
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
@@ -123,7 +123,7 @@ export function AdminArenaTab({ authToken }: AdminArenaTabProps) {
             </span>
             <div>
               <h2 className="text-lg font-black text-white tracking-tight">
-                Battle Arena Studio &amp; Challenge Engine
+                KΛ ARENA Studio &amp; Challenge Engine
               </h2>
               <p className="text-xs text-slate-400">
                 Manage 1v1 Quick Blitz, 60s Bug Hunt, Web Pixel Clash &amp; Custom arena questions.

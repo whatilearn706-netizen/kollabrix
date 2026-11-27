@@ -20,7 +20,7 @@ export * from './cppMediumQuestions';
 export * from './cppHardQuestions';
 
 /**
- * All 270 Calibrated Competitive Algorithmic Battle Arena Questions
+ * All 270 Calibrated Competitive Algorithmic KΛ ARENA Questions
  * Covers:
  * - Java: Easy, Medium, Hard (3m, 5m, 10m)
  * - Python: Easy, Medium, Hard (3m, 5m, 10m)

@@ -30,14 +30,14 @@ function ArenaPageContent() {
   const { user, profile, openAuthModal } = useAuth();
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
-  // Starts ASLEEP (0% GPU/CPU Three.js footprint) until the user enters Battle Arena.
+  // Starts ASLEEP (0% GPU/CPU Three.js footprint) until the user enters KΛ ARENA.
   // Exits back to Kollabrix (/) unmount WebGL and return Arena to sleep on next visit.
   const [showPlayLobby, setShowPlayLobby] = useState<boolean>(Boolean(roomParam));
   const [pendingWakeAfterAuth, setPendingWakeAfterAuth] = useState<boolean>(false);
 
   const [isLive, setIsLive] = useState<boolean>(true);
   const [maintenanceMessage, setMaintenanceMessage] = useState(
-    'Battle Arena is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
+    'KΛ ARENA is temporarily offline for scheduled system tuning, anti-cheat calibration, and challenge additions. Please check back shortly!'
   );
 
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
@@ -224,7 +224,7 @@ function ArenaPageContent() {
     } catch {}
   }, [router]);
 
-  // Auto-wake Battle Arena once user finishes creating/signing into their Kollabrix account
+  // Auto-wake KΛ ARENA once user finishes creating/signing into their Kollabrix account
   useEffect(() => {
     if (pendingWakeAfterAuth && user) {
       setPendingWakeAfterAuth(false);
@@ -289,7 +289,7 @@ function ArenaPageContent() {
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
               </div>
               <h1 className="text-2xl font-black text-white tracking-tight mt-1 font-mono uppercase">
-                Battle Arena Offline
+                KΛ ARENA Offline
               </h1>
             </div>
           </div>
@@ -377,7 +377,7 @@ function ArenaPageContent() {
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white">
-            Enter Battle Arena
+            Enter KΛ ARENA
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-400 max-w-lg mx-auto leading-relaxed">
@@ -394,7 +394,7 @@ function ArenaPageContent() {
               className="px-9 py-4 rounded-2xl bg-gradient-to-b from-[#232732] via-[#13161D] to-[#090B0F] text-white border border-zinc-300/50 hover:border-white/85 font-mono text-xs sm:text-sm font-black uppercase tracking-[0.18em] flex items-center justify-center gap-2.5 shadow-[0_0_30px_rgba(226,232,240,0.22),inset_0_1px_0_rgba(255,255,255,0.28)] hover:shadow-[0_0_40px_rgba(226,232,240,0.38)] hover:scale-[1.02] transition-all cursor-pointer"
             >
               <Swords className="w-4 h-4 text-zinc-200" />
-              <span>{user ? 'Enter Battle Arena' : 'Create Account & Enter Arena'}</span>
+              <span>{user ? 'Enter KΛ ARENA' : 'Create Account & Enter Arena'}</span>
               <ArrowRight className="w-4 h-4 text-zinc-200" />
             </button>
 

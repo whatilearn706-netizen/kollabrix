@@ -106,7 +106,7 @@ export function KaBuilderMemoryModal({ open, onClose, user, onSaved }: BuilderMe
 
         {!user?.id ? (
           <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-zinc-300 text-center space-y-2">
-            <p>Sign in to save your tech stack, weak DSA topics, and sync live Battle Arena ELO with KΛ ΛI.</p>
+            <p>Sign in to save your tech stack, weak DSA topics, and sync live KΛ ARENA ELO with KΛ ΛI.</p>
           </div>
         ) : loading ? (
           <div className="py-10 flex items-center justify-center gap-2 text-xs text-zinc-400">
@@ -119,7 +119,7 @@ export function KaBuilderMemoryModal({ open, onClose, user, onSaved }: BuilderMe
               <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1.5 font-bold text-amber-200">
                   <Swords className="w-4 h-4 text-amber-400" />
-                  <span>Synced Battle Arena Stats</span>
+                  <span>Synced KΛ ARENA Stats</span>
                 </span>
                 <span className="font-mono font-bold text-white">
                   {arenaStats.elo} ELO ({arenaStats.tier}) · {arenaStats.wins}W / {arenaStats.losses}L

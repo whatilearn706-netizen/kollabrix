@@ -29,7 +29,7 @@ interface AdminQuestionStudioProps {
 type StudioMode = 'algorithms' | 'bug_hunt' | 'web_dev';
 
 /**
- * Obsidian Titanium Question Studio matching the 4-stage Battle Arena architecture:
+ * Obsidian Titanium Question Studio matching the 4-stage KΛ ARENA architecture:
  * Supports 1v1 Quick Blitz (Py/C++/Java), 60s Bug Hunt (Web UI Bug or Code Bug), and Web Pixel Clash.
  */
 export function AdminQuestionStudio({
@@ -182,7 +182,7 @@ export function AdminQuestionStudio({
       const d = await res.json();
       if (!res.ok || !d.success) throw new Error(d?.error || 'Failed to save question');
 
-      onStatus({ text: `Saved "${payload.title}" to Battle Arena.`, type: 'success' });
+      onStatus({ text: `Saved "${payload.title}" to KΛ ARENA.`, type: 'success' });
       setTitle('');
       setDescription('');
       setShowComposer(false);
@@ -198,19 +198,19 @@ export function AdminQuestionStudio({
     try {
       const headers = await authHeaders();
       await fetch(`/api/arena/questions?id=${encodeURIComponent(id)}`, { method: 'DELETE', headers });
-      onStatus({ text: 'Removed question from Battle Arena.', type: 'success' });
+      onStatus({ text: 'Removed question from KΛ ARENA.', type: 'success' });
       await onRefresh();
     } catch {}
   };
 
   const handleClearAll = async () => {
-    if (!confirm('Remove ALL Battle Arena questions permanently?')) return;
+    if (!confirm('Remove ALL KΛ ARENA questions permanently?')) return;
     setIsClearing(true);
     try {
       const headers = await authHeaders();
       const res = await fetch('/api/arena/questions?all=true', { method: 'DELETE', headers });
       if (res.ok) {
-        onStatus({ text: 'All Battle Arena questions cleared.', type: 'success' });
+        onStatus({ text: 'All KΛ ARENA questions cleared.', type: 'success' });
         await onRefresh();
       }
     } finally {
@@ -356,7 +356,7 @@ export function AdminQuestionStudio({
       {showComposer && (
         <form onSubmit={handleSave} className="p-5 sm:p-6 rounded-2xl bg-[#0A0E17] border border-white/20 space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
-            <h4 className="font-mono text-sm font-black text-white uppercase tracking-wider">Create Battle Arena Challenge</h4>
+            <h4 className="font-mono text-sm font-black text-white uppercase tracking-wider">Create KΛ ARENA Challenge</h4>
             {mode === 'bug_hunt' && (
               <span className="px-2.5 py-0.5 rounded-full bg-red-950/70 border border-red-500/40 font-mono text-[10px] font-bold text-red-300">
                 ⏱ Locked to 60s Bug Hunt Sprint
@@ -648,7 +648,7 @@ export function AdminQuestionStudio({
             className="w-full py-3 rounded-xl bg-gradient-to-r from-slate-100 via-white to-slate-200 text-slate-950 font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSaving ? <RotateCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>{isSaving ? 'Saving...' : 'Save Challenge to Battle Arena'}</span>
+            <span>{isSaving ? 'Saving...' : 'Save Challenge to KΛ ARENA'}</span>
           </button>
         </form>
       )}
@@ -656,13 +656,13 @@ export function AdminQuestionStudio({
       {/* Saved Questions List or Clean Empty State */}
       {isLoading ? (
         <div className="p-10 rounded-2xl bg-[#0A0E17] border border-white/10 text-center font-mono text-xs text-slate-400">
-          Loading Battle Arena questions...
+          Loading KΛ ARENA questions...
         </div>
       ) : filtered.length === 0 ? (
         <div className="p-10 rounded-2xl bg-[#0A0E17] border border-white/10 text-center space-y-3">
           <Layers className="w-8 h-8 text-slate-500 mx-auto" />
           <div className="font-sans font-bold text-white text-sm">
-            {questions.length === 0 ? 'Battle Arena Question Bank Is Empty' : 'No Questions Match Current Filter'}
+            {questions.length === 0 ? 'KΛ ARENA Question Bank Is Empty' : 'No Questions Match Current Filter'}
           </div>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
             Click <strong className="text-white">+ Add Question</strong> above to add fresh challenges for 1v1 Quick Blitz, 60s Bug Hunt, Web Pixel Clash, or Custom rooms.

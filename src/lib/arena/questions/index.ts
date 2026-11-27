@@ -29,7 +29,7 @@ export * from './algorithms';
 export * from './bughunt/web';
 
 /**
- * All 990+ Calibrated Battle Arena Questions
+ * All 990+ Calibrated KΛ ARENA Questions
  * Covers:
  * - HTML: Easy, Medium, Hard (3m, 5m, 10m)
  * - HTML + CSS: Easy, Medium, Hard (3m, 5m, 10m)

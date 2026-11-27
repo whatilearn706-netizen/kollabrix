@@ -39,7 +39,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   // Group 1: CORE CAPABILITIES (Requested Sequence)
   {
     id: 'arena',
-    label: '1v1 Battle Arena',
+    label: 'KΛ ARENA',
     group: 'core',
     href: '/arena',
     badge: 'LIVE DUELS · 14 ACTIVE',

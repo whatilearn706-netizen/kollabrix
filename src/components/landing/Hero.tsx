@@ -175,7 +175,7 @@ export function LandingHero() {
   const [triggerLightPowerOn, setTriggerLightPowerOn] = useState(false);
   const [heroEntranceKey, setHeroEntranceKey] = useState(0);
 
-  // Eagerly prefetch the Battle Arena route and preload its visual background for instant navigation
+  // Eagerly prefetch the KΛ ARENA route and preload its visual background for instant navigation
   useEffect(() => {
     try {
       router.prefetch('/arena');
@@ -470,7 +470,7 @@ export function LandingHero() {
             onPointerUp={handleLaptopPointerUp}
             onMouseEnter={() => { try { router.prefetch('/arena'); } catch {} }}
             onTouchStart={() => { try { router.prefetch('/arena'); } catch {} }}
-            title="Click to enter 1v1 Battle Arena"
+            title="Click to enter KΛ ARENA"
             style={{
               transform: `perspective(1400px) rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
               transformStyle: 'preserve-3d',
@@ -480,7 +480,7 @@ export function LandingHero() {
             {/* Full-coverage transparent click overlay ensuring 100% of the laptop surface reliably responds to clicks and taps */}
             <div
               className="absolute inset-0 z-40 cursor-pointer pointer-events-auto"
-              aria-label="Enter Battle Arena"
+              aria-label="Enter KΛ ARENA"
             />
 
             {/* Full-display dark obsidian backdrop so top corners beside the webcam notch stay seamless */}
@@ -697,7 +697,7 @@ export function LandingHero() {
                 <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:-translate-y-1">
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/90 border border-amber-400/50 text-amber-300 text-xs font-mono font-semibold shadow-[0_0_20px_rgba(245,158,11,0.45)] backdrop-blur-md">
                     <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400 animate-pulse" />
-                    <span>Click to enter 1v1 Battle Arena →</span>
+                    <span>Click to enter KΛ ARENA →</span>
                   </span>
                 </div>
               </Link>

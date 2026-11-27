@@ -36,7 +36,7 @@ interface AppItem {
 const APPS_LIST: AppItem[] = [
   {
     id: 'arena',
-    name: 'Battle Arena',
+    name: 'KΛ ARENA',
     sub: '1v1 ELO Duels',
     category: 'compete',
     href: '/arena',
@@ -406,7 +406,7 @@ export function KollabrixQuickDock({ hideTrigger = false }: { hideTrigger?: bool
                 })}
               </div>
 
-              {/* Pinned Top 2 Featured Cards (Battle Arena & Hackathons) */}
+              {/* Pinned Top 2 Featured Cards (KΛ ARENA & Hackathons) */}
               {showFeaturedRow && featuredApps.length > 0 && (
                 <div className="grid grid-cols-2 gap-2 pt-0.5">
                   {featuredApps.map((app, idx) => {

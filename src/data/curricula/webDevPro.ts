@@ -626,9 +626,9 @@ console.log(handlePost({ user: null }, {}), handlePost({ user: "a" }, { ok: true
           id: 'wp-4-7',
           title: 'OpenGraph Metadata Title Formatter',
           difficulty: 'Easy',
-          description: 'Format `"Battle Arena"` with template `"%s | Kollabrix"` -> Battle Arena | Kollabrix',
-          starterCode: `const title = "Battle Arena", tmpl = "%s | Kollabrix";// TODO`,
-          expectedOutput: 'Battle Arena | Kollabrix',
+          description: 'Format `"KΛ ARENA"` with template `"%s | Kollabrix"` -> KΛ ARENA | Kollabrix',
+          starterCode: `const title = "KΛ ARENA", tmpl = "%s | Kollabrix";// TODO`,
+          expectedOutput: 'KΛ ARENA | Kollabrix',
           hints: ['`tmpl.replace("%s", title)`'],
         },
         {

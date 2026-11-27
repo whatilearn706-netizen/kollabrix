@@ -102,7 +102,7 @@ export function Navbar() {
     setUserDropdownOpen(false);
   }, [pathname]);
 
-  // Dedicated Resource Hub, Battle Arena, AI Spark Studio, standalone KΛ subdomains, and Active Exam Mode run without global navbar
+  // Dedicated Resource Hub, KΛ ARENA, AI Spark Studio, standalone KΛ subdomains, and Active Exam Mode run without global navbar
   if (
     getClientKaSubdomain() !== null ||
     pathname.startsWith('/resources') ||
@@ -560,7 +560,7 @@ export function Navbar() {
               className="flex items-center gap-3 px-3.5 py-2 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
               <Swords className="w-4 h-4 text-emerald-400" />
-              <span>1v1 Battle Arena</span>
+              <span>KΛ ARENA</span>
             </Link>
 
             <Link

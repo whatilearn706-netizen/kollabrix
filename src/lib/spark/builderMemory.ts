@@ -23,7 +23,7 @@ const DEFAULT_MEMORY: BuilderMemoryProfile = {
 };
 
 /**
- * Loads a student's Personal Builder Memory + live Battle Arena performance telemetry
+ * Loads a student's Personal Builder Memory + live KΛ ARENA performance telemetry
  * so KΛ ΛI automatically adapts explanations, code languages, and drills without re-prompting.
  */
 export async function getBuilderMemoryWithArena(userId: string | null): Promise<{
@@ -102,7 +102,7 @@ export function formatBuilderMemoryPrompt(
   }
   if (arenaStats) {
     lines.push(
-      `- Live 1v1 Battle Arena Telemetry: ${arenaStats.elo} ELO (${arenaStats.tier}) · ${arenaStats.wins}W / ${arenaStats.losses}L · Streak: ${arenaStats.winStreak}${
+      `- Live KΛ ARENA Telemetry: ${arenaStats.elo} ELO (${arenaStats.tier}) · ${arenaStats.wins}W / ${arenaStats.losses}L · Streak: ${arenaStats.winStreak}${
         arenaStats.lastOpponent ? ` · Last Rival: ${arenaStats.lastOpponent}` : ''
       }`
     );

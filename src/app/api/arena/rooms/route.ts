@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Host creates or updates a Battle Arena room
+// POST: Host creates or updates a KΛ ARENA room
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: Admin or host permanently deletes a Battle Arena room
+// DELETE: Admin or host permanently deletes a KΛ ARENA room
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

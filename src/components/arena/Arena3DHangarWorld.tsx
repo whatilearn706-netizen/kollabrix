@@ -59,7 +59,7 @@ function createRadialGlowTexture(
 }
 
 /**
- * Kollabrix Battle Arena Stadium Stage (adapted from https://pin.it/2r437XD0o):
+ * Kollabrix KΛ ARENA Stadium Stage (adapted from https://pin.it/2r437XD0o):
  * - Deep midnight navy-black enclosed indoor arena amphitheater bowl
  * - Curved upper seating tiers with glowing ice-white / pale-blue LED ribbon panels
  * - Concentric curved overhead banks of bright stadium floodlights with soft misty beams

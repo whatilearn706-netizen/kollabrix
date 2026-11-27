@@ -1,7 +1,7 @@
 import type { DuelQuestion } from '@/types/arenaDuel';
 
 /**
- * Calibrated Battle Arena Questions (30 items)
+ * Calibrated KΛ ARENA Questions (30 items)
  * Designed for collegiate speed-coding with ~30 seconds margin to spare.
  */
 export const HTML_CSS_EASY_ARENA_QUESTIONS: DuelQuestion[] = [
@@ -842,7 +842,7 @@ export const HTML_CSS_EASY_ARENA_QUESTIONS: DuelQuestion[] = [
     "difficulty": "easy",
     "timeLimitSeconds": 600,
     "targetPreviewTitle": "Testimonial Quote Card",
-    "targetComponentHtml": "<div class='test-card'><p style='font-style:italic;margin:0 0 10px;color:#e2e8f0;font-size:13px;'>\"The 1v1 Battle Arena brought esports energy into our computer science lab.\"</p><strong>Priya Sharma</strong> <span style='font-size:11px;color:#94a3b8;'>\u2014 BITS Pilani</span></div>",
+    "targetComponentHtml": "<div class='test-card'><p style='font-style:italic;margin:0 0 10px;color:#e2e8f0;font-size:13px;'>\"The KΛ ARENA brought esports energy into our computer science lab.\"</p><strong>Priya Sharma</strong> <span style='font-size:11px;color:#94a3b8;'>\u2014 BITS Pilani</span></div>",
     "targetComponentCss": ".test-card { width: 320px; padding: 18px; background: #1e293b; border-left: 4px solid #38bdf8; border-radius: 8px; color: #fff; font-family: sans-serif; }",
     "starterHtml": "<div class='testimonial-card-container'><!-- Build Testimonial Quote Card --></div>",
     "starterCss": "/* Style with CSS */",

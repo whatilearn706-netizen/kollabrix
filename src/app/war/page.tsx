@@ -199,7 +199,7 @@ export default function CampusWarPage() {
     );
   }
 
-  // Dedicated Full-Screen View for Selected Battle Arena Derby
+  // Dedicated Full-Screen View for Selected KΛ ARENA Derby
   if (selectedDerbyMatch) {
     return (
       <main className="min-h-screen bg-[#07090E] text-slate-100 pb-24 pt-6 px-4 sm:px-6 lg:px-8 xl:px-10 selection:bg-amber-500 selection:text-slate-950 w-full animate-fadeIn">
@@ -400,7 +400,7 @@ export default function CampusWarPage() {
                 <span className="text-amber-400 font-bold">{config.matches?.length || 0} Battles Live</span>
               </div>
 
-              {/* 1. Battle Arena 1v1 */}
+              {/* 1. KΛ ARENA 1v1 */}
               <button
                 type="button"
                 onClick={() => setSelectedPillar('arena')}
@@ -423,7 +423,7 @@ export default function CampusWarPage() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className={`text-base font-black truncate ${selectedPillar === 'arena' ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
-                        Battle Arena 1v1
+                        KΛ ARENA 1v1
                       </h4>
                     </div>
                     <p className="text-xs text-slate-400 truncate mt-0.5">
@@ -578,7 +578,7 @@ export default function CampusWarPage() {
                     Showing:
                   </span>
                   <span className="text-xs font-bold text-amber-300 px-3 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 shadow-xs">
-                    {selectedPillar === 'arena' && '⚔️ Battle Arena 1v1'}
+                    {selectedPillar === 'arena' && '⚔️ KΛ ARENA 1v1'}
                     {selectedPillar === 'hackathon' && '🏆 Hackathons'}
                     {selectedPillar === 'problem' && '💡 Faculty Bounties'}
                     {selectedPillar === 'icpc' && '⚡ ICPC Gauntlet'}
@@ -846,14 +846,14 @@ export default function CampusWarPage() {
                       onChange={(e) => setChallengePillar(e.target.value as WarPillar)}
                       className="w-full h-10 px-2.5 rounded-xl bg-[#090C12] border border-white/10 text-white text-xs focus:outline-none focus:border-amber-400"
                     >
-                      {isAdmin && <option value="arena">⚔️ Battle Arena 1v1 (Official Dual-Stack)</option>}
+                      {isAdmin && <option value="arena">⚔️ KΛ ARENA 1v1 (Official Dual-Stack)</option>}
                       <option value="hackathon">🏆 Hackathon Derby</option>
                       <option value="problem">💡 Faculty Bounty</option>
                       <option value="icpc">⚡ ICPC Gauntlet</option>
                     </select>
                     {!isAdmin && (
                       <span className="text-[10px] text-amber-400 font-mono block mt-1">
-                        Notice: Inter-College Battle Arenas are hosted exclusively by Kollabrix Master Admin.
+                        Notice: Inter-College KΛ ARENAs are hosted exclusively by Kollabrix Master Admin.
                       </span>
                     )}
                   </div>

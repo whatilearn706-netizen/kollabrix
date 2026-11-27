@@ -27,7 +27,7 @@ const KOLLABRIX_PLATFORM_MAP = `UNIFIED 3-WEBSITE ECOSYSTEM MAP (Kollabrix + KΛ
    - **My Projects & Squad Workspaces** ([My Projects](/my-projects)) & **Applications** ([My Applications](/my-applications)): Manage active projects, track join applications (Pending/Accepted/Rejected), sync GitHub commits, coordinate tasks/milestones, receive mentoring notes, and claim verified project certificates.
    - **Hackathons** ([Hackathons](/hackathons)) & **Host Hackathon** ([Host Hackathon](/hackathons/new)): Browse live/upcoming collegiate & sponsored hackathons with prize pools, themes, and registration deadlines, register a team, or host a campus hackathon.
    - **Find Teammates** ([Teammates](/teammates)): Filter verified college developers, AI/ML engineers, backend builders, and UI/UX designers by skills, roles, and campus; view builder profiles at \`/profile/[username]\` or \`/p/[username]\`.
-   - **1v1 Battle Arena** ([1v1 Battle Arena](/arena)): Real-time 1v1 & 2v2 coding duels (Quick Blitz 3m/5m/10m, 60s Bug Hunt, Web Pixel Clash, Custom Private Rooms) across Python, C++, Java, HTML/CSS/JS with ELO ratings, 1,020 verified challenges, and live rival Fog-of-War.
+   - **KΛ ARENA** ([KΛ ARENA](/arena)): Real-time 1v1 & 2v2 coding duels (Quick Blitz 3m/5m/10m, 60s Bug Hunt, Web Pixel Clash, Custom Private Rooms) across Python, C++, Java, HTML/CSS/JS with ELO ratings, 1,020 verified challenges, and live rival Fog-of-War.
    - **Practice IDE** ([Practice IDE](/icpc)): LeetCode/ICPC-style DSA & Placement OA problem sets (Amazon, TCS, ICPC) running on Kollabrix's private multi-core compiler with sample & hidden testcases, streaks, and cross-device progress sync.
    - **Campus War** ([Campus War](/war)) & **College Leaderboard** ([Leaderboard](/leaderboard)): Inter-college team matches, war bounties across Arena/Hackathons/Problems/ICPC, and live national collegiate rankings.
    - **Faculty Problem Bank** ([Problem Bank](/problems)), **Post Problem** ([Post Problem](/problems/new)) & **Faculty Portal** ([Faculty Dashboard](/teacher/dashboard)): Real-world engineering challenges posted by professors & mentors where squads submit solutions and receive faculty feedback.
@@ -36,7 +36,7 @@ const KOLLABRIX_PLATFORM_MAP = `UNIFIED 3-WEBSITE ECOSYSTEM MAP (Kollabrix + KΛ
 2. **KΛ ΛI (Autonomous Engineering AI — \`https://ai.kollabrix.in\` / [KΛ ΛI](/ka-ai))**:
    - **KΛ-1 & KΛ-Pro Chat**: Live ecosystem-aware AI copilot with **Personal Builder Memory** (remembers user's stack, weak DSA patterns, Arena ELO) and **Sketch/Screenshot-to-Working-App** (Architecture Diagram + SQL + React/API code).
    - **Code Sandbox**: Write, run, and auto-verify/auto-heal code against Judge0 testcases.
-   - **DSA & Placements Coach**: Pattern-based OA & interview prep linked directly to Practice IDE & Battle Arena.
+   - **DSA & Placements Coach**: Pattern-based OA & interview prep linked directly to Practice IDE & KΛ ARENA.
    - **Hackathon Studio (Hackathon Pass)**: Bespoke 7-Slide \`.pptx\` Deck Generator (with Repeat / New Design), **AI Jury Roast & Live Q&A Simulator**, **1-Click Working Starter Repo Blueprint**, Cut-List, 2-Min Demo Timer, and Squad Match.
 
 3. **KΛ FOLIO (Dark-Luxury Coding Library & Goal-Based Book Decision Engine — \`https://folio.kollabrix.in\` / [KΛ FOLIO](/ka-codex) & [Resources Studio](/resources))**:
@@ -61,7 +61,7 @@ const RESPONSE_BEHAVIOR_RULES = `UNIFIED 3-WEBSITE INTELLIGENCE & LIVE SYNC RULE
    - Never invent fake projects, fake deadlines, fake usernames, or non-existent routes.
 2. **Coding, DSA, Architecture & General Questions**:
    - Always give a **complete, accurate, direct answer** to the user's actual question FIRST.
-   - Whenever the topic involves a programming language, DSA pattern (e.g., Sliding Window, DP, Graphs, Binary Search), or System Design, attach a crisp **"Connected Ecosystem Next Steps"** section pointing to the exact matching KΛ FOLIO track/book/pattern ([Watch / Read in KΛ FOLIO](/resources)), [Practice IDE](/icpc), or [1v1 Battle Arena](/arena).
+   - Whenever the topic involves a programming language, DSA pattern (e.g., Sliding Window, DP, Graphs, Binary Search), or System Design, attach a crisp **"Connected Ecosystem Next Steps"** section pointing to the exact matching KΛ FOLIO track/book/pattern ([Watch / Read in KΛ FOLIO](/resources)), [Practice IDE](/icpc), or [KΛ ARENA](/arena).
    - If the user attaches a sketch, whiteboard photo, Figma UI screenshot, or assignment PDF, output a complete structured build response: 1) Architecture Diagram (\`\`\`mermaid\`), 2) Database SQL Schema (\`\`\`sql\`), and 3) Production-ready React/API code (\`\`\`tsx / \`\`\`ts).`;
 
 /**
@@ -142,7 +142,7 @@ export async function buildKollabrixLiveContext(
   - **KΛ-Pro (Deep Reasoning Tier)**: High-capacity Gemini Pro / Hydrogen model used for complex system architecture, deep multi-file code debugging, Sketch-to-Working-App vision parsing, Jury Roast simulations, and bespoke 7-slide \`.pptx\` pitch deck generation.
 - **KΛ AI Exclusive Ecosystem Weapons (What ChatGPT/Claude Cannot Do)**:
   1. **Judge0 Auto-Verify & Auto-Heal Loop**: Silently compiles and tests code in Kollabrix's Judge0 sandbox; if tests fail or TLE, KΛ AI reads the real stderr/compile error and patches the code automatically.
-  2. **Personal Builder Memory**: Persists user's preferred stack (e.g., Next.js + Java + Postgres), weak DSA patterns, and real Battle Arena ELO/loss history so every response adapts automatically.
+  2. **Personal Builder Memory**: Persists user's preferred stack (e.g., Next.js + Java + Postgres), weak DSA patterns, and real KΛ ARENA ELO/loss history so every response adapts automatically.
   3. **Sketch / Screenshot-to-Working-App**: Upload a whiteboard photo, Figma mockup, or assignment PDF → outputs Mermaid architecture diagram + PostgreSQL SQL schema + React/API code.
   4. **Hackathon Studio & Hackathon Pass (₹49 / 7 days)**:
      - **Bespoke 7-Slide \`.pptx\` Generator**: Reads hackathon link, GitHub repo, and problem statement to generate custom themed decks with a **Repeat / New Design** button for fresh layouts & backgrounds.

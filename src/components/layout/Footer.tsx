@@ -188,8 +188,8 @@ export function Footer() {
                 </Link>
                 <Link
                   href="/arena"
-                  aria-label="1v1 Battle Arena"
-                  title="1v1 Battle Arena"
+                  aria-label="KΛ ARENA"
+                  title="KΛ ARENA"
                   className={`p-2 rounded-lg transition-all duration-150 hover:scale-105 ${surfaceStyle} ${isFooterDark ? 'hover:border-white/30 hover:text-white' : 'hover:border-stone-400'}`}
                 >
                   <Swords className="w-3.5 h-3.5" />
@@ -242,7 +242,7 @@ export function Footer() {
               <ul className="space-y-2.5">
                 <li>
                   <Link href="/arena" className={linkClass}>
-                    1v1 Battle Arena
+                    KΛ ARENA
                   </Link>
                 </li>
                 <li>

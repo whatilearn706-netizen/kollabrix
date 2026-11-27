@@ -17,7 +17,7 @@ interface SparkExplainErrorButtonProps {
 
 /**
  * Reusable "Ask Spark AI Why This Failed" Socratic Tutor button + hint card
- * embedded inside the Practice IDE (/icpc) and Battle Arena (/arena) error drawers.
+ * embedded inside the Practice IDE (/icpc) and KΛ ARENA (/arena) error drawers.
  */
 export function SparkExplainErrorButton({
   code,
