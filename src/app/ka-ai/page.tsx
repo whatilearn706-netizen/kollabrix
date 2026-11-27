@@ -186,234 +186,210 @@ export default function KaAiBrandPage() {
           </div>
         </section>
 
-        {/* ========================================================= */}
-{/* KΛ AI CAPABILITIES: 3 INTERACTIVE QUICK-ACTION CARDS */}
-{/* ========================================================= */}
-<section className="relative z-10 w-full max-w-5xl mx-auto px-4 py-16">
-  {/* Section Header */}
-  <div className="text-center mb-10">
-    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/20 text-[11px] font-mono tracking-widest text-sky-300 uppercase mb-3">
-      Live Copilot Modes
-    </div>
-    <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-      What Can You Ask <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">KΛ AI</span>?
-    </h2>
-    <p className="text-sm text-zinc-400 mt-2 max-w-lg mx-auto">
-      Tap any weapon below to load the prompt directly into your voice session.
-    </p>
-  </div>
-
-  {/* 3 Quick Action Cards Grid */}
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-    {/* Card 1: Hackathon Architect */}
-    <div 
-      onClick={() => {
-        // If you have a voice/prompt handler, trigger it here:
-        const prompt = "Give me a winning tech stack and architecture for a 24h AI hackathon.";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }}
-      className="group relative p-6 rounded-2xl bg-gradient-to-b from-[#0A101D]/90 to-[#050811]/90 border border-sky-500/20 hover:border-sky-400/60 transition-all duration-300 cursor-pointer hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(56,189,248,0.2)] flex flex-col justify-between"
-    >
-      <div>
-        <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-400/30 flex items-center justify-center text-sky-400 font-bold mb-4 group-hover:scale-110 transition-transform">
-          ⚡
-        </div>
-        <div className="text-xs font-mono font-semibold text-sky-400 tracking-wider uppercase mb-1">
-          Architect
-        </div>
-        <h3 className="text-lg font-bold text-white mb-2">Hackathon Architect</h3>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          &ldquo;Give me a winning tech stack and modular architecture for a 24h AI hackathon.&rdquo;
-        </p>
-      </div>
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono font-semibold text-sky-300 group-hover:text-white">
-        <span>Tap to Launch</span>
-        <span className="group-hover:translate-x-1 transition-transform">→</span>
-      </div>
-    </div>
-
-    {/* Card 2: Bug Hunter & Fixer */}
-    <div 
-      onClick={() => {
-        const prompt = "Find the memory leak and bottleneck in my Spring Boot and Next.js code.";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }}
-      className="group relative p-6 rounded-2xl bg-gradient-to-b from-[#0A101D]/90 to-[#050811]/90 border border-emerald-500/20 hover:border-emerald-400/60 transition-all duration-300 cursor-pointer hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(52,211,153,0.2)] flex flex-col justify-between"
-    >
-      <div>
-        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-400/30 flex items-center justify-center text-emerald-400 font-bold mb-4 group-hover:scale-110 transition-transform">
-          🔍
-        </div>
-        <div className="text-xs font-mono font-semibold text-emerald-400 tracking-wider uppercase mb-1">
-          Debugger
-        </div>
-        <h3 className="text-lg font-bold text-white mb-2">Bug Hunter &amp; Fixer</h3>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          &ldquo;Find the memory leak and race condition in my Spring Boot / Next.js code.&rdquo;
-        </p>
-      </div>
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono font-semibold text-emerald-300 group-hover:text-white">
-        <span>Tap to Launch</span>
-        <span className="group-hover:translate-x-1 transition-transform">→</span>
-      </div>
-    </div>
-
-    {/* Card 3: Code Reviewer */}
-    <div 
-      onClick={() => {
-        const prompt = "Review this pull request code and provide senior staff engineer feedback.";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }}
-      className="group relative p-6 rounded-2xl bg-gradient-to-b from-[#0A101D]/90 to-[#050811]/90 border border-purple-500/20 hover:border-purple-400/60 transition-all duration-300 cursor-pointer hover:-translate-y-1 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(192,132,252,0.2)] flex flex-col justify-between"
-    >
-      <div>
-        <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-400/30 flex items-center justify-center text-purple-400 font-bold mb-4 group-hover:scale-110 transition-transform">
-          🛡️
-        </div>
-        <div className="text-xs font-mono font-semibold text-purple-400 tracking-wider uppercase mb-1">
-          Staff Reviewer
-        </div>
-        <h3 className="text-lg font-bold text-white mb-2">Senior Code Review</h3>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          &ldquo;Review my PR code, enforce clean architecture, and give senior staff feedback.&rdquo;
-        </p>
-      </div>
-      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono font-semibold text-purple-300 group-hover:text-white">
-        <span>Tap to Launch</span>
-        <span className="group-hover:translate-x-1 transition-transform">→</span>
-      </div>
-    </div>
-  </div>
-</section>
-
                 {/* ========================================================= */}
-        {/* SECTION 2: HIGH-TECH CONTACT COCKPIT (Admin Connected)    */}
+        {/* KΛ AI PROMPT WEAPONS: HIGH-TECH TERMINAL CAPSULES         */}
+        {/* ========================================================= */}
+        <section className="relative z-10 w-full max-w-5xl mx-auto px-4 py-16">
+          {/* Header */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/20 text-[10px] font-mono tracking-[0.2em] text-sky-300 uppercase mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+              DIRECT AUDIO SYNTHESIS
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+              Command <span className="bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">KΛ AI</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-md mx-auto">
+              Select a pre-tuned neural copilot mode. Click to synthesize the voice query.
+            </p>
+          </div>
+
+          {/* 3 Creative Blueprint Terminal Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Card 1: Hackathon Architect */}
+            <div
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group relative rounded-2xl bg-[#030611]/90 border border-sky-500/25 hover:border-sky-400/80 p-5 transition-all duration-300 cursor-pointer overflow-hidden hover:shadow-[0_0_30px_rgba(56,189,248,0.25)] flex flex-col justify-between"
+            >
+              {/* Corner Tech Decor */}
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-sky-500/15 to-transparent rounded-bl-2xl border-b border-l border-sky-400/20 flex items-start justify-end pr-2 pt-1.5">
+                <span className="text-[9px] font-mono font-bold text-sky-400">01</span>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-400/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(56,189,248,0.3)]">
+                    ⚡
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-sky-400 tracking-wider uppercase block">COGNITIVE / ARCH</span>
+                    <h3 className="text-sm font-bold text-white tracking-wide">Hackathon Architect</h3>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#01040A]/90 border border-white/5 font-mono text-[11px] text-zinc-300 leading-relaxed group-hover:border-sky-500/30 transition-colors">
+                  <span className="text-sky-400 select-none mr-1.5">&gt;</span>
+                  &ldquo;Design winning 24h AI stack &amp; modular DB schema.&rdquo;
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400 group-hover:text-sky-300 transition-colors">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                  Synthesize Voice
+                </span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            {/* Card 2: Bug Hunter & Fixer */}
+            <div
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group relative rounded-2xl bg-[#030611]/90 border border-cyan-500/25 hover:border-cyan-400/80 p-5 transition-all duration-300 cursor-pointer overflow-hidden hover:shadow-[0_0_30px_rgba(34,211,238,0.25)] flex flex-col justify-between"
+            >
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-cyan-500/15 to-transparent rounded-bl-2xl border-b border-l border-cyan-400/20 flex items-start justify-end pr-2 pt-1.5">
+                <span className="text-[9px] font-mono font-bold text-cyan-400">02</span>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+                    🔍
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-cyan-400 tracking-wider uppercase block">RUNTIME / AUDIT</span>
+                    <h3 className="text-sm font-bold text-white tracking-wide">Bug Hunter &amp; Fixer</h3>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#01040A]/90 border border-white/5 font-mono text-[11px] text-zinc-300 leading-relaxed group-hover:border-cyan-500/30 transition-colors">
+                  <span className="text-cyan-400 select-none mr-1.5">&gt;</span>
+                  &ldquo;Trace race condition and memory leak in Spring/Next.&rdquo;
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400 group-hover:text-cyan-300 transition-colors">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  Synthesize Voice
+                </span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+
+            {/* Card 3: Senior Code Review */}
+            <div
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="group relative rounded-2xl bg-[#030611]/90 border border-indigo-500/25 hover:border-indigo-400/80 p-5 transition-all duration-300 cursor-pointer overflow-hidden hover:shadow-[0_0_30px_rgba(99,102,241,0.25)] flex flex-col justify-between"
+            >
+              <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-indigo-500/15 to-transparent rounded-bl-2xl border-b border-l border-indigo-400/20 flex items-start justify-end pr-2 pt-1.5">
+                <span className="text-[9px] font-mono font-bold text-indigo-400">03</span>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(99,102,241,0.3)]">
+                    🛡️
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono text-indigo-400 tracking-wider uppercase block">QUALITY / GATE</span>
+                    <h3 className="text-sm font-bold text-white tracking-wide">Senior Code Review</h3>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#01040A]/90 border border-white/5 font-mono text-[11px] text-zinc-300 leading-relaxed group-hover:border-indigo-500/30 transition-colors">
+                  <span className="text-indigo-400 select-none mr-1.5">&gt;</span>
+                  &ldquo;Refactor PR code for production scale and zero smells.&rdquo;
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-400 group-hover:text-indigo-300 transition-colors">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                  Synthesize Voice
+                </span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================= */}
+        {/* SECTION 2: ORIGINAL SLEEK GLASS CAPSULE (With Mobile No.) */}
         {/* ========================================================= */}
         <section
           id="contact"
           className="relative py-20 sm:py-28 px-4 flex flex-col items-center text-center overflow-hidden"
         >
-          {/* Subtle Hairline Divider */}
-          <div className="w-56 sm:w-80 h-px bg-gradient-to-r from-transparent via-sky-400/30 to-transparent mb-12" />
+          {/* Top Centered Hairline Rule */}
+          <div className="w-56 sm:w-80 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-12" />
 
-          {/* Ambient Blue Radial Glow Behind Card */}
+          {/* Upward Cobalt Aurora Mist at Bottom */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-96"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-56"
             style={{
               background:
-                'radial-gradient(ellipse 65% 60% at 50% 100%, rgba(37,99,235,0.35) 0%, rgba(14,165,233,0.15) 35%, transparent 75%)',
+                'radial-gradient(ellipse 70% 80% at 50% 105%, rgba(37,99,235,0.4) 0%, rgba(15,41,109,0.2) 45%, transparent 75%)',
             }}
           />
 
-          {/* Header Pill & Heading */}
-          <div className="relative z-10 flex flex-col items-center mb-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/25 text-[11px] font-mono tracking-widest text-sky-300 uppercase mb-3 backdrop-blur-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Direct Support Dispatch
-            </div>
-            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-slate-200 via-white to-slate-400 bg-clip-text text-transparent">
-              Connect with <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">KΛ Core</span>
-            </h2>
-            <p className="mt-3 max-w-lg text-xs sm:text-sm text-zinc-400 leading-relaxed">
-              Have questions about Collegiate Hackathons, KΛ AI Copilots, or enterprise campus deployment? Drop your coordinates below.
+          <h2 className="relative z-10 text-3xl sm:text-5xl font-medium tracking-[-0.03em] bg-gradient-to-r from-slate-400 via-white to-slate-400 bg-clip-text text-transparent">
+            Get in touch
+          </h2>
+          <p className="relative z-10 mt-3 max-w-md text-xs sm:text-sm text-slate-400 leading-relaxed">
+            Got questions for hackathons or need technical AI assistance? KΛ AI is here to help. Reach out and we&apos;ll get back to you as soon as possible.
+          </p>
+
+          {/* Original Ultra-Clean Glass Bar with Mobile Number added in the row */}
+          <form
+            onSubmit={handleContactSubmit}
+            className="relative z-10 mt-9 w-full max-w-3xl rounded-2xl bg-[#070E24]/75 border border-white/[0.1] backdrop-blur-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-[0_24px_70px_rgba(0,0,0,0.8)]"
+          >
+            <input
+              type="text"
+              required
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder="Name"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#040919]/90 border border-white/[0.06] focus:border-sky-400/50 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none transition-colors"
+            />
+            <input
+              type="tel"
+              required
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              placeholder="Mobile No."
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#040919]/90 border border-white/[0.06] focus:border-sky-400/50 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none font-mono transition-colors"
+            />
+            <input
+              type="email"
+              required
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="Email"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#040919]/90 border border-white/[0.06] focus:border-sky-400/50 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={contactLoading}
+              className="px-6 py-2.5 rounded-xl bg-[#0A132C] hover:bg-[#111E44] border border-white/15 text-xs sm:text-sm font-medium text-slate-100 whitespace-nowrap cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+            >
+              {contactLoading ? 'Sending...' : 'Contact us'}
+            </button>
+          </form>
+
+          {contactSent && (
+            <p className="relative z-10 mt-3 text-xs font-mono text-sky-300">
+              ✓ Thanks! Your details and mobile number have been queued for the KΛ AI team.
             </p>
-          </div>
-
-          {/* High-Tech Tactical Glass Card */}
-          <div className="relative z-10 w-full max-w-xl rounded-2xl bg-gradient-to-b from-[#0B1226]/90 via-[#070B18]/95 to-[#03060E]/98 border border-white/10 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(56,189,248,0.12)] text-left">
-            <form onSubmit={handleContactSubmit} className="space-y-4">
-              {/* Row 1: Name & Mobile */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
-                    Your Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    placeholder="e.g. Mayank Goyal"
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
-                    Mobile Number *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Email */}
-              <div>
-                <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
-                  Email Address *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="student@college.edu"
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all"
-                />
-              </div>
-
-              {/* Row 3: Optional Query */}
-              <div>
-                <label className="block text-[11px] font-mono font-medium text-zinc-400 uppercase tracking-wider mb-1.5">
-                  How Can We Help? (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={contactMessage}
-                  onChange={(e) => setContactMessage(e.target.value)}
-                  placeholder="Hackathon query, campus ambassador, or tech stack..."
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#030712]/90 border border-white/10 focus:border-sky-400/60 focus:ring-1 focus:ring-sky-400/30 text-xs sm:text-sm text-white placeholder:text-zinc-600 outline-none transition-all"
-                />
-              </div>
-
-              {/* Error Message */}
-              {contactError && (
-                <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs font-mono text-red-300">
-                  {contactError}
-                </div>
-              )}
-
-              {/* Success State */}
-              {contactSent && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-400/30 text-xs font-mono text-emerald-300 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span>Success! Your details have reached the Admin Control Center. We&apos;ll get back to you shortly.</span>
-                </div>
-              )}
-
-              {/* Action Button */}
-              <button
-                type="submit"
-                disabled={contactLoading || contactSent}
-                className="w-full mt-2 py-3.5 px-6 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-mono text-xs sm:text-sm font-bold tracking-wider uppercase transition-all shadow-[0_0_24px_rgba(56,189,248,0.35)] hover:shadow-[0_0_36px_rgba(56,189,248,0.55)] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-              >
-                {contactLoading ? (
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Dispatch Details</span>
-                    <span>→</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+          )}
         </section>
 
         {/* SECTION 3: COSMIC PLANETARY HORIZON FOOTER (Exact Match to pin.it/4w79gNvLO) */}
