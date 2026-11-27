@@ -187,7 +187,7 @@ function addHeaderFooter(
 ) {
   const headerY = layoutStyle === 'minimal_swiss' ? 0.38 : 0.28;
   slide.addText(
-    `0${s.slideNumber} · ${(s.type || 'PITCH').toUpperCase()}  |  ${(deck.hackathonName || 'HACKATHON DECK').toUpperCase()}`,
+    `0${s.slideNumber} · ${asText(s.type, 'PITCH').toUpperCase()}  |  ${asText(deck.hackathonName, 'HACKATHON DECK').toUpperCase()}`,
     { x: 0.6, y: headerY, w: 9.8, h: 0.28, fontSize: 9.5, bold: true, color: c.accent }
   );
 
@@ -212,7 +212,7 @@ function addHeaderFooter(
     valign: 'middle',
   });
 
-  slide.addText(s.title || 'Slide', {
+  slide.addText(asText(s.title, 'Slide'), {
     x: 0.6,
     y: headerY + 0.32,
     w: 12.1,
@@ -223,7 +223,7 @@ function addHeaderFooter(
   });
 
   slide.addText(
-    `${deck.deckTitle || 'Project Deck'}  ·  ${deck.hackathonName || 'Hackathon Submission'}  ·  Crafted with KΛ-Pro`,
+    `${asText(deck.deckTitle, 'Project Deck')}  ·  ${asText(deck.hackathonName, 'Hackathon Submission')}  ·  Crafted with KA-Pro`,
     {
       x: 0.6,
       y: 7.0,
@@ -235,10 +235,37 @@ function addHeaderFooter(
   );
 }
 
+function asText(v: unknown, fallback = ''): string {
+  if (typeof v === 'string') return v.trim() || fallback;
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>;
+    return asText(o.label ?? o.title ?? o.name ?? o.value ?? '', fallback);
+  }
+  return fallback;
+}
+
+function asTextArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((x) => asText(x)).filter(Boolean);
+  if (typeof v === 'string') return v.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const deck = body?.deck as ScreeningDeck | undefined;
+    const contentType = request.headers.get('content-type') || '';
+    let deck: ScreeningDeck | undefined;
+
+    if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+      const form = await request.formData();
+      const raw = form.get('deckJson');
+      if (typeof raw === 'string') {
+        deck = JSON.parse(raw) as ScreeningDeck;
+      }
+    } else {
+      const body = await request.json();
+      deck = (body?.deck ?? body) as ScreeningDeck | undefined;
+    }
 
     if (!deck || !Array.isArray(deck.slides) || deck.slides.length === 0) {
       return NextResponse.json({ error: 'Invalid deck payload.' }, { status: 400 });
@@ -247,8 +274,8 @@ export async function POST(request: NextRequest) {
     const PptxGenJS = (await import('pptxgenjs')).default;
     const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_WIDE';
-    pptx.title = deck.deckTitle || 'Kollabrix Screening Deck';
-    pptx.author = 'Kollabrix KΛ-Pro';
+    pptx.title = asText(deck.deckTitle, 'Kollabrix Screening Deck');
+    pptx.author = 'Kollabrix KA-Pro';
 
     const paletteKey = (
       deck.themePalette && PALETTES[deck.themePalette] ? deck.themePalette : 'obsidian_amber'
@@ -299,7 +326,7 @@ export async function POST(request: NextRequest) {
           fill: { color: c.cardAltBg },
           line: { color: c.accent, width: 1 },
         });
-        slide.addText((deck.hackathonName || 'HACKATHON SCREENING DECK').toUpperCase(), {
+        slide.addText(asText(deck.hackathonName, 'HACKATHON SCREENING DECK').toUpperCase(), {
           x: 0.95,
           y: 0.94,
           w: 5.9,
@@ -310,7 +337,7 @@ export async function POST(request: NextRequest) {
           valign: 'middle',
         });
 
-        slide.addText(deck.deckTitle || s.title, {
+        slide.addText(asText(deck.deckTitle || s.title, 'Screening Deck'), {
           x: 0.8,
           y: 1.55,
           w: qrDataUrl ? 9.3 : 11.5,
@@ -320,7 +347,7 @@ export async function POST(request: NextRequest) {
           color: c.text,
         });
 
-        slide.addText(s.headline || '', {
+        slide.addText(asText(s.headline), {
           x: 0.8,
           y: 2.95,
           w: qrDataUrl ? 9.2 : 11.2,
@@ -353,7 +380,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Value cards from bullets
-        const coverBullets = (s.bullets || []).slice(0, 3);
+        const coverBullets = asTextArray(s.bullets).slice(0, 3);
         coverBullets.forEach((b, bIdx) => {
           const xPos = 0.8 + bIdx * 3.95;
           slide.addShape(pptx.ShapeType.roundRect, {
@@ -385,15 +412,15 @@ export async function POST(request: NextRequest) {
         });
 
         const footerLinks = [
-          deck.repoUrl ? `Repo: ${deck.repoUrl}` : '',
-          deck.liveDemoUrl ? `Live: ${deck.liveDemoUrl}` : '',
+          deck.repoUrl ? `Repo: ${asText(deck.repoUrl)}` : '',
+          deck.liveDemoUrl ? `Live: ${asText(deck.liveDemoUrl)}` : '',
         ]
           .filter(Boolean)
           .join('   |   ');
         if (footerLinks) {
           slide.addText(footerLinks, { x: 0.8, y: 6.5, w: 11.5, h: 0.35, fontSize: 10, color: c.muted });
         }
-        if (s.speakerNotes) slide.addNotes(s.speakerNotes);
+        if (s.speakerNotes) slide.addNotes(asText(s.speakerNotes));
         continue;
       }
 
@@ -408,7 +435,7 @@ export async function POST(request: NextRequest) {
         fill: { color: c.cardBg },
         line: { color: c.primary, width: 1 },
       });
-      slide.addText(s.headline || '', {
+      slide.addText(asText(s.headline), {
         x: 0.85,
         y: 1.35,
         w: 11.6,
@@ -419,7 +446,7 @@ export async function POST(request: NextRequest) {
         valign: 'middle',
       });
 
-      const bullets = s.bullets || [];
+      const bullets = asTextArray(s.bullets);
 
       // 2. ARCHITECTURE FLOW LAYOUT
       if (layout === 'architecture_diagram' || s.type === 'architecture') {
@@ -435,7 +462,7 @@ export async function POST(request: NextRequest) {
               fill: { color: c.cardAltBg },
               line: { color: nIdx % 2 === 0 ? c.accent : c.primary, width: 1.5 },
             });
-            slide.addText((node.layer || 'LAYER').toUpperCase(), {
+            slide.addText(asText(node.layer, 'LAYER').toUpperCase(), {
               x: xPos + 0.15,
               y: 2.27,
               w: 2.45,
@@ -444,7 +471,7 @@ export async function POST(request: NextRequest) {
               bold: true,
               color: c.accent,
             });
-            slide.addText(node.label || '', {
+            slide.addText(asText(node.label), {
               x: xPos + 0.15,
               y: 2.6,
               w: 2.45,
@@ -453,7 +480,7 @@ export async function POST(request: NextRequest) {
               bold: true,
               color: c.text,
             });
-            slide.addText(node.detail || '', {
+            slide.addText(asText(node.detail), {
               x: xPos + 0.15,
               y: 3.12,
               w: 2.45,
@@ -517,7 +544,7 @@ export async function POST(request: NextRequest) {
             fill: { color: c.cardBg },
             line: { color: gIdx % 2 === 0 ? c.accent : c.primary, width: 1.2 },
           });
-          slide.addText((cell.category || 'STACK').toUpperCase(), {
+          slide.addText(asText(cell.category, 'STACK').toUpperCase(), {
             x: xPos + 0.25,
             y: yPos + 0.18,
             w: 5.4,
@@ -527,7 +554,7 @@ export async function POST(request: NextRequest) {
             color: gIdx % 2 === 0 ? c.accent : c.primary,
           });
           slide.addText(
-            (cell.items || []).map((it) => ({
+            asTextArray(cell.items).map((it) => ({
               text: it,
               options: { bullet: { indent: 12 }, color: c.text, fontSize: 13, breakLine: true },
             })),
@@ -555,7 +582,7 @@ export async function POST(request: NextRequest) {
             fill: { color: c.cardAltBg },
             line: { color: 'F43F5E', width: 1 },
           });
-          slide.addText(`RISK: ${pair.risk}`, {
+          slide.addText(`RISK: ${asText(pair.risk)}`, {
             x: 0.8,
             y: yPos + 0.14,
             w: 4.8,
@@ -584,7 +611,7 @@ export async function POST(request: NextRequest) {
             fill: { color: c.cardBg },
             line: { color: c.accent, width: 1 },
           });
-          slide.addText(`MITIGATION: ${pair.mitigation}`, {
+          slide.addText(`MITIGATION: ${asText(pair.mitigation)}`, {
             x: 6.6,
             y: yPos + 0.14,
             w: 5.9,
@@ -705,7 +732,7 @@ export async function POST(request: NextRequest) {
               fill: { color: c.cardAltBg },
               line: { color: kIdx === 0 ? c.primary : c.accent, width: 1.3 },
             });
-            slide.addText(k.value || '', {
+            slide.addText(asText(k.value), {
               x: 8.75,
               y: yPos + 0.14,
               w: 3.75,
@@ -714,7 +741,7 @@ export async function POST(request: NextRequest) {
               bold: true,
               color: kIdx === 0 ? c.primary : c.accent,
             });
-            slide.addText(k.label || '', {
+            slide.addText(asText(k.label), {
               x: 8.75,
               y: yPos + 0.72,
               w: 3.75,
@@ -794,18 +821,26 @@ export async function POST(request: NextRequest) {
       }
 
       if (s.speakerNotes) {
-        slide.addNotes(s.speakerNotes);
+        slide.addNotes(asText(s.speakerNotes));
       }
     }
 
     const buffer = (await pptx.write({ outputType: 'nodebuffer' })) as Buffer;
-    const slug = (deck.deckTitle || 'kollabrix-deck').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const rawSlug = asText(deck.deckTitle, 'kollabrix-deck')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    const slug = rawSlug || 'kollabrix-deck';
+    const fileName = `${slug}-screening-deck.pptx`;
 
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'Content-Disposition': `attachment; filename="${slug}-screening-deck.pptx"`,
+        'Content-Disposition': `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+        'Content-Length': String(buffer.byteLength),
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (err: any) {

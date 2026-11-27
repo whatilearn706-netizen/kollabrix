@@ -27,7 +27,13 @@ import {
   Palette,
 } from 'lucide-react';
 import { KaArchitectureDiagram } from './KaArchitectureDiagram';
-import { downloadScreeningPptx, PptxThemePalette, ScreeningDeck } from '@/lib/spark/pptxExport';
+import {
+  downloadScreeningPptx,
+  ExportedPptxFile,
+  PptxThemePalette,
+  ScreeningDeck,
+  triggerNativeFormPptxDownload,
+} from '@/lib/spark/pptxExport';
 
 const THEME_LABELS: Record<PptxThemePalette, string> = {
   obsidian_amber: 'Obsidian Amber',
@@ -52,8 +58,21 @@ export function ScreeningDeckView({
   tokensUsed?: number;
 }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
+  const [exportedFile, setExportedFile] = useState<ExportedPptxFile | null>(null);
   const [copiedNotes, setCopiedNotes] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<string>('');
+
+  useEffect(() => {
+    setExportedFile(null);
+    setDownloadError('');
+  }, [deck]);
+
+  useEffect(() => {
+    return () => {
+      if (exportedFile?.url) URL.revokeObjectURL(exportedFile.url);
+    };
+  }, [exportedFile]);
 
   return (
     <div className="space-y-4">
@@ -126,19 +145,65 @@ export function ScreeningDeckView({
             disabled={downloading}
             onClick={async () => {
               setDownloading(true);
+              setDownloadError('');
               try {
-                await downloadScreeningPptx(deck);
+                const file = await downloadScreeningPptx(deck);
+                setExportedFile(file);
+              } catch (err: any) {
+                setDownloadError(err?.message || 'Export failed — trying direct browser download.');
+                try {
+                  triggerNativeFormPptxDownload(deck);
+                } catch {}
               } finally {
                 setDownloading(false);
               }
             }}
             className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
           >
-            <Download className="w-3.5 h-3.5" />
+            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             <span>{downloading ? 'Exporting...' : 'Download .pptx Deck'}</span>
           </button>
         </div>
       </div>
+
+      {(exportedFile || downloadError) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs">
+          {exportedFile ? (
+            <>
+              <span className="text-emerald-200">
+                Deck ready ({Math.round(exportedFile.sizeBytes / 1024)} KB) — if Safari didn&apos;t auto-save, click Save directly:
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href={exportedFile.url}
+                  download={exportedFile.fileName}
+                  className="px-3 py-1 rounded-lg bg-emerald-400 hover:bg-emerald-300 text-zinc-950 font-bold"
+                >
+                  Save {exportedFile.fileName}
+                </a>
+                <button
+                  type="button"
+                  onClick={() => triggerNativeFormPptxDownload(deck)}
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 text-zinc-200 font-semibold cursor-pointer"
+                >
+                  Safari Direct Download
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between w-full gap-2 text-rose-200">
+              <span>{downloadError}</span>
+              <button
+                type="button"
+                onClick={() => triggerNativeFormPptxDownload(deck)}
+                className="px-3 py-1 rounded-lg bg-amber-400 text-zinc-950 font-bold cursor-pointer shrink-0"
+              >
+                Force Direct Download
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {deck.juryObjectionShield && (
         <div className="p-3.5 rounded-2xl bg-violet-500/10 border border-violet-500/30 text-xs text-violet-200">
