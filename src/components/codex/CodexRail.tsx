@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Home, BookOpen, Zap, Bookmark, Gift } from 'lucide-react';
 import { CodexSection } from '@/data/codexCatalog';
+import { KaBrandEmblem } from '@/components/brands/KaBrandSuite';
 
 interface CodexRailProps {
   activeSection: CodexSection;
@@ -36,12 +37,7 @@ export function CodexRail({ activeSection, onSelectSection, savedCount }: CodexR
           title="Back to Kollabrix Home"
           className="w-10 h-10 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 flex items-center justify-center transition-all group"
         >
-          <span className="inline-flex items-center font-black text-xs text-white">
-            K
-            <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-amber-300" aria-hidden="true">
-              <path d="M12 3.2L4.2 20.8H8.3L12 11.4L15.7 20.8H19.8L12 3.2Z" fill="currentColor" />
-            </svg>
-          </span>
+          <KaBrandEmblem className="w-6 h-3.5" />
         </Link>
 
         <nav className="flex flex-col items-center gap-3.5">

@@ -10,16 +10,16 @@ interface KaBrandEmblemProps {
 }
 
 /**
- * Shared KΛ emblem echoing Kollabrix's exact obsidian-silver aesthetic:
+ * Shared KΛ emblem matching Kollabrix's exact obsidian-silver palette and Image 2 asymmetric Λ geometry:
  * - Bright platinum-silver "K" (matching KOLL / BRIX)
- * - Signature Kollabrix gunmetal-graphite "Λ" (#A1A1AA -> #52525B -> #27272A) with silver bevel
- * - Subtle vertical platinum spark needle connecting the two strokes
+ * - No middle divider line
+ * - Asymmetric sculpted "Λ" (tucked shorter left leg hugging K + full right leg) in Kollabrix gunmetal-graphite with crisp silver bevels
  */
 export function KaBrandEmblem({ className = '', size = 'sm' }: KaBrandEmblemProps) {
   const dims = size === 'md' ? 'w-8 h-5' : 'w-7 h-4';
   return (
     <svg
-      viewBox="0 0 48 28"
+      viewBox="0 0 46 28"
       fill="none"
       aria-hidden="true"
       className={`${dims} shrink-0 drop-shadow-[0_2px_8px_rgba(226,232,240,0.22)] ${className}`}
@@ -33,39 +33,29 @@ export function KaBrandEmblem({ className = '', size = 'sm' }: KaBrandEmblemProp
         </linearGradient>
 
         {/* Exact Kollabrix Λ gunmetal-graphite gradient (zinc-400 -> zinc-600 -> zinc-800) */}
-        <linearGradient id="kaKollabrixLambda" x1="34" y1="3" x2="34" y2="25" gradientUnits="userSpaceOnUse">
+        <linearGradient id="kaKollabrixLambda" x1="33" y1="3" x2="33" y2="25" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#A1A1AA" />
           <stop offset="50%" stopColor="#52525B" />
           <stop offset="100%" stopColor="#27272A" />
         </linearGradient>
 
-        {/* Brushed silver bevel border matching Kollabrix wings */}
-        <linearGradient id="kaSilverBevel" x1="24" y1="3" x2="44" y2="25" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#E2E8F0" stopOpacity="0.85" />
-          <stop offset="50%" stopColor="#94A3B8" stopOpacity="0.65" />
-          <stop offset="100%" stopColor="#64748B" stopOpacity="0.45" />
-        </linearGradient>
-
-        {/* Luminous silver vertical spark */}
-        <linearGradient id="kaCenterSpark" x1="23" y1="1" x2="23" y2="27" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#94A3B8" stopOpacity="0" />
-          <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.95" />
-          <stop offset="100%" stopColor="#94A3B8" stopOpacity="0" />
+        {/* Crisp brushed silver bevel border */}
+        <linearGradient id="kaSilverBevel" x1="22" y1="3" x2="44" y2="25" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#F1F5F9" stopOpacity="0.92" />
+          <stop offset="50%" stopColor="#94A3B8" stopOpacity="0.72" />
+          <stop offset="100%" stopColor="#64748B" stopOpacity="0.52" />
         </linearGradient>
       </defs>
 
       {/* Platinum-Silver K */}
       <path
-        d="M4 4H9.2V12.4L17.4 4H23.1L13.7 13.9L23.3 24H17.5L9.2 15.2V24H4V4Z"
+        d="M3 4H8.4V12.2L16.8 4H22.8L13.1 13.8L23 24H16.9L8.4 15.1V24H3V4Z"
         fill="url(#kaPlatinumK)"
       />
 
-      {/* Subtle Kollabrix Vertical Platinum Spark */}
-      <polygon points="23.8,1.5 24.8,14 23.8,26.5 22.8,14" fill="url(#kaCenterSpark)" />
-
-      {/* Signature Kollabrix Dark Gunmetal-Graphite Λ with Brushed Silver Bevel */}
+      {/* Asymmetric Sculpted Gunmetal-Graphite Λ (tucked left leg + full-length right leg, matching Image 2) */}
       <path
-        d="M32.4 4H37.2L44.6 24H39.4L34.8 10.6L30.2 24H25L32.4 4Z"
+        d="M28.6 4H33.8L43.2 24H37.4L31.2 10.4L26.2 21.4L22.6 17.6L28.6 4Z"
         fill="url(#kaKollabrixLambda)"
         stroke="url(#kaSilverBevel)"
         strokeWidth="0.95"
