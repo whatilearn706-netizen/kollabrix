@@ -6,6 +6,7 @@ import {
   Sparkles,
   Plus,
   ArrowUp,
+  ArrowLeft,
   Square,
   SquarePen,
   Code2,
@@ -156,6 +157,24 @@ export default function SparkUniversalWorkspacePage() {
       })
       .catch(() => {});
   }, [user?.id]);
+
+  // Seed browser history on fresh /spark tab so tapping browser Back opens KΛ ΛI homepage (/ka-ai)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+    const cameFromKaAi = document.referrer.includes('/ka-ai');
+    if (!cameFromKaAi && !window.history.state?.kaBackSeeded && window.history.length <= 2) {
+      window.history.replaceState({ ...(window.history.state || {}), kaBackRoot: '/ka-ai' }, '', '/ka-ai');
+      window.history.pushState({ kaBackSeeded: true }, '', currentUrl);
+    }
+    const onPopState = (e: PopStateEvent) => {
+      if (window.location.pathname === '/ka-ai' || (e.state && e.state.kaBackRoot === '/ka-ai')) {
+        window.location.assign('/ka-ai');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // Hydrate threads from localStorage immediately on mount
   useEffect(() => {
@@ -671,6 +690,15 @@ export default function SparkUniversalWorkspacePage() {
                 </button>
               </>
             )}
+
+            <Link
+              href="/ka-ai"
+              title="Back to KΛ ΛI Homepage"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-xs font-mono text-zinc-300 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">KΛ ΛI</span>
+            </Link>
 
             <div className="relative">
               <button

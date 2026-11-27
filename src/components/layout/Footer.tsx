@@ -63,7 +63,9 @@ export function Footer() {
     pathname?.startsWith('/resources') ||
     pathname?.startsWith('/arena') ||
     pathname?.startsWith('/spark') ||
-    pathname?.startsWith('/ai-spark')
+    pathname?.startsWith('/ai-spark') ||
+    pathname?.startsWith('/ka-ai') ||
+    pathname?.startsWith('/ka-codex')
   ) {
     return null;
   }
@@ -251,8 +253,13 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/spark" className={linkClass}>
+                  <Link href="/spark" target="_blank" rel="noopener noreferrer" className={linkClass}>
                     KΛ ΛI
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/resources" target="_blank" rel="noopener noreferrer" className={linkClass}>
+                    KA CODEX
                   </Link>
                 </li>
               </ul>

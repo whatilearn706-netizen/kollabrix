@@ -103,6 +103,8 @@ export function GlobalBroadcastBanner() {
     pathname?.startsWith('/icpc') ||
     pathname?.startsWith('/spark') ||
     pathname?.startsWith('/ai-spark') ||
+    pathname?.startsWith('/ka-ai') ||
+    pathname?.startsWith('/ka-codex') ||
     isExamMode ||
     !banner.enabled ||
     isDismissed

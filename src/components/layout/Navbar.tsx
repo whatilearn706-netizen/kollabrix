@@ -107,6 +107,8 @@ export function Navbar() {
     pathname.startsWith('/arena') ||
     pathname.startsWith('/spark') ||
     pathname.startsWith('/ai-spark') ||
+    pathname.startsWith('/ka-ai') ||
+    pathname.startsWith('/ka-codex') ||
     isExamMode
   ) {
     return null;
@@ -280,13 +282,13 @@ export function Navbar() {
             <span className="relative z-10">My Dashboard</span>
           </Link>
 
-          {/* Creative Brushed-Silver KΛ AI New-Tab Launcher Button */}
+          {/* Creative Brushed-Silver KA AI New-Tab Launcher Button */}
           <Link
             href="/spark"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Open KΛ ΛI Studio in a new tab"
-            title="Launch KΛ ΛI Studio (New Tab)"
+            aria-label="Open KΛ ΛI workspace in a new tab"
+            title="Launch KΛ ΛI (New Tab)"
             className={clsx(
               'relative inline-flex items-center justify-center gap-1 h-9 px-3.5 rounded-full overflow-hidden transition-all duration-300 active:scale-[0.96] group shrink-0',
               isNavbarDark
@@ -325,6 +327,24 @@ export function Navbar() {
                 />
               </svg>
             </span>
+          </Link>
+
+          {/* Compact Brushed-Silver KA CODEX New-Tab Launcher Button */}
+          <Link
+            href="/resources"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open KA CODEX workspace in a new tab"
+            title="Launch KA CODEX (New Tab)"
+            className={clsx(
+              'relative inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-full overflow-hidden transition-all duration-300 active:scale-[0.96] group shrink-0',
+              isNavbarDark
+                ? 'bg-gradient-to-b from-[#1B1F29] via-[#0F1219] to-[#06070B] border border-zinc-300/35 hover:border-amber-200/75 text-zinc-200 hover:text-white shadow-[0_0_14px_rgba(226,232,240,0.14)]'
+                : 'bg-slate-900 text-white border border-slate-400/40 hover:border-white'
+            )}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-300" />
+            <span className="font-mono text-[11px] font-black tracking-wider">CODEX</span>
           </Link>
 
           {user ? (
@@ -513,7 +533,7 @@ export function Navbar() {
             href="/spark"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Open KΛ ΛI Studio in a new tab"
+            aria-label="Open KΛ ΛI workspace in a new tab"
             className={clsx(
               'inline-flex items-center justify-center gap-[2px] h-8 px-2.5 rounded-full border text-xs font-black transition-all shadow-[0_0_14px_rgba(226,232,240,0.2)]',
               isNavbarDark
@@ -682,12 +702,26 @@ export function Navbar() {
 
             <Link
               href="/spark"
+              target="_blank"
+              rel="noopener noreferrer"
               prefetch={false}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
             >
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span>KΛ ΛI</span>
+            </Link>
+
+            <Link
+              href="/resources"
+              target="_blank"
+              rel="noopener noreferrer"
+              prefetch={false}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold opacity-90 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            >
+              <BookOpen className="w-4 h-4 text-amber-300" />
+              <span>KA CODEX</span>
             </Link>
 
             <Link

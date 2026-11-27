@@ -514,7 +514,7 @@ export function GlowingSearchSparkBar() {
             type="button"
             onClick={(e) => {
               e.preventDefault();
-              router.push('/spark');
+              window.open('/spark', '_blank', 'noopener,noreferrer');
             }}
             className="group/spark inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-violet-600/35 via-fuchsia-600/35 to-cyan-500/35 hover:from-violet-500/50 hover:via-fuchsia-500/50 hover:to-cyan-400/50 border border-white/20 hover:border-cyan-400/60 text-white transition-all duration-300 shrink-0 shadow-[0_0_15px_rgba(236,72,153,0.3)] hover:shadow-[0_0_24px_rgba(6,182,212,0.6)] active:scale-95 cursor-pointer"
             title="Launch KΛ ΛI (⌘K)"

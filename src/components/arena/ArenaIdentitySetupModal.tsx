@@ -22,43 +22,43 @@ export const AVATAR_CLASS_META: Record<
 > = {
   walker: {
     title: 'Cyber Architect',
-    specialty: 'Satin Gunmetal × Brass',
+    specialty: 'Slate Tee × Caramel Bag',
     badge: 'ARCHITECT',
-    armorHex: '#4B525E',
-    armorDarkHex: '#181B22',
-    jointHex: '#D4A84F',
+    armorHex: '#697C82',
+    armorDarkHex: '#663F24',
+    jointHex: '#C46B2B',
   },
   ronin: {
     title: 'Compiler Knight',
-    specialty: 'Cobalt Chrome × Cyan',
+    specialty: 'Cobalt Tee × Cyan Bag',
     badge: 'KNIGHT',
-    armorHex: '#2E4A73',
-    armorDarkHex: '#0E1726',
+    armorHex: '#355787',
+    armorDarkHex: '#27272A',
     jointHex: '#38BDF8',
   },
   sentinel: {
     title: 'Kernel Phantom',
-    specialty: 'Crimson Alloy × Amber',
+    specialty: 'Crimson Tee × Amber Bag',
     badge: 'PHANTOM',
-    armorHex: '#5E2735',
-    armorDarkHex: '#190C11',
-    jointHex: '#F59E0B',
+    armorHex: '#7C2D3E',
+    armorDarkHex: '#3F2316',
+    jointHex: '#D97706',
   },
   coder: {
     title: 'Syntax Prodigy',
-    specialty: 'Jade Titanium × Emerald',
+    specialty: 'Jade Tee × Tan Bag',
     badge: 'PRODIGY',
-    armorHex: '#2A4E44',
-    armorDarkHex: '#0D1916',
-    jointHex: '#34D399',
+    armorHex: '#2E5E50',
+    armorDarkHex: '#4B2E1B',
+    jointHex: '#C97B36',
   },
   glitch: {
     title: 'Glitch Viper',
-    specialty: 'Obsidian Violet × Gold',
+    specialty: 'Violet Tee × Gold Bag',
     badge: 'VIPER',
-    armorHex: '#453363',
-    armorDarkHex: '#130D1F',
-    jointHex: '#FBBF24',
+    armorHex: '#4B3869',
+    armorDarkHex: '#1E1B24',
+    jointHex: '#EAB308',
   },
 };
 
@@ -84,61 +84,62 @@ export function ColoredMechBadge({
 
   return (
     <svg
-      viewBox="-6 6 132 110"
+      viewBox="-4 4 128 112"
       className={sizeClass}
       aria-hidden="true"
     >
       <defs>
-        <radialGradient id={`mechShell-${uid}`} cx="42%" cy="32%" r="65%">
-          <stop offset="0%" stopColor="#94A3B8" stopOpacity="0.55" />
-          <stop offset="35%" stopColor={armorHex} />
-          <stop offset="100%" stopColor={armorDarkHex} />
+        <radialGradient id={`skinGrad-${uid}`} cx="45%" cy="38%" r="60%">
+          <stop offset="0%" stopColor="#FCE0CC" />
+          <stop offset="65%" stopColor="#F2BE9E" />
+          <stop offset="100%" stopColor="#DCA080" />
         </radialGradient>
-        <linearGradient id={`mechGold-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#FEF3C7" />
-          <stop offset="50%" stopColor={jointHex} />
-          <stop offset="100%" stopColor="#78350F" />
-        </linearGradient>
       </defs>
 
-      {/* Floor Shadow */}
-      <ellipse cx="60" cy="105" rx="34" ry="6" fill="rgba(0,0,0,0.65)" />
+      {/* Soft ground shadow */}
+      <ellipse cx="60" cy="108" rx="30" ry="5" fill="rgba(0,0,0,0.65)" />
 
-      {/* Stubby Armored Legs + Toe Caps */}
-      <rect x="37" y="75" width="16" height="22" rx="6" fill={`url(#mechShell-${uid})`} />
-      <rect x="67" y="75" width="16" height="22" rx="6" fill={`url(#mechShell-${uid})`} />
-      <ellipse cx="45" cy="98" rx="9" ry="5" fill={armorDarkHex} />
-      <ellipse cx="75" cy="98" rx="9" ry="5" fill={armorDarkHex} />
-
-      {/* Narrow Segmented Waist */}
-      <rect x="44" y="68" width="32" height="10" rx="4" fill={armorDarkHex} />
-
-      {/* Bulky Curved Mech Arms + 3-Claw Hands */}
-      <rect x="16" y="49" width="15" height="33" rx="7" fill={`url(#mechShell-${uid})`} />
-      <rect x="89" y="49" width="15" height="33" rx="7" fill={`url(#mechShell-${uid})`} />
-      <circle cx="23.5" cy="84" r="6" fill={armorDarkHex} />
-      <circle cx="96.5" cy="84" r="6" fill={armorDarkHex} />
-
-      {/* Colored Shoulder Joint Rings (brass / cyan / crimson / emerald / violet) */}
-      <circle cx="25" cy="51" r="8.5" fill={`url(#mechGold-${uid})`} />
-      <circle cx="25" cy="51" r="3.8" fill={armorDarkHex} />
-      <circle cx="95" cy="51" r="8.5" fill={`url(#mechGold-${uid})`} />
-      <circle cx="95" cy="51" r="3.8" fill={armorDarkHex} />
-
-      {/* Oversized Domed Ganker Head-Torso Shell */}
+      {/* Crewneck T-Shirt Bust + Crossbody Bag Strap */}
       <path
-        d="M27 47 C27 20, 93 20, 93 47 C93 64, 80 71, 60 71 C40 71, 27 64, 27 47 Z"
-        fill={`url(#mechShell-${uid})`}
-        stroke="rgba(255,255,255,0.18)"
-        strokeWidth="1.2"
+        d="M28 104 C28 84, 40 76, 60 76 C80 76, 92 84, 92 104 Z"
+        fill={armorHex}
       />
+      <path d="M40 78 L80 104" stroke={jointHex} strokeWidth="6" strokeLinecap="round" />
 
-      {/* Glossy Black Recessed Oval Eyes & Chin Seam */}
-      <ellipse cx="44" cy="52" rx="5.8" ry="8.5" fill="#050608" />
-      <ellipse cx="42.5" cy="49" rx="1.6" ry="2.4" fill="rgba(255,255,255,0.35)" />
-      <ellipse cx="76" cy="52" rx="5.8" ry="8.5" fill="#050608" />
-      <ellipse cx="74.5" cy="49" rx="1.6" ry="2.4" fill="rgba(255,255,255,0.35)" />
-      <rect x="51" y="61" width="18" height="2" rx="1" fill={armorDarkHex} />
+      {/* Ears */}
+      <circle cx="30" cy="52" r="7.5" fill="#EAC1A5" />
+      <circle cx="90" cy="52" r="7.5" fill="#EAC1A5" />
+
+      {/* Plump Chibi Head */}
+      <ellipse cx="60" cy="50" rx="29" ry="27" fill={`url(#skinGrad-${uid})`} />
+
+      {/* Sculpted Hair Cap & Side-Swept Bangs */}
+      <path
+        d="M31 44 C31 20, 89 20, 89 44 C84 34, 72 31, 60 32 C48 31, 36 34, 31 44 Z"
+        fill={armorDarkHex}
+      />
+      <path d="M36 37 Q54 25 74 34" stroke={armorDarkHex} strokeWidth="6" strokeLinecap="round" fill="none" />
+
+      {/* Soft Cheek Blush */}
+      <ellipse cx="42" cy="59" rx="5.5" ry="3.2" fill="#E5947A" opacity="0.65" />
+      <ellipse cx="78" cy="59" rx="5.5" ry="3.2" fill="#E5947A" opacity="0.65" />
+
+      {/* Eyebrows */}
+      <rect x="40" y="39" width="11" height="3" rx="1.5" fill={armorDarkHex} />
+      <rect x="69" y="39" width="11" height="3" rx="1.5" fill={armorDarkHex} />
+
+      {/* Round Glasses Frames + Bead Eyes + Nose */}
+      <circle cx="46" cy="51" r="9.5" fill="rgba(255,255,255,0.06)" stroke="#18191C" strokeWidth="2.4" />
+      <circle cx="74" cy="51" r="9.5" fill="rgba(255,255,255,0.06)" stroke="#18191C" strokeWidth="2.4" />
+      <line x1="55.5" y1="51" x2="64.5" y2="51" stroke="#18191C" strokeWidth="2.4" />
+
+      <circle cx="46" cy="51" r="3" fill="#111012" />
+      <circle cx="45" cy="49.7" r="1" fill="#FFFFFF" />
+      <circle cx="74" cy="51" r="3" fill="#111012" />
+      <circle cx="73" cy="49.7" r="1" fill="#FFFFFF" />
+
+      <circle cx="60" cy="57" r="3.2" fill="#E3977C" />
+      <rect x="56" y="64" width="8" height="1.8" rx="0.9" fill={armorDarkHex} opacity="0.65" />
     </svg>
   );
 }

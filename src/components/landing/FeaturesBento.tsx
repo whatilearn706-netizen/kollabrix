@@ -72,6 +72,7 @@ const features = [
     iconBg: 'bg-violet-500/10 text-violet-400 border border-violet-500/25',
     span: '',
     href: '/spark',
+    openInNewTab: true,
   },
   {
     title: 'Starter Kits & Resources',
@@ -85,6 +86,7 @@ const features = [
     iconBg: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/25',
     span: 'md:col-span-2',
     href: '/resources',
+    openInNewTab: true,
   },
 ];
 
@@ -129,7 +131,12 @@ function FeatureCard({
       onMouseLeave={() => onHover(null)}
       onMouseMove={handleMouseMove}
     >
-      <Link href={feature.href} className="block h-full group focus-visible:outline-none">
+      <Link
+        href={feature.href}
+        target={(feature as { openInNewTab?: boolean }).openInNewTab ? '_blank' : undefined}
+        rel={(feature as { openInNewTab?: boolean }).openInNewTab ? 'noopener noreferrer' : undefined}
+        className="block h-full group focus-visible:outline-none"
+      >
         <motion.div
           ref={cardRef}
           animate={{

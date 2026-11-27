@@ -87,10 +87,10 @@ export function SparkSidebar({
       {/* Top Brand + Controls */}
       <div className="p-3 space-y-3">
         <div className="flex items-center justify-between px-1">
-          <Link href="/" className="flex items-center gap-2 group" title="Back to Kollabrix Home">
+          <Link href="/ka-ai" className="flex items-center gap-2 group" title="Back to KΛ ΛI Homepage">
             <BrandLogo size="sm" showWordmark={false} />
             <span className="text-[13px] font-black tracking-[0.14em] text-white group-hover:text-zinc-300 transition-colors">
-              KOLLΛBRIX
+              KΛ ΛI
             </span>
           </Link>
           <div className="flex items-center gap-0.5">

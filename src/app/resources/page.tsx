@@ -74,6 +74,24 @@ export default function ResourcesPage() {
   );
   const isAdmin = user?.email?.toLowerCase() === 'goyalmayank142@gmail.com';
 
+  // Seed browser history on fresh /resources tab so tapping browser Back opens KΛ CODEX homepage (/ka-codex)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+    const cameFromCodexHome = document.referrer.includes('/ka-codex');
+    if (!cameFromCodexHome && !window.history.state?.kaBackSeeded && window.history.length <= 2) {
+      window.history.replaceState({ ...(window.history.state || {}), kaBackRoot: '/ka-codex' }, '', '/ka-codex');
+      window.history.pushState({ kaBackSeeded: true }, '', currentUrl);
+    }
+    const onPopState = (e: PopStateEvent) => {
+      if (window.location.pathname === '/ka-codex' || (e.state && e.state.kaBackRoot === '/ka-codex')) {
+        window.location.assign('/ka-codex');
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
   // Hydrate bookmarks, progress, and dynamic curricula
   useEffect(() => {
     try {
@@ -249,11 +267,11 @@ export default function ResourcesPage() {
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Link
-              href="/"
+              href="/ka-codex"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#FAF8F5] text-[#07090E] font-semibold text-sm hover:bg-sky-100 transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Return to Kollabrix</span>
+              <span>Return to KΛ CODEX</span>
             </Link>
             <Link
               href="/arena"
@@ -320,11 +338,12 @@ export default function ResourcesPage() {
         <header className="h-[72px] px-5 sm:px-10 lg:px-14 flex items-center justify-between gap-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <Link
-              href="/"
+              href="/ka-codex"
+              title="Back to KΛ CODEX Homepage"
               className="inline-flex items-center gap-2 text-xs font-mono text-zinc-400 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Campus</span>
+              <span className="hidden sm:inline">KΛ CODEX</span>
             </Link>
             <span className="text-zinc-700">/</span>
             <div className="flex items-center gap-2">

@@ -1,11 +1,17 @@
 'use client';
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { LightRays } from '@/components/ui/light-rays';
 import { useSiteTheme } from '@/components/theme/SiteThemeProvider';
 
 export function GlobalLightRays() {
+  const pathname = usePathname();
   const { isDark } = useSiteTheme();
+
+  if (pathname?.startsWith('/ka-ai') || pathname?.startsWith('/ka-codex')) {
+    return null;
+  }
 
   return (
     <div
