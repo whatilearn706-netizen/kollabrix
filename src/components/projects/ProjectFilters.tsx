@@ -113,17 +113,17 @@ export function ProjectFilters({
       </div>
 
       {/* 2. Sleek Search & Filter Bar */}
-      <div className="relative rounded-2xl bg-[#090C12] border border-white/10 p-2 sm:p-2.5 flex items-center gap-3 shadow-lg">
+      <div className="relative rounded-2xl bg-[#090C12] border border-white/10 p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3 shadow-lg">
         {/* Titanium Search Icon */}
-        <div className="pl-2 shrink-0">
-          <Search className="w-5 h-5 text-zinc-400" />
+        <div className="pl-1.5 sm:pl-2 shrink-0">
+          <Search className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-400" />
         </div>
 
         {/* Input Field */}
         <input
           ref={searchInputRef}
           type="text"
-          placeholder="Search projects, skills, stack..."
+          placeholder="Search projects..."
           value={filters.search || ''}
           onChange={(e) => onChange({ ...filters, search: e.target.value, page: 1 })}
           className="flex-1 bg-transparent border-0 outline-none ring-0 focus:ring-0 text-xs sm:text-sm text-slate-100 placeholder-slate-400 min-w-0 truncate"
@@ -152,7 +152,7 @@ export function ProjectFilters({
         <button
           type="button"
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all shrink-0 cursor-pointer ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shrink-0 cursor-pointer ${
             hasActiveFilters
               ? 'border border-white/60 bg-white/10 text-white hover:bg-white/15 shadow-[0_0_12px_rgba(255,255,255,0.15)]'
               : 'border border-slate-700/80 bg-[#141926] text-slate-300 hover:text-white hover:border-slate-600'
