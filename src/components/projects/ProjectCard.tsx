@@ -196,7 +196,7 @@ export function ProjectCard({ project, variant }: ProjectCardProps) {
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-1 text-[11px] text-slate-500 italic">
+            <div className="flex items-center gap-1 text-[11px] text-slate-400 italic">
               <span>All Builder Roles Welcome</span>
             </div>
           )}

@@ -88,7 +88,7 @@ export function ProjectFilters({
     <div className="w-full space-y-4">
       {/* 1. BROWSE CATEGORIES Section */}
       <div className="space-y-2.5">
-        <div className="text-[11px] font-mono tracking-widest text-slate-500 uppercase font-semibold">
+       <div className="text-[11px] font-mono tracking-widest text-slate-400 uppercase font-semibold">
           BROWSE CATEGORIES
         </div>
         <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 scrollbar-none">
@@ -290,7 +290,7 @@ export function ProjectFilters({
       {/* 4. ACTIVE FILTERS Strip */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] font-mono tracking-wider text-slate-500 uppercase font-semibold mr-1 shrink-0">
+          <span className="text-[11px] font-mono tracking-wider text-slate-400 uppercase font-semibold mr-1 shrink-0">
             ACTIVE FILTERS
           </span>
 

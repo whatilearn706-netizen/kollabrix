@@ -625,7 +625,7 @@ export default function ExploreProjectsPage() {
           Showing <strong className="text-white">{startRecord}</strong> - <strong className="text-white">{endRecord}</strong> of{' '}
           <strong className="text-white font-bold">{totalCount}</strong> projects
         </div>
-        <div className="font-mono text-[11px] text-zinc-500">
+       <div className="font-mono text-[11px] text-zinc-400">
           Page {currentPage} of {totalPages}
         </div>
       </div>
