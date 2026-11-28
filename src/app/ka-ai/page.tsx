@@ -178,7 +178,7 @@ export default function KaAiBrandPage() {
             <button
               type="button"
               onClick={replayIntro}
-              className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-slate-900/75 hover:text-slate-950 font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/35 hover:bg-slate-950/55 border border-white/20 text-[10px] font-mono uppercase tracking-[0.18em] text-white/90 hover:text-white font-semibold transition-all cursor-pointer backdrop-blur-sm"
             >
               <RotateCcw className="w-3 h-3" />
               <span>Replay Intro</span>

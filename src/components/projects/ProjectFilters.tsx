@@ -91,7 +91,7 @@ export function ProjectFilters({
        <div className="text-[11px] font-mono tracking-widest text-slate-400 uppercase font-semibold">
           BROWSE CATEGORIES
         </div>
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 scrollbar-none">
+        <div className="flex items-center gap-2.5 overflow-x-auto pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categoryItems.map((cat) => {
             const isSelected = (!filters.category && cat.value === 'All') || filters.category === cat.value;
             return (
@@ -123,10 +123,10 @@ export function ProjectFilters({
         <input
           ref={searchInputRef}
           type="text"
-          placeholder="Search projects, skills, or technologies"
+          placeholder="Search projects, skills, stack..."
           value={filters.search || ''}
           onChange={(e) => onChange({ ...filters, search: e.target.value, page: 1 })}
-          className="flex-1 bg-transparent border-0 outline-none ring-0 focus:ring-0 text-sm text-slate-100 placeholder-slate-400 min-w-0"
+          className="flex-1 bg-transparent border-0 outline-none ring-0 focus:ring-0 text-xs sm:text-sm text-slate-100 placeholder-slate-400 min-w-0 truncate"
         />
 
         {/* Clear Search Button */}

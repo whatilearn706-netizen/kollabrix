@@ -41,40 +41,12 @@ export default function ExploreProjectsPage() {
   const { theme } = useSiteTheme();
   const isFaculty = isFacultyUser(user, profile);
 
-  // Dynamic Explore configuration
-  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(() => {
-    return getPageCache<ExploreConfig>('linkora_explore_config');
-  });
+  // Dynamic Explore configuration (hydrated post-mount to prevent SSR mismatch on mobile reloads)
+  const [exploreConfig, setExploreConfig] = useState<ExploreConfig | null>(null);
 
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const raw = getPageCache<Project[]>('linkora_explore_projects_v8');
-    if (Array.isArray(raw) && raw.length > 0) {
-      return raw.filter((p) => {
-        if (!p) return false;
-        const cat = (p.category || '').toLowerCase();
-        const sum = (p.summary || '').toLowerCase();
-        const desc = (p.description || '').toLowerCase();
-        return !(
-          p.problem_statement_id ||
-          (p as any).problem_statement ||
-          cat === 'hackathon sprint' ||
-          cat === 'faculty industry problem' ||
-          cat.includes('hackathon') ||
-          sum.includes('hackathon team sprint') ||
-          sum.includes('faculty challenge') ||
-          sum.includes('tackling faculty') ||
-          desc.includes('squad mission & approach') ||
-          desc.includes('### looking for team members')
-        );
-      });
-    }
-    return DEMO_PROJECTS.slice(0, 12);
-  });
+  const [projects, setProjects] = useState<Project[]>(() => DEMO_PROJECTS.slice(0, 12));
 
-  const [totalCount, setTotalCount] = useState<number>(() => {
-    const cachedCount = getPageCache<number>('linkora_explore_count_v8');
-    return typeof cachedCount === 'number' && cachedCount > 0 ? cachedCount : DEMO_PROJECTS.length;
-  });
+  const [totalCount, setTotalCount] = useState<number>(DEMO_PROJECTS.length);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -94,8 +66,37 @@ export default function ExploreProjectsPage() {
 
   const pageSize = exploreConfig?.default_page_size || DEFAULT_PAGE_SIZE;
 
-  // 1. Load dynamic Explore configuration from platform settings
+  // 1. Hydrate localStorage cache + load dynamic Explore configuration safely after mount
   useEffect(() => {
+    const cachedCfg = getPageCache<ExploreConfig>('linkora_explore_config');
+    if (cachedCfg) setExploreConfig(cachedCfg);
+
+    const raw = getPageCache<Project[]>('linkora_explore_projects_v8');
+    if (Array.isArray(raw) && raw.length > 0) {
+      const cleaned = raw.filter((p) => {
+        if (!p) return false;
+        const cat = (p.category || '').toLowerCase();
+        const sum = (p.summary || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return !(
+          p.problem_statement_id ||
+          (p as any).problem_statement ||
+          cat === 'hackathon sprint' ||
+          cat === 'faculty industry problem' ||
+          cat.includes('hackathon') ||
+          sum.includes('hackathon team sprint') ||
+          sum.includes('faculty challenge') ||
+          sum.includes('tackling faculty') ||
+          desc.includes('squad mission & approach') ||
+          desc.includes('### looking for team members')
+        );
+      });
+      if (cleaned.length > 0) setProjects(cleaned);
+    }
+
+    const cachedCount = getPageCache<number>('linkora_explore_count_v8');
+    if (typeof cachedCount === 'number' && cachedCount > 0) setTotalCount(cachedCount);
+
     async function loadConfig() {
       try {
         const res = await fetch('/api/explore/config');
@@ -719,12 +720,12 @@ export default function ExploreProjectsPage() {
                           rowRefs.current[section.key] = el;
                         }}
                         onScroll={() => updateRowScrollState(section.key)}
-                        className="flex gap-6 lg:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch pb-1"
+                        className="flex gap-4 sm:gap-6 lg:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden items-stretch pb-1"
                       >
                         {section.items.map((project, idx) => (
                           <div
                             key={project.id}
-                            className="blur-to-focus-card shrink-0 w-[85%] sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-64px)/3)] snap-start flex flex-col"
+                            className="blur-to-focus-card shrink-0 w-[92%] sm:w-[calc((100%-24px)/2)] lg:w-[calc((100%-64px)/3)] snap-start flex flex-col"
                             style={{ animationDelay: `${Math.min(idx * 35, 350)}ms` }}
                           >
                             <ProjectCard project={project} />

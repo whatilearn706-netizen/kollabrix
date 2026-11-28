@@ -23,6 +23,7 @@ import {
 export interface CapabilityItem {
   id: string;
   label: string;
+  subtitle: string;
   group: 'core' | 'campus';
   href: string;
   badge: string;
@@ -40,6 +41,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'arena',
     label: 'KΛ ARENA',
+    subtitle: '1v1 Live Speed Coding Duels',
     group: 'core',
     href: '/arena',
     badge: 'LIVE DUELS · 14 ACTIVE',
@@ -53,6 +55,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'spark',
     label: 'KΛ ΛI',
+    subtitle: 'AI Coding & Hackathon Copilot',
     group: 'core',
     href: '/spark',
     badge: 'KΛ-1 · KΛ-PRO ENGINE',
@@ -66,12 +69,13 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'resources',
     label: 'KΛ FOLIO',
+    subtitle: '33 Books, 80/20 Guides & Tracks',
     group: 'core',
     href: '/resources',
     badge: 'FOLIO LIBRARY',
     dotColor: 'bg-amber-300 shadow-[0_0_8px_#fcd34d]',
     badgeClass: 'bg-amber-500/15 text-amber-200 border-amber-400/35',
-    description: 'Language video tracks, 12 coding classics & step-by-step study studio.',
+    description: 'Language video tracks, 33 coding classics & step-by-step study studio.',
     ctaLabel: 'Open KΛ FOLIO',
     openInNewTab: true,
     icon: BookOpen,
@@ -79,6 +83,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'icpc',
     label: 'Practice IDE',
+    subtitle: 'Company OAs & Instant Bug Coach',
     group: 'core',
     href: '/icpc',
     badge: 'OA & ICPC PROCTORED LAB',
@@ -91,6 +96,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'problems',
     label: 'Faculty Problems',
+    subtitle: 'Real Verified Campus Challenges',
     group: 'core',
     href: '/problems',
     badge: 'CAMPUS BRIEFS',
@@ -105,6 +111,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'war',
     label: 'Campus War',
+    subtitle: 'College vs College Squad Clashes',
     group: 'campus',
     href: '/war',
     badge: 'INTER-COLLEGE',
@@ -118,6 +125,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'leaderboard',
     label: 'Campus Leaderboard',
+    subtitle: 'National ELO & Squad Standings',
     group: 'campus',
     href: '/leaderboard',
     badge: 'RANKINGS',
@@ -130,6 +138,7 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
   {
     id: 'deadlines',
     label: 'Deadlines Radar',
+    subtitle: 'Live Hackathon Submission Timers',
     group: 'campus',
     href: '/deadlines',
     badge: 'COUNTDOWNS',
@@ -548,7 +557,12 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
                             )}
                           />
                           <Icon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <span className="min-w-0">
+                            <span className="block truncate">{item.label}</span>
+                            <span className="block text-[10px] font-normal text-zinc-400 truncate">
+                              {item.subtitle}
+                            </span>
+                          </span>
                         </span>
                         {item.live && (
                           <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 shrink-0">
@@ -562,7 +576,7 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
 
                 {/* Group 2: CAMPUS & RANKINGS */}
                 <div className="space-y-1 pt-1 border-t border-white/[0.06]">
-                  <div className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-zinc-500">
+                  <div className="px-2.5 pb-1 text-[10px] font-mono font-bold uppercase tracking-[0.14em] text-zinc-400">
                     Campus &amp; Rankings
                   </div>
                   {campusItems.map((item) => {
@@ -578,7 +592,7 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
                         onFocus={() => setHoveredItem(item)}
                         onClick={() => setIsOpen(false)}
                         className={clsx(
-                          'flex items-center justify-between gap-2.5 px-2.5 py-1.5 rounded-xl text-[13px] transition-all border',
+                          'flex items-center justify-between gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-all border',
                           isHovered
                             ? 'bg-white/[0.08] border-white/15 text-white font-semibold shadow-sm'
                             : 'bg-transparent border-transparent text-zinc-300 hover:text-white font-medium'
@@ -592,7 +606,12 @@ export function CapabilitiesMegaMenu({ isNavbarDark }: { isNavbarDark: boolean }
                             )}
                           />
                           <Icon className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <span className="min-w-0">
+                            <span className="block truncate">{item.label}</span>
+                            <span className="block text-[10px] font-normal text-zinc-400 truncate">
+                              {item.subtitle}
+                            </span>
+                          </span>
                         </span>
                         {item.live && (
                           <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 shrink-0">

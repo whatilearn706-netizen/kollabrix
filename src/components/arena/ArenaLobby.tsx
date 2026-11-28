@@ -111,7 +111,7 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
                 KΛ ARENA
               </span>
               <span className="text-zinc-500 text-xs">&bull;</span>
-              <h1 className="font-heading font-black text-xs md:text-sm lg:text-base tracking-[0.22em] uppercase bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+              <h1 className="font-heading font-black text-xs md:text-sm lg:text-base tracking-[0.14em] uppercase bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
                 THE PROVING GROUNDS
               </h1>
             </div>
@@ -144,7 +144,7 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
       <div className="sm:hidden flex justify-center pt-1.5 relative z-20">
         <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-b from-[#20242E]/95 via-[#10131A]/95 to-[#07090D]/95 border border-zinc-300/30 border-t-zinc-100/45 shadow-[0_10px_30px_rgba(0,0,0,0.85)]">
           <span className="w-1.5 h-1.5 rotate-45 bg-zinc-200" />
-          <span className="font-heading font-black text-sm tracking-[0.22em] uppercase bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+          <span className="font-heading font-black text-sm tracking-[0.14em] uppercase bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent">
             THE PROVING GROUNDS
           </span>
           <span className="w-1.5 h-1.5 rotate-45 bg-zinc-200" />
@@ -210,12 +210,12 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
         </div>
 
         {engine.isGuest && (
-          <p className="text-[10px] font-mono text-zinc-400/90 text-center">
+          <p className="px-3.5 py-1 rounded-full bg-[#070A12]/85 border border-white/10 backdrop-blur-md text-[10px] font-mono text-zinc-300 text-center">
             Guest Preview &bull; Random ID &amp; ELO reset on tab switch or exit.{' '}
             <button
               type="button"
               onClick={engine.openAuthForArena}
-              className="text-zinc-200 underline underline-offset-2 hover:text-white cursor-pointer"
+              className="text-white underline underline-offset-2 hover:text-amber-200 cursor-pointer"
             >
               Sign in to save everything
             </button>
@@ -229,8 +229,12 @@ export function ArenaLobby({ engine, onOpenJoinModal }: ArenaLobbyProps) {
           <ArenaMatchPortalModal
             engine={engine}
             onEnterMatch={() => {
-              setMatchConfigured(true);
               setShowMatchPortal(false);
+              if (engine.combatMode === 'custom') {
+                engine.createCustomRoom();
+              } else {
+                engine.launchInstantMatch(false);
+              }
             }}
             onOpenJoinModal={onOpenJoinModal}
             onClose={() => setShowMatchPortal(false)}

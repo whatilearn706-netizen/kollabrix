@@ -246,8 +246,8 @@ export function ArenaMatchPortalModal({
 
       {/* Minimal Header */}
       <header className="relative z-20 w-full max-w-7xl mx-auto flex items-center justify-between gap-3">
-        <span className="font-mono text-[11px] uppercase tracking-[0.26em] text-amber-300/90">
-          {selectedId ? 'LOADOUT LOCKED · CONFIGURE PARAMETERS' : 'CHOOSE YOUR ARENA CARD'}
+        <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-amber-300/90">
+          {selectedId ? 'MODE SELECTED · CONFIGURE MATCH' : 'CHOOSE YOUR ARENA CARD'}
         </span>
 
         <div className="flex items-center gap-2.5">
@@ -518,7 +518,7 @@ export function ArenaMatchPortalModal({
                 onClick={onEnterMatch}
                 className="w-full py-4 px-6 rounded-2xl bg-gradient-to-b from-[#232732] via-[#13161D] to-[#090B0F] text-white border border-zinc-300/50 hover:border-white/85 font-mono text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_26px_rgba(226,232,240,0.22),inset_0_1px_0_rgba(255,255,255,0.28)] hover:shadow-[0_0_34px_rgba(226,232,240,0.36)] cursor-pointer transition-all"
               >
-                <span>Enter Match</span>
+                <span>{engine.combatMode === 'custom' ? 'Create Custom Room' : 'Start Matchmaking'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </motion.div>
