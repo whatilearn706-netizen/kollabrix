@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:security": "node scripts/test-security-payloads.js",
+    "audit:site": "node scripts/full-site-audit.mjs",
     "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@babel/core": "^8.0.7",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@types/node": "^20.17.0",
