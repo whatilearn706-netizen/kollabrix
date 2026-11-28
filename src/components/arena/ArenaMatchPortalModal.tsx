@@ -283,27 +283,21 @@ export function ArenaMatchPortalModal({
             <div className="hidden xl:block pointer-events-none fixed left-[-110px] top-1/2 -translate-y-1/2 w-[180px] h-[195px] rounded-2xl bg-[#11141E] border border-amber-500/20 opacity-45 -rotate-[28deg]" />
             <div className="hidden xl:block pointer-events-none fixed right-[-110px] top-1/2 -translate-y-1/2 w-[180px] h-[195px] rounded-2xl bg-[#1C120B] border border-amber-500/25 opacity-45 rotate-[28deg]" />
 
-            <div className="flex flex-wrap lg:flex-nowrap items-center justify-center gap-5 sm:gap-7 py-6">
-              {RADIAL_MODES.map((item) => (
-                <motion.button
-                  key={item.id}
-                  layoutId={`arena-card-${item.id}`}
-                  type="button"
-                  onClick={() => handleChooseCard(item.id)}
-                  initial={{ rotate: item.arcAngle, y: item.arcOffsetY }}
-                  animate={{ rotate: item.arcAngle, y: item.arcOffsetY }}
-                  whileHover={{
-                    y: item.arcOffsetY - 18,
-                    scale: 1.07,
-                    rotate: item.arcAngle * 0.4,
-                  }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                  className={`w-[205px] h-[225px] sm:w-[225px] sm:h-[245px] rounded-2xl ${item.cardBg} ${item.borderClass} cursor-pointer text-left shrink-0 overflow-hidden`}
-                >
-                  <ModeTileGraphic item={item} />
-                </motion.button>
-              ))}
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center justify-center gap-5 sm:gap-6 py-6 w-full max-w-5xl px-4">
+  {RADIAL_MODES.map((item) => (
+    <motion.button
+      key={item.id}
+      layoutId={`arena-card-${item.id}`}
+      type="button"
+      onClick={() => handleChooseCard(item.id)}
+      whileHover={{ y: -6, scale: 1.03 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+      className={`w-full max-w-[240px] mx-auto h-[245px] rounded-2xl ${item.cardBg} ${item.borderClass} cursor-pointer text-left shrink-0 overflow-hidden`}
+    >
+      <ModeTileGraphic item={item} />
+    </motion.button>
+  ))}
+</div>
 
             <p className="mt-8 font-mono text-xs uppercase tracking-[0.35em] text-zinc-400">
               TAP A MODE TO ENTER

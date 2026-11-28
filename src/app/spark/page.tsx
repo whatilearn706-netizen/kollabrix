@@ -128,7 +128,12 @@ export default function SparkUniversalWorkspacePage() {
   const [mode, setMode] = useState<SparkMode>('general');
   const [tier, setTier] = useState<ModelTier>('fast');
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+useEffect(() => {
+  if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+    setSidebarOpen(true);
+  }
+}, []);
 
   const [threads, setThreads] = useState<StoredSparkThread[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);

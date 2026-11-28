@@ -10,7 +10,7 @@ function AnimatedCounter({
   target: number;
   suffix?: string;
 }) {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(target);
   const ref = useRef<HTMLSpanElement>(null);
   const isInView = useInView(ref, { once: true });
 

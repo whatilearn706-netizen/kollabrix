@@ -235,7 +235,7 @@ export function StarterKitsHub({ isAdminPreview = false }: { isAdminPreview?: bo
                 className="py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-xs text-center flex items-center justify-center gap-1.5"
               >
                 <Zap className="w-3.5 h-3.5" />
-                <span>Deploy Vercel</span>
+                                <span>{kit.deployUrl.includes('render.com') ? 'Deploy Render' : 'Deploy Vercel'}</span>
               </a>
             </div>
           </div>
@@ -310,7 +310,7 @@ export function StarterKitsHub({ isAdminPreview = false }: { isAdminPreview?: bo
                 rel="noopener noreferrer"
                 className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
               >
-                <span>Deploy to Vercel</span>
+                                <span>{activeEnvModalKit.deployUrl.includes('render.com') ? 'Deploy to Render' : 'Deploy to Vercel'}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>

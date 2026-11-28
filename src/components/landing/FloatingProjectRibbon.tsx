@@ -214,7 +214,7 @@ export function FloatingProjectRibbon() {
               href="/explore"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/[0.1] text-xs sm:text-sm font-semibold text-white transition-all group self-start sm:self-auto cursor-pointer"
             >
-              <span>Explore All 40+ Projects</span>
+              <span>Explore All Projects</span>
               <ArrowRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>

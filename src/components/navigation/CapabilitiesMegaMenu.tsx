@@ -109,13 +109,13 @@ export const CAPABILITY_ITEMS: CapabilityItem[] = [
 
   // Group 2: CAMPUS & RANKINGS
   {
-    id: 'war',
+     id: 'war',
     label: 'Campus War',
     subtitle: 'College vs College Squad Clashes',
     group: 'campus',
     href: '/war',
-    badge: 'INTER-COLLEGE',
-    live: true,
+    badge: 'COMING SOON',
+    live: false,
     dotColor: 'bg-rose-400 shadow-[0_0_8px_#fb7185]',
     badgeClass: 'bg-rose-500/15 text-rose-300 border-rose-500/35',
     description: 'Represent your university in live squad-vs-squad coding clashes.',

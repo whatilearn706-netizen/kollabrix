@@ -293,7 +293,7 @@ export function IntentConsole({
                   className="bg-slate-900 hover:bg-black text-white font-bold shadow-sm"
                   rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
-                  Explore 40+ Projects
+                  Explore Active Projects
                 </Button>
               </Link>
             </div>

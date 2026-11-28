@@ -320,7 +320,7 @@ export function KaPricingModal({
                 <span className="text-xs text-zinc-400">/ 7 days</span>
               </div>
               <p className="text-xs text-zinc-400">
-                Built for hackathon weekend — split ₹12/person across your 4-member squad.
+               Built for hackathon weekend — split ₹25/person across your 4-member squad.
               </p>
               <ul className="space-y-2 pt-2 text-xs text-zinc-200">
                 <li className="flex items-start gap-2">

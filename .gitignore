@@ -46,3 +46,14 @@ backups/*.tar.gz
 backups/*.sql
 !backups/RESTORE_GUIDE.md
 !backups/complete-database-schema.sql
+
+# Root database dumps and backups (never commit secrets/tokens to git)
+*.sql
+!backups/complete-database-schema.sql
+*.tar.gz
+*.sb-*
+Kollabrix_*.pdf
+Kollabrix_*.pptx
+generate_*.py
+presentation.html
+kollabrix_open_source_dossier.html
